@@ -22,6 +22,9 @@ final class SnapshotTest extends TestCase
     #[\PHPUnit\Framework\Attributes\DataProvider('fixtureProvider')]
     public function testFixtureMatchesStoredHash(string $name): void
     {
+        if (!SnapshotHelper::hasFixtures()) {
+            $this->markTestSkipped('Fixture files not available outside the monorepo.');
+        }
         $xml    = file_get_contents(SnapshotHelper::fixtures() . "/$name.xml");
         $engine = new LpdfEngine('test-key');
         $bytes  = $engine->renderPdf($xml);
@@ -30,6 +33,9 @@ final class SnapshotTest extends TestCase
 
     public function testOutputIsPdf(): void
     {
+        if (!SnapshotHelper::hasFixtures()) {
+            $this->markTestSkipped('Fixture files not available outside the monorepo.');
+        }
         $xml   = file_get_contents(SnapshotHelper::fixtures() . '/example1.xml');
         $bytes = (new LpdfEngine('test-key'))->renderPdf($xml);
         self::assertStringStartsWith('%PDF-', $bytes);
@@ -37,6 +43,9 @@ final class SnapshotTest extends TestCase
 
     public function testCustomFontDoesNotThrow(): void
     {
+        if (!SnapshotHelper::hasFixtures()) {
+            $this->markTestSkipped('Fixture files not available outside the monorepo.');
+        }
         $xml    = file_get_contents(SnapshotHelper::fixtures() . '/example1.xml');
         $engine = new LpdfEngine('test-key');
 

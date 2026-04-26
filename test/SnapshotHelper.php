@@ -53,6 +53,13 @@ final class SnapshotHelper
         return $path;
     }
 
+    /** Returns true when fixture XML files are present (not just an empty dir). */
+    public static function hasFixtures(): bool
+    {
+        $dir = self::fixtures();
+        return is_dir($dir) && !empty(glob($dir . '/*.xml'));
+    }
+
     /** Returns the absolute path to the shared test/snapshots directory. */
     public static function snapshots(): string
     {
