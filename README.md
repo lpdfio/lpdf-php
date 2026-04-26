@@ -45,14 +45,6 @@ Documents are defined in a layout XML format. See the [lpdf documentation](https
 - PHP 8.2+
 - A WASI-capable runtime is bundled — no additional extensions required.
 
-## High-performance FFI (Linux only)
-
-For production Linux deployments, install the optional FFI package for native performance:
-
-```bash
-composer require lpdfio/lpdf-ffi
-```
-
 ## License
 
 Free for individuals, open-source projects, non-profits, and organizations with annual gross revenue under 1,000,000 USD (Community License). A paid license is required for production use by larger organizations.
