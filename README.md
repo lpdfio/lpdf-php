@@ -1,6 +1,6 @@
 # lpdfio/lpdf
 
-PHP adapter for [lpdf](https://lpdf.io) — pixel-perfect, lightweight, and consistent PDF rendering.
+PHP adapter for [lpdf](https://lpdf.io) — an accurate, efficient, and cross-platform PDF engine.
 
 ## Installation
 
@@ -15,7 +15,7 @@ composer require lpdfio/lpdf
 
 use Lpdf\LpdfEngine;
 
-$engine = new LpdfEngine('');          // empty key → free tier (watermark)
+$engine = new LpdfEngine('');
 
 $engine->loadFont('montserrat', file_get_contents('fonts/Montserrat-Regular.ttf'));
 $engine->loadImage('logo', file_get_contents('images/logo.png'));
