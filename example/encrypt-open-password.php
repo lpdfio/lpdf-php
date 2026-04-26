@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../../../vendor/autoload.php';
  *   docker run --rm \
  *     -v "$(pwd)/src/adapters/php/example:/app/src/adapters/php/example" \
  *     -v "$(pwd)/example:/app/example" \
- *     -v "$(pwd)/docs:/app/docs" \
+ *     -v "$(pwd)/test/fixtures:/app/test/fixtures" \
  *     -w /app lpdf-php php src/adapters/php/example/encrypt-open-password.php
  *
  * Output: example/result/encrypt-open-password-php.pdf
@@ -21,7 +21,7 @@ require_once __DIR__ . '/../../../../vendor/autoload.php';
 use Lpdf\LpdfEngine;
 
 $root    = __DIR__ . '/../../../../example/';
-$xmlFile = __DIR__ . '/../../../../docs/examples/showcase-encryption.xml';
+$xmlFile = __DIR__ . '/../../../../test/fixtures/showcase-encryption.xml';
 $outputFile = 'encrypt-open-password-php.pdf';
 
 $xml = file_get_contents($xmlFile);
