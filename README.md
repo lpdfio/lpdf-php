@@ -47,6 +47,4 @@ Documents are defined in a layout XML format. See the [lpdf documentation](https
 
 ## License
 
-Free for individuals, open-source projects, non-profits, and organizations with annual gross revenue under 1,000,000 USD (Community License). A paid license is required for production use by larger organizations.
-
-See [LICENSE](LICENSE) for full terms or visit [lpdf.io/pricing](https://lpdf.io/pricing) to purchase a license.
+Dual-licensed: Community License (free) and Commercial License (paid). See [LICENSE](LICENSE) for full terms.
