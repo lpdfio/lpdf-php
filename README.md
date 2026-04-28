@@ -1,6 +1,6 @@
 # lpdfio/lpdf
 
-PHP adapter for [lpdf](https://lpdf.io) — an accurate, efficient, and cross-platform PDF engine.
+PHP adapter for [Lpdf](https://lpdf.io) — an accurate, efficient, and cross-platform PDF engine.
 
 ## Installation
 
@@ -28,7 +28,7 @@ file_put_contents('output.pdf', $pdf);
 
 ## XML format
 
-Documents are defined in a layout XML format. See the [lpdf documentation](https://lpdf.io/docs) and [examples](https://github.com/lpdfio/lpdf/tree/main/docs/examples) for the full schema.
+Documents are defined in a layout XML format. See the [Lpdf documentation](https://lpdf.io/docs) and [examples](https://github.com/lpdfio/lpdf/tree/main/docs/examples) for the full schema.
 
 ```xml
 <stack spacing="m" padding="l">
