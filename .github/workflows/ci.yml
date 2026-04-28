@@ -14,6 +14,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -21,33 +23,44 @@ jobs:
           tools: composer
 
       # ── Download WASI binary from core release ───────────────────────────────
-      # Derives the core tag from composer.json (strip patch → .0).
-      # Falls back to the latest release when the version is a placeholder (0.0.0)
-      # or the derived tag does not yet exist.
+      # Derives the core tag from the latest semver git tag in this repo
+      # (strip patch → .0).  Falls back to the latest core release when no
+      # adapter tag exists yet.
       - name: Download lpdf-wasi.wasm
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p resources
-          COMPOSER_VERSION=$(php -r "echo json_decode(file_get_contents('composer.json'))->version ?? '0.0.0';")
-          CORE_TAG="v$(echo "$COMPOSER_VERSION" | sed 's/\.[0-9]*$/.0/')"
+          ADAPTER_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]' | head -1)
+          CORE_TAG=$(echo "${ADAPTER_TAG:-v0.0.0}" | sed 's/\.[0-9]*$/.0/')
+          echo "Resolved adapter tag: ${ADAPTER_TAG:-<none>}"
           echo "Resolved core tag: $CORE_TAG"
-          for attempt in 1 2 3; do
-            gh release download "$CORE_TAG" \
-              --repo lpdfio/lpdf \
-              --pattern "lpdf-wasi.wasm" \
-              --dir resources \
-              --clobber && break
-            echo "Attempt $attempt failed — retrying in 10s..."
-            sleep 10
-          done
-          # Fallback to latest release when the derived tag doesn't exist yet
-          if [ ! -f resources/lpdf-wasi.wasm ]; then
+          # No adapter tags yet — go straight to latest
+          if [ -z "$ADAPTER_TAG" ] || [ "$CORE_TAG" = "v0.0.0" ]; then
+            echo "No adapter tag — downloading latest release"
             gh release download \
               --repo lpdfio/lpdf \
               --pattern "lpdf-wasi.wasm" \
               --dir resources \
               --clobber
+          else
+            for attempt in 1 2 3; do
+              gh release download "$CORE_TAG" \
+                --repo lpdfio/lpdf \
+                --pattern "lpdf-wasi.wasm" \
+                --dir resources \
+                --clobber && break
+              echo "Attempt $attempt failed — retrying in 10s..."
+              sleep 10
+            done
+            # Fallback to latest release when the derived tag doesn't exist yet
+            if [ ! -f resources/lpdf-wasi.wasm ]; then
+              gh release download \
+                --repo lpdfio/lpdf \
+                --pattern "lpdf-wasi.wasm" \
+                --dir resources \
+                --clobber
+            fi
           fi
 
       # ── Install wasmtime runtime ─────────────────────────────────────────────
