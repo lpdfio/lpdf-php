@@ -98,7 +98,7 @@ jobs:
 
       - name: Commit updated wasm binary
         run: |
-          git add resources/lpdf-wasi.wasm
+          git add -f resources/lpdf-wasi.wasm
           git diff --cached --quiet || git commit -m "release: $ADAPTER_TAG"
 
       - name: Tag and push (dispatch — use write_token)
