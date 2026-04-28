@@ -1,6 +1,6 @@
 {
   "name": "lpdfio/lpdf",
-  "description": "PHP adapter for lpdf — pixel-perfect, lightweight, and consistent PDF rendering",
+  "description": "PHP adapter for Lpdf — an accurate, efficient, and cross-platform PDF engine",
   "type": "library",
   "license": "proprietary",
   "homepage": "https://lpdf.io",
