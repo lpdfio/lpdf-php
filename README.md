@@ -1,3 +1,5 @@
+<p align="center"><img src="lpdf-logo.svg" height="48" alt="Lpdf"></p>
+
 # lpdfio/lpdf
 
 PHP adapter for [Lpdf](https://lpdf.io) — an accurate, efficient, and cross-platform PDF engine.
