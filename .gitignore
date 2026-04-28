@@ -1,0 +1,4 @@
+vendor/
+
+# Generated WASM artifacts
+resources/lpdf-wasi.wasm
