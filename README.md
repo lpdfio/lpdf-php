@@ -2,7 +2,9 @@
 
 # lpdfio/lpdf
 
-PHP adapter for [Lpdf](https://lpdf.io) — an accurate, efficient, and cross-platform PDF engine.
+PHP adapter for [Lpdf](https://lpdf.io) — PDF as Code, on every platform.
+
+Describe your document structure in code using the programming Kit, or XML. Every PDF is compact, pixel-perfect, and identical across platforms.
 
 ## Installation
 
