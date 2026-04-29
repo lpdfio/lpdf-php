@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lpdf\Kit;
 
-final readonly class SectionOptions
+final readonly class SectionAttr
 {
     public function __construct(
         public ?string      $size        = null,

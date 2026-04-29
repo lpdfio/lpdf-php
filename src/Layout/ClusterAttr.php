@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lpdf\Layout;
 
-final readonly class StackOptions
+final readonly class ClusterAttr
 {
     public function __construct(
         public ?string $gap        = null,

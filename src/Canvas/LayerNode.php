@@ -6,13 +6,13 @@ namespace Lpdf\Canvas;
 
 use Lpdf\Shared\PageScope;
 
-/** @internal Use Canvas::layer() to construct. */
+/** @internal Use Pdf::layer() to construct. */
 final readonly class LayerNode extends Node
 {
     /** @param Node[] $nodes */
     public function __construct(
-        private array         $nodes,
-        private ?LayerOptions $options = null,
+        private array          $nodes,
+        private ?LayerAttr $options = null,
     ) {}
 
     public function jsonSerialize(): mixed

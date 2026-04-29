@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lpdf\Layout;
 
-final readonly class BarcodeOptions
+final readonly class BarcodeAttr
 {
     public function __construct(
         public string  $type,

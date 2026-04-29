@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lpdf\Layout;
 
-final readonly class DividerOptions
+final readonly class DividerAttr
 {
     public function __construct(
         public ?string $color     = null,

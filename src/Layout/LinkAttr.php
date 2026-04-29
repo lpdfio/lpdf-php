@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lpdf\Layout;
 
-final readonly class LinkOptions
+final readonly class LinkAttr
 {
     public function __construct(
         public ?string $url    = null,

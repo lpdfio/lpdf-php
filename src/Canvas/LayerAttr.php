@@ -6,7 +6,7 @@ namespace Lpdf\Canvas;
 
 use Lpdf\Shared\PageScope;
 
-final readonly class LayerOptions
+final readonly class LayerAttr
 {
     /**
      * @param PageScope|string|null $page  Named scope or numeric range, e.g. '2-4', '1,3-5'.

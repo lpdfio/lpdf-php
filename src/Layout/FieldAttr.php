@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lpdf\Layout;
 
-final readonly class FieldOptions
+final readonly class FieldAttr
 {
     public function __construct(
         /** Displayed label or button caption. */

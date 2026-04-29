@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lpdf\Layout;
 
-final readonly class TextOptions
+final readonly class TextAttr
 {
     public function __construct(
         public ?string $font       = null,
