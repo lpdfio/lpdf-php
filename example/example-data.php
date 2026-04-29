@@ -16,7 +16,8 @@ require_once __DIR__ . '/../../../../vendor/autoload.php';
  * Output: example/result/data-invoice-php.pdf
  */
 
-use Lpdf\LpdfEngine;
+use Lpdf\Pdf;
+use Lpdf\Engine\RenderOptions;
 
 $root       = __DIR__ . '/../../../../example/';
 $xmlFile    = $root . 'xml/data-invoice.xml';
@@ -26,9 +27,9 @@ $outputFile = 'example-data-php.pdf';
 $xml  = file_get_contents($xmlFile);
 $data = json_decode(file_get_contents($jsonFile), associative: true);
 
-$engine = new LpdfEngine('');  // empty key → free tier (watermark)
+$engine = Pdf::engine();  // empty key → free tier (watermark)
 
-$pdf = $engine->renderPdf($xml, data: $data);
+$pdf = $engine->render($xml, new RenderOptions(data: $data));
 
 file_put_contents($root . "result/{$outputFile}", $pdf);
 echo "output: $outputFile (" . number_format(strlen($pdf)) . " bytes)\n";

@@ -18,7 +18,7 @@ require_once __DIR__ . '/../../../../vendor/autoload.php';
  * Output: example/result/encrypt-permissions-only-php.pdf
  */
 
-use Lpdf\LpdfEngine;
+use Lpdf\Pdf;
 
 $root    = __DIR__ . '/../../../../example/';
 $xmlFile = __DIR__ . '/../../../../test/fixtures/showcase-encryption.xml';
@@ -26,13 +26,13 @@ $outputFile = 'encrypt-permissions-only-php.pdf';
 
 $xml = file_get_contents($xmlFile);
 
-$engine = new LpdfEngine('');  // empty key → free tier (watermark)
+$engine = Pdf::engine();  // empty key → free tier (watermark)
 
 // Permissions only — no open password.
 // File opens freely; cooperative viewers enforce print: false, copy: false.
 $engine->setEncryption('', 's3cr3t', ['print' => false, 'copy' => false]);
 
-$pdf = $engine->renderPdf($xml);
+$pdf = $engine->render($xml);
 
 file_put_contents($root . "result/{$outputFile}", $pdf);
 echo "output: $outputFile (" . number_format(strlen($pdf)) . " bytes)\n";
