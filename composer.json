@@ -1,6 +1,6 @@
 {
   "name": "lpdfio/lpdf",
-  "description": "PHP adapter for Lpdf — PDF as Code, on every platform. Describe your document structure in code using the programming Kit, or XML. Every PDF is compact, pixel-perfect, and identical across platforms.",
+  "description": "PHP SDK for Lpdf — PDF as Code on every platform. You describe a document as code or XML. Lpdf renders a compact, pixel-perfect PDF — identical across platforms.",
   "type": "library",
   "license": "proprietary",
   "homepage": "https://lpdf.io",
@@ -18,7 +18,8 @@
     "phpunit/phpunit": "^11"
   },
   "autoload": {
-    "psr-4": { "Lpdf\\": "src/" }
+    "psr-4": { "Lpdf\\": "src/" },
+    "files": ["src/constants.php"]
   },
   "autoload-dev": {
     "psr-4": { "Lpdf\\Tests\\": "test/" }

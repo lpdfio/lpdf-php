@@ -2,9 +2,9 @@
 
 # lpdfio/lpdf
 
-PHP adapter for [Lpdf](https://lpdf.io) — PDF as Code, on every platform.
+**PHP SDK for [Lpdf](https://lpdf.io) — PDF as Code on every platform**
 
-Describe your document structure in code using the programming Kit or XML. Every PDF is compact, pixel-perfect, and identical across platforms.
+You describe a document as code or XML. Lpdf renders a compact, pixel-perfect PDF — identical across platforms.
 
 ## Installation
 
@@ -15,40 +15,42 @@ composer require lpdfio/lpdf
 ## Usage
 
 ```php
-<?php
+use Lpdf\L;
+use const Lpdf\NoAttr;
 
-use Lpdf\LpdfEngine;
+$engine = L::engine();
 
-$engine = new LpdfEngine('');
+$doc = L::document(new DocumentAttr(size: 'letter', margin: '48pt'), [
+    L::section(NoAttr, [
+        L::layout(NoAttr, [
+            L::stack(new StackAttr(gap: '24pt'), [
+                L::split(NoAttr, [
+                    L::text(new TextAttr(fontSize: '8pt', color: '#888888'), ['ACME CORP']),
+                    L::text(new TextAttr(fontSize: '22pt', bold: 'true'), ['Project Proposal']),
+                ]),
+                L::divider(new DividerAttr(thickness: 'xs')),
+                L::text(new TextAttr(fontSize: '13pt', bold: 'true'), ['Scope of Work']),
+                L::flank(new FlankAttr(gap: '12pt', align: 'start'), [
+                    L::text(new TextAttr(color: '#888888', width: '24pt'), ['01']),
+                    L::text(NoAttr, ['Discovery & Research']),
+                ]),
+            ]),
+        ]),
+    ]),
+]);
 
-$engine->loadFont('montserrat', file_get_contents('fonts/Montserrat-Regular.ttf'));
-$engine->loadImage('logo', file_get_contents('images/logo.png'));
-
-$xml = file_get_contents('document.xml');
-$pdf = $engine->renderPdf($xml);
-
-file_put_contents('output.pdf', $pdf);
-```
-
-## XML format
-
-Documents are defined in a layout XML format. See the [Lpdf documentation](https://lpdf.io/docs) and [examples](https://github.com/lpdfio/lpdf/tree/main/docs/examples) for the full schema.
-
-```xml
-<stack spacing="m" padding="l">
-  <text font-size="xl" font="Montserrat-Bold">Invoice #1001</text>
-  <grid columns="2">
-    <text>Date</text>      <text>2026-04-25</text>
-    <text>Due</text>       <text>2026-05-25</text>
-  </grid>
-</stack>
+$pdf = $engine->render($doc);
 ```
 
 ## Requirements
 
 - PHP 8.2+
-- A WASI-capable runtime is bundled — no additional extensions required.
+- [`wasmtime`](https://wasmtime.dev) CLI must be available in `PATH` (used to run the bundled WASI binary).
 
-## License
+## Docs
+
+[lpdf.io/docs/php](https://lpdf.io/docs/php)
+
+--
 
 Dual-licensed: Community License (free) and Commercial License (paid). See [LICENSE](LICENSE) for full terms.
