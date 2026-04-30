@@ -15,5 +15,6 @@ final readonly class PathStyle
         public ?bool        $fillRuleEvenodd   = null,
         public ?LineCap     $lineCap           = null,
         public ?LineJoin    $lineJoin          = null,
+        public ?float       $opacity           = null,
     ) {}
 }

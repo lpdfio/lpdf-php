@@ -23,6 +23,8 @@ final readonly class RectNode extends Node
         if ($this->style?->strokeWidth  !== null) $attrs['stroke-width'] = (string)$this->style->strokeWidth;
         if ($this->style?->strokeDash   !== null) $attrs['stroke-dash']  = implode(' ', $this->style->strokeDash);
         if ($this->style?->borderRadius !== null) $attrs['radius']       = (string)$this->style->borderRadius;
+        if ($this->style?->opacity      !== null) $attrs['opacity']      = (string)$this->style->opacity;
+        if ($this->style?->anchor       !== null) $attrs['anchor']       = $this->style->anchor;
         return ['type' => 'canvas-rect', 'attrs' => (object) $attrs];
     }
 }

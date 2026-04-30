@@ -10,5 +10,6 @@ final readonly class DividerAttr
         public ?string $color     = null,
         public ?string $thickness = null,
         public ?string $direction = null,
+        public ?string $debug     = null,
     ) {}
 }

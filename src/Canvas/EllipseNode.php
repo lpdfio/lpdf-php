@@ -22,6 +22,8 @@ final readonly class EllipseNode extends Node
         if ($this->style?->stroke      !== null) $attrs['stroke']       = $this->style->stroke;
         if ($this->style?->strokeWidth !== null) $attrs['stroke-width'] = (string)$this->style->strokeWidth;
         if ($this->style?->strokeDash  !== null) $attrs['stroke-dash']  = implode(' ', $this->style->strokeDash);
+        if ($this->style?->opacity     !== null) $attrs['opacity']      = (string)$this->style->opacity;
+        if ($this->style?->anchor      !== null) $attrs['anchor']       = $this->style->anchor;
         return ['type' => 'canvas-ellipse', 'attrs' => (object) $attrs];
     }
 }

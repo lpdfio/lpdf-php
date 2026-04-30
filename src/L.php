@@ -24,6 +24,7 @@ use Lpdf\Engine\EngineException;
 use Lpdf\Engine\EngineOptions;
 use Lpdf\Engine\WasmRunner;
 use Lpdf\Kit\DocumentAttr;
+use Lpdf\Kit\DocumentTokens;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\Kit\SectionAttr;
 use Lpdf\Kit\SectionCanvas;
@@ -141,6 +142,12 @@ final class L
     public static function canvas(mixed $attrs, array $layers = []): SectionCanvas
     {
         return new SectionCanvas($layers);
+    }
+
+    /** Create a {@see DocumentTokens} instance (convenience factory). */
+    public static function tokens(DocumentTokens $attrs): DocumentTokens
+    {
+        return $attrs;
     }
 
     // ── Layout containers ──────────────────────────────────────────────────────
@@ -346,8 +353,8 @@ final class L
     }
 
     /** Build a canvas-image node at (x, y) with dimensions (w × h). */
-    public static function imgAt(float $x, float $y, float $w, float $h, string $name): ImageNode
+    public static function imgAt(float $x, float $y, float $w, float $h, string $name, ?string $anchor = null): ImageNode
     {
-        return new ImageNode($x, $y, $w, $h, $name);
+        return new ImageNode($x, $y, $w, $h, $name, $anchor);
     }
 }

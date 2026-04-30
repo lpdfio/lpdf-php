@@ -15,13 +15,14 @@ final readonly class PathNode extends Node
     public function jsonSerialize(): mixed
     {
         $attrs = ['d' => $this->d];
-        if ($this->style?->fill            !== null) $attrs['fill']            = $this->style->fill;
-        if ($this->style?->stroke          !== null) $attrs['stroke']          = $this->style->stroke;
+        if ($this->style?->fill            !== null) $attrs['fill']         = $this->style->fill;
+        if ($this->style?->stroke          !== null) $attrs['stroke']       = $this->style->stroke;
         if ($this->style?->strokeWidth     !== null) $attrs['stroke-width'] = (string)$this->style->strokeWidth;
         if ($this->style?->strokeDash      !== null) $attrs['stroke-dash']  = implode(' ', $this->style->strokeDash);
         if ($this->style?->fillRuleEvenodd !== null) $attrs['fill-rule']    = $this->style->fillRuleEvenodd ? 'evenodd' : 'nonzero';
         if ($this->style?->lineCap         !== null) $attrs['line-cap']     = $this->style->lineCap->value;
         if ($this->style?->lineJoin        !== null) $attrs['line-join']    = $this->style->lineJoin->value;
+        if ($this->style?->opacity         !== null) $attrs['opacity']      = (string)$this->style->opacity;
         return ['type' => 'canvas-path', 'attrs' => (object) $attrs];
     }
 }

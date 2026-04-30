@@ -13,5 +13,7 @@ final readonly class RectStyle
         /** @var float[]|null */
         public ?array       $strokeDash    = null,
         public ?float       $borderRadius  = null,
+        public ?float       $opacity       = null,
+        public ?string      $anchor        = null,
     ) {}
 }

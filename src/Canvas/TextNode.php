@@ -25,6 +25,8 @@ final readonly class TextNode extends Node
         if ($this->style?->align      !== null) $attrs['align']       = $this->style->align->value;
         if ($this->style?->lineHeight !== null) $attrs['line-height'] = (string)$this->style->lineHeight;
         if ($this->style?->width      !== null) $attrs['w']           = (string)$this->style->width;
+        if ($this->style?->opacity    !== null) $attrs['opacity']     = (string)$this->style->opacity;
+        if ($this->style?->anchor     !== null) $attrs['anchor']      = $this->style->anchor;
 
         $node = ['type' => 'canvas-text', 'text' => $this->content, 'attrs' => (object) $attrs];
         if ($this->runs !== []) {

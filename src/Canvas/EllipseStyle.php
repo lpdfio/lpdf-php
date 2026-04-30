@@ -12,5 +12,7 @@ final readonly class EllipseStyle
         public ?float       $strokeWidth  = null,
         /** @var float[]|null */
         public ?array       $strokeDash   = null,
+        public ?float       $opacity      = null,
+        public ?string      $anchor       = null,
     ) {}
 }

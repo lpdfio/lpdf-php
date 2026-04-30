@@ -13,5 +13,7 @@ final readonly class TextStyle
         public ?TextAlign  $align       = null,
         public ?float      $lineHeight  = null,
         public ?float      $width       = null,
+        public ?float      $opacity     = null,
+        public ?string     $anchor      = null,
     ) {}
 }
