@@ -18,7 +18,7 @@ final readonly class DocumentTokens implements \JsonSerializable
      * @param array<string,string>|null $border
      * @param array<string,string>|null $radius
      * @param array<string,string>|null $width
-     * @param array<string,string>|null $text
+     * @param array<string,string>|null $textSize
      * @param array<string,array{src?:string,builtin?:string}>|null $fonts
      */
     public function __construct(
@@ -28,7 +28,7 @@ final readonly class DocumentTokens implements \JsonSerializable
         public ?array $border = null,
         public ?array $radius = null,
         public ?array $width  = null,
-        public ?array $text   = null,
+        public ?array $textSize = null,
         public ?array $fonts  = null,
     ) {}
 
@@ -42,7 +42,7 @@ final readonly class DocumentTokens implements \JsonSerializable
                 'border' => $this->border,
                 'radius' => $this->radius,
                 'width'  => $this->width,
-                'text'   => $this->text,
+                'text-size' => $this->textSize,
                 'fonts'  => $this->fonts,
             ],
             static fn($v) => $v !== null,
