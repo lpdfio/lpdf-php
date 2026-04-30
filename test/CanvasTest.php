@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Lpdf\Tests;
 
-use Lpdf\Pdf;
+use Lpdf\L;
 use Lpdf\Canvas\Clip;
 use Lpdf\Canvas\EllipseStyle;
 use Lpdf\Canvas\LayerAttr;
@@ -27,14 +27,14 @@ final class CanvasTest extends TestCase
     public function testCanvasOutputIsPdf(): void
     {
         $doc   = $this->minimalDoc();
-        $bytes = Pdf::engine()->setLicenseKey('test-key')->render($doc);
+        $bytes = L::engine()->setLicenseKey('test-key')->render($doc);
         self::assertStringStartsWith('%PDF-', $bytes);
     }
 
     public function testCanvasSnapshotMatchesOrIsCreated(): void
     {
         $doc   = $this->comprehensiveDoc();
-        $bytes = Pdf::engine()->setLicenseKey('test-key')->render($doc);
+        $bytes = L::engine()->setLicenseKey('test-key')->render($doc);
         self::assertStringStartsWith('%PDF-', $bytes);
         SnapshotHelper::compareOrUpdate('canvas_comprehensive', $bytes);
     }
@@ -43,7 +43,7 @@ final class CanvasTest extends TestCase
 
     public function testDocumentSerializesToDocument(): void
     {
-        $doc  = Pdf::document(null, [Pdf::section(null, [])]);
+        $doc  = L::document(null, [L::section(null, [])]);
         $json = json_decode(json_encode($doc, JSON_THROW_ON_ERROR), true);
 
         self::assertSame(1, $json['version']);
@@ -53,7 +53,7 @@ final class CanvasTest extends TestCase
 
     public function testSectionSerializesToSection(): void
     {
-        $section = Pdf::section(new SectionAttr(size: 'a4', margin: '20pt'), []);
+        $section = L::section(new SectionAttr(size: 'a4', margin: '20pt'), []);
         $json    = json_decode(json_encode($section, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('section', $json['type']);
@@ -63,8 +63,8 @@ final class CanvasTest extends TestCase
 
     public function testSectionWithCanvasLayersSerializesKindNodes(): void
     {
-        $layer   = Pdf::layer(null, [Pdf::rect(0, 0, 100, 100)]);
-        $section = Pdf::section(null, [Pdf::canvas(null, [$layer])]);
+        $layer   = L::layer(null, [L::rect(0, 0, 100, 100)]);
+        $section = L::section(null, [L::canvas(null, [$layer])]);
         $json    = json_decode(json_encode($section, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('section', $json['type']);
@@ -75,10 +75,10 @@ final class CanvasTest extends TestCase
 
     public function testSectionWithBothLayoutAndCanvas(): void
     {
-        $layer   = Pdf::layer(null, [Pdf::rect(0, 0, 100, 100)]);
-        $section = Pdf::section(null, [
-            Pdf::layout(null, [Pdf::text(null, ['Hello'])]),
-            Pdf::canvas(null, [$layer]),
+        $layer   = L::layer(null, [L::rect(0, 0, 100, 100)]);
+        $section = L::section(null, [
+            L::layout(null, [L::text(null, ['Hello'])]),
+            L::canvas(null, [$layer]),
         ]);
         $json = json_decode(json_encode($section, JSON_THROW_ON_ERROR), true);
 
@@ -89,10 +89,10 @@ final class CanvasTest extends TestCase
 
     public function testSectionWithCanvasUnderlayOrder(): void
     {
-        $layer   = Pdf::layer(null, [Pdf::rect(0, 0, 100, 100)]);
-        $section = Pdf::section(null, [
-            Pdf::canvas(null, [$layer]),
-            Pdf::layout(null, [Pdf::text(null, ['Hello'])]),
+        $layer   = L::layer(null, [L::rect(0, 0, 100, 100)]);
+        $section = L::section(null, [
+            L::canvas(null, [$layer]),
+            L::layout(null, [L::text(null, ['Hello'])]),
         ]);
         $json = json_decode(json_encode($section, JSON_THROW_ON_ERROR), true);
 
@@ -102,7 +102,7 @@ final class CanvasTest extends TestCase
 
     public function testSectionWithTitleSerializesAttr(): void
     {
-        $section = Pdf::section(new SectionAttr(title: 'Cover'), []);
+        $section = L::section(new SectionAttr(title: 'Cover'), []);
         $json    = json_decode(json_encode($section, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('Cover', $json['attrs']['title']);
@@ -112,7 +112,7 @@ final class CanvasTest extends TestCase
 
     public function testRegionSerializesToLayoutRegion(): void
     {
-        $region = Pdf::region(new RegionAttr(pin: 'top-right'), [Pdf::text(null, ['Header'])]);
+        $region = L::region(new RegionAttr(pin: 'top-right'), [L::text(null, ['Header'])]);
         $json   = json_decode(json_encode($region, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('layout-region', $json['type']);
@@ -125,7 +125,7 @@ final class CanvasTest extends TestCase
 
     public function testRectSerializesCorrectly(): void
     {
-        $node = Pdf::rect(10, 20, 100, 50, new RectStyle(fill: '#ff0000', borderRadius: 5));
+        $node = L::rect(10, 20, 100, 50, new RectStyle(fill: '#ff0000', borderRadius: 5));
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('canvas-rect', $json['type']);
@@ -139,7 +139,7 @@ final class CanvasTest extends TestCase
 
     public function testLineSerializesCorrectly(): void
     {
-        $node = Pdf::line(0, 0, 100, 100);
+        $node = L::line(0, 0, 100, 100);
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('canvas-line', $json['type']);
@@ -151,7 +151,7 @@ final class CanvasTest extends TestCase
 
     public function testEllipseSerializesCorrectly(): void
     {
-        $node = Pdf::ellipse(50, 50, 40, 20, new EllipseStyle(fill: '#00ff00'));
+        $node = L::ellipse(50, 50, 40, 20, new EllipseStyle(fill: '#00ff00'));
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('canvas-ellipse', $json['type']);
@@ -164,7 +164,7 @@ final class CanvasTest extends TestCase
 
     public function testCircleSerializesToCanvasCircle(): void
     {
-        $node = Pdf::circle(100, 100, 30);
+        $node = L::circle(100, 100, 30);
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('canvas-circle', $json['type']);
@@ -175,7 +175,7 @@ final class CanvasTest extends TestCase
 
     public function testPathSerializesCorrectly(): void
     {
-        $node = Pdf::path('M 0 0 L 100 100 Z', new PathStyle(fill: '#0000ff', fillRuleEvenodd: true));
+        $node = L::path('M 0 0 L 100 100 Z', new PathStyle(fill: '#0000ff', fillRuleEvenodd: true));
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('canvas-path', $json['type']);
@@ -186,7 +186,7 @@ final class CanvasTest extends TestCase
 
     public function testImgSerializesToCanvasImg(): void
     {
-        $node = Pdf::imgAt(10, 20, 200, 150, 'logo');
+        $node = L::imgAt(10, 20, 200, 150, 'logo');
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('canvas-img', $json['type']);
@@ -196,7 +196,7 @@ final class CanvasTest extends TestCase
 
     public function testTextSerializesCorrectly(): void
     {
-        $node = Pdf::textAt(20, 40, 'Hello', new TextStyle(font: 'Helvetica', size: 14, color: '#333333'));
+        $node = L::textAt(20, 40, 'Hello', new TextStyle(font: 'Helvetica', size: 14, color: '#333333'));
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('canvas-text', $json['type']);
@@ -209,7 +209,7 @@ final class CanvasTest extends TestCase
 
     public function testTextWithRunsSerializesRuns(): void
     {
-        $node = Pdf::textAt(
+        $node = L::textAt(
             x: 0, y: 0, content: 'base',
             runs: [new Run('bold', font: 'Helvetica-Bold', color: '#ff0000')],
         );
@@ -226,9 +226,9 @@ final class CanvasTest extends TestCase
 
     public function testLayerSerializesWithOpacity(): void
     {
-        $node = Pdf::layer(
+        $node = L::layer(
             new LayerAttr(opacity: 0.5),
-            [Pdf::rect(0, 0, 100, 100)],
+            [L::rect(0, 0, 100, 100)],
         );
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
@@ -239,7 +239,7 @@ final class CanvasTest extends TestCase
 
     public function testLayerWithPageScopeSerializesPage(): void
     {
-        $node = Pdf::layer(new LayerAttr(page: PageScope::Each), []);
+        $node = L::layer(new LayerAttr(page: PageScope::Each), []);
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
         self::assertSame('each', $json['attrs']['page']);
@@ -247,7 +247,7 @@ final class CanvasTest extends TestCase
 
     public function testLayerSerializesWithClip(): void
     {
-        $node = Pdf::layer(new LayerAttr(clip: new Clip(10, 10, 100, 50, 5)), []);
+        $node = L::layer(new LayerAttr(clip: new Clip(10, 10, 100, 50, 5)), []);
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
         self::assertSame(10.0, (float) $json['attrs']['clip']['x']);
@@ -258,7 +258,7 @@ final class CanvasTest extends TestCase
     public function testLayerSerializesWithTransform(): void
     {
         $matrix = [1.0, 0.0, 0.0, 1.0, 50.0, 100.0];
-        $node   = Pdf::layer(new LayerAttr(transform: new Transform($matrix)), []);
+        $node   = L::layer(new LayerAttr(transform: new Transform($matrix)), []);
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
         self::assertEquals($matrix, $json['attrs']['transform']);
@@ -266,7 +266,7 @@ final class CanvasTest extends TestCase
 
     public function testNullStyleAttrsAreOmitted(): void
     {
-        $node = Pdf::rect(0, 0, 50, 50); // no style
+        $node = L::rect(0, 0, 50, 50); // no style
         $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
 
         self::assertArrayNotHasKey('fill', $json['attrs']);
@@ -277,14 +277,14 @@ final class CanvasTest extends TestCase
 
     private function minimalDoc(): PdfDocument
     {
-        return Pdf::document(
+        return L::document(
             new DocumentAttr(tokens: new DocumentTokens(fonts: ['Helvetica' => ['builtin' => 'Helvetica']])),
             [
-                Pdf::section(new SectionAttr(size: 'a4'), [
-                    Pdf::canvas(null, [
-                        Pdf::layer(null, [
-                            Pdf::rect(40, 40, 200, 100, new RectStyle(fill: '#4a90e2')),
-                            Pdf::textAt(40, 160, 'Hello Canvas!', new TextStyle(font: 'Helvetica', size: 16, color: '#000000')),
+                L::section(new SectionAttr(size: 'a4'), [
+                    L::canvas(null, [
+                        L::layer(null, [
+                            L::rect(40, 40, 200, 100, new RectStyle(fill: '#4a90e2')),
+                            L::textAt(40, 160, 'Hello Canvas!', new TextStyle(font: 'Helvetica', size: 16, color: '#000000')),
                         ]),
                     ]),
                 ]),
@@ -294,21 +294,21 @@ final class CanvasTest extends TestCase
 
     private function comprehensiveDoc(): PdfDocument
     {
-        return Pdf::document(
+        return L::document(
             new DocumentAttr(tokens: new DocumentTokens(fonts: ['Helvetica' => ['builtin' => 'Helvetica']])),
             [
-                Pdf::section(new SectionAttr(size: 'a4'), [
-                    Pdf::canvas(null, [
-                        Pdf::layer(null, [
-                            Pdf::rect(40, 40, 200, 100, new RectStyle(fill: '#4a90e2', stroke: '#1a5276', strokeWidth: 2, borderRadius: 8)),
-                            Pdf::line(40, 170, 555, 170),
-                            Pdf::ellipse(140, 250, 80, 50, new EllipseStyle(fill: '#f39c12')),
-                            Pdf::circle(400, 250, 60, new EllipseStyle(fill: '#27ae60')),
-                            Pdf::path('M 40 360 L 200 310 L 360 360 Z', new PathStyle(fill: '#8e44ad')),
-                            Pdf::textAt(40, 420, 'Canvas text', new TextStyle(font: 'Helvetica', size: 18, color: '#1a1a1a')),
+                L::section(new SectionAttr(size: 'a4'), [
+                    L::canvas(null, [
+                        L::layer(null, [
+                            L::rect(40, 40, 200, 100, new RectStyle(fill: '#4a90e2', stroke: '#1a5276', strokeWidth: 2, borderRadius: 8)),
+                            L::line(40, 170, 555, 170),
+                            L::ellipse(140, 250, 80, 50, new EllipseStyle(fill: '#f39c12')),
+                            L::circle(400, 250, 60, new EllipseStyle(fill: '#27ae60')),
+                            L::path('M 40 360 L 200 310 L 360 360 Z', new PathStyle(fill: '#8e44ad')),
+                            L::textAt(40, 420, 'Canvas text', new TextStyle(font: 'Helvetica', size: 18, color: '#1a1a1a')),
                         ]),
-                        Pdf::layer(new LayerAttr(opacity: 0.5), [
-                            Pdf::rect(40, 460, 515, 60, new RectStyle(fill: '#e74c3c')),
+                        L::layer(new LayerAttr(opacity: 0.5), [
+                            L::rect(40, 460, 515, 60, new RectStyle(fill: '#e74c3c')),
                         ]),
                     ]),
                 ]),

@@ -18,7 +18,7 @@ require_once __DIR__ . '/../../../../vendor/autoload.php';
  * Output: example/result/encrypt-open-password-php.pdf
  */
 
-use Lpdf\Pdf;
+use Lpdf\L;
 
 $root    = __DIR__ . '/../../../../example/';
 $xmlFile = __DIR__ . '/../../../../test/fixtures/showcase-encryption.xml';
@@ -26,7 +26,7 @@ $outputFile = 'encrypt-open-password-php.pdf';
 
 $xml = file_get_contents($xmlFile);
 
-$engine = Pdf::engine();  // empty key → free tier (watermark)
+$engine = L::engine();  // empty key → free tier (watermark)
 
 // With open password — viewers prompt for 'password' before displaying content.
 $engine->setEncryption('password', 'owner', ['copy' => false]);

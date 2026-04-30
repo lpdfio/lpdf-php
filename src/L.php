@@ -65,18 +65,18 @@ use Lpdf\Shared\AttrsHelper;
  *
  * @example
  * ```php
- * use Lpdf\Pdf;
+ * use Lpdf\L;
  * use Lpdf\Kit\{DocumentAttr, SectionAttr};
  *
- * $doc = Pdf::document(new DocumentAttr(), [
- *     Pdf::section(new SectionAttr(size: 'a4'), [
- *         Pdf::layout(null, [Pdf::text(null, ['Hello'])]),
+ * $doc = L::document(new DocumentAttr(), [
+ *     L::section(new SectionAttr(size: 'a4'), [
+ *         L::layout(null, [L::text(null, ['Hello'])]),
  *     ]),
  * ]);
- * $pdf = Pdf::engine()->setLicenseKey('…')->render($doc);
+ * $pdf = L::engine()->setLicenseKey('…')->render($doc);
  * ```
  */
-final class Pdf
+final class L
 {
     use AttrsHelper;
 
@@ -345,7 +345,7 @@ final class Pdf
         return new CanvasTextNode($x, $y, $content, $style, $runs);
     }
 
-    /** Build a canvas-image node at (x, y) with dimensions (w \u00d7 h). */
+    /** Build a canvas-image node at (x, y) with dimensions (w × h). */
     public static function imgAt(float $x, float $y, float $w, float $h, string $name): ImageNode
     {
         return new ImageNode($x, $y, $w, $h, $name);

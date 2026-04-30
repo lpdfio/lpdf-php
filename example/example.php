@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../../../vendor/autoload.php';
 
-use Lpdf\Pdf;
+use Lpdf\L;
 
 $root = __DIR__ . '/../../../../example/';
 
@@ -16,7 +16,7 @@ $examples = [
 
 // init engine
 $licenseKey = ''; //file_get_contents($root . 'test.lic');
-$engine = Pdf::engine()->setLicenseKey($licenseKey);
+$engine = L::engine()->setLicenseKey($licenseKey);
 
 // load assets (only used if referenced in xml/layout)
 $engine->loadFont('montserrat', file_get_contents($root . 'assets/fonts/Montserrat-Regular.ttf'));

@@ -17,7 +17,7 @@ use Lpdf\Canvas\Run;
 use Lpdf\Canvas\TextAlign;
 use Lpdf\Canvas\TextStyle;
 use Lpdf\Canvas\Transform;
-use Lpdf\Pdf;
+use Lpdf\L;
 
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentMeta;
@@ -28,7 +28,7 @@ $root = __DIR__ . '/../../../../example/';
 // ── Engine ────────────────────────────────────────────────────────────────────
 
 $licenseKey = ''; // file_get_contents($root . 'test.lic');
-$engine = Pdf::engine()->setLicenseKey($licenseKey);
+$engine = L::engine()->setLicenseKey($licenseKey);
 
 // Load a font (used for canvas-text nodes that reference it).
 $engine->loadFont('montserrat', file_get_contents($root . 'assets/fonts/Montserrat-Regular.ttf'));
@@ -38,101 +38,101 @@ $engine->loadFont('montserrat', file_get_contents($root . 'assets/fonts/Montserr
 // Each section uses absolute x/y coordinates with the origin at the top-left.
 // The page is 595 × 842 pt (A4 portrait).
 
-$section1 = Pdf::section(new SectionAttr(size: 'a4'), [
-    Pdf::canvas(null, [
-        Pdf::layer(null, [
+$section1 = L::section(new SectionAttr(size: 'a4'), [
+    L::canvas(null, [
+        L::layer(null, [
 
                 // ── Heading bar ──────────────────────────────────────────────────────
-                Pdf::rect(0, 0, 595, 60, new RectStyle(fill: '#1a3a5c')),
+                L::rect(0, 0, 595, 60, new RectStyle(fill: '#1a3a5c')),
 
-                Pdf::textAt(28, 18, 'lpdf Canvas Primitives', new TextStyle(font: 'Helvetica-Bold', size: 22, color: '#ffffff')),
+                L::textAt(28, 18, 'lpdf Canvas Primitives', new TextStyle(font: 'Helvetica-Bold', size: 22, color: '#ffffff')),
 
                 // ── Section: rect ────────────────────────────────────────────────────
-                Pdf::textAt(28, 80, 'canvas-rect', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
+                L::textAt(28, 80, 'canvas-rect', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
 
                 // Plain fill
-                Pdf::rect(28, 96, 120, 60, new RectStyle(fill: '#4a90e2')),
+                L::rect(28, 96, 120, 60, new RectStyle(fill: '#4a90e2')),
 
                 // Fill + stroke
-                Pdf::rect(164, 96, 120, 60, new RectStyle(
+                L::rect(164, 96, 120, 60, new RectStyle(
                     fill: '#e8f4fd', stroke: '#2980b9', strokeWidth: 2,
                 )),
 
                 // Rounded corners
-                Pdf::rect(300, 96, 120, 60, new RectStyle(
+                L::rect(300, 96, 120, 60, new RectStyle(
                     fill: '#d5f5e3', stroke: '#27ae60', strokeWidth: 1, borderRadius: 12,
                 )),
 
                 // Stroke only
-                Pdf::rect(436, 96, 120, 60, new RectStyle(
+                L::rect(436, 96, 120, 60, new RectStyle(
                     stroke: '#e74c3c', strokeWidth: 3,
                 )),
 
                 // ── Section: line ────────────────────────────────────────────────────
-                Pdf::textAt(28, 176, 'canvas-line', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
+                L::textAt(28, 176, 'canvas-line', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
 
                 // Solid thin
-                Pdf::line(28, 192, 300, 192, new LineStyle(stroke: '#333333', strokeWidth: 1)),
+                L::line(28, 192, 300, 192, new LineStyle(stroke: '#333333', strokeWidth: 1)),
 
                 // Thick round cap
-                Pdf::line(28, 210, 300, 210, new LineStyle(stroke: '#8e44ad', strokeWidth: 4, lineCap: LineCap::Round)),
+                L::line(28, 210, 300, 210, new LineStyle(stroke: '#8e44ad', strokeWidth: 4, lineCap: LineCap::Round)),
 
                 // Dashed
-                Pdf::line(28, 228, 300, 228, new LineStyle(stroke: '#e67e22', strokeWidth: 2, strokeDash: [6, 3])),
+                L::line(28, 228, 300, 228, new LineStyle(stroke: '#e67e22', strokeWidth: 2, strokeDash: [6, 3])),
 
                 // Diagonal
-                Pdf::line(340, 192, 567, 240, new LineStyle(stroke: '#16a085', strokeWidth: 2)),
+                L::line(340, 192, 567, 240, new LineStyle(stroke: '#16a085', strokeWidth: 2)),
 
                 // ── Section: ellipse / circle ────────────────────────────────────────
-                Pdf::textAt(28, 256, 'canvas-ellipse / canvas-circle', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
+                L::textAt(28, 256, 'canvas-ellipse / canvas-circle', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
 
                 // Ellipse filled
-                Pdf::ellipse(100, 305, 72, 40, new EllipseStyle(fill: '#f39c12', stroke: '#d68910', strokeWidth: 2)),
+                L::ellipse(100, 305, 72, 40, new EllipseStyle(fill: '#f39c12', stroke: '#d68910', strokeWidth: 2)),
 
                 // Circle filled
-                Pdf::circle(260, 305, 40, new EllipseStyle(fill: '#27ae60')),
+                L::circle(260, 305, 40, new EllipseStyle(fill: '#27ae60')),
 
                 // Circle stroke only
-                Pdf::circle(380, 305, 40, new EllipseStyle(stroke: '#c0392b', strokeWidth: 3)),
+                L::circle(380, 305, 40, new EllipseStyle(stroke: '#c0392b', strokeWidth: 3)),
 
                 // Ellipse no fill, dashed stroke
-                Pdf::ellipse(490, 305, 65, 35, new EllipseStyle(stroke: '#2c3e50', strokeWidth: 1, strokeDash: [4, 2])),
+                L::ellipse(490, 305, 65, 35, new EllipseStyle(stroke: '#2c3e50', strokeWidth: 1, strokeDash: [4, 2])),
 
                 // ── Section: path ────────────────────────────────────────────────────
-                Pdf::textAt(28, 356, 'canvas-path', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
+                L::textAt(28, 356, 'canvas-path', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
 
                 // Triangle
-                Pdf::path('M 28 410 L 128 370 L 228 410 Z', new PathStyle(fill: '#8e44ad', stroke: '#6c3483', strokeWidth: 1)),
+                L::path('M 28 410 L 128 370 L 228 410 Z', new PathStyle(fill: '#8e44ad', stroke: '#6c3483', strokeWidth: 1)),
 
                 // Open path (chevron)
-                Pdf::path('M 250 410 L 310 375 L 370 410', new PathStyle(stroke: '#2980b9', strokeWidth: 3, lineCap: LineCap::Round, lineJoin: LineJoin::Round)),
+                L::path('M 250 410 L 310 375 L 370 410', new PathStyle(stroke: '#2980b9', strokeWidth: 3, lineCap: LineCap::Round, lineJoin: LineJoin::Round)),
 
                 // Bezier curve (cubic)
-                Pdf::path('M 400 410 C 420 365 500 365 520 410', new PathStyle(stroke: '#16a085', strokeWidth: 2, fill: '#d1f2eb')),
+                L::path('M 400 410 C 420 365 500 365 520 410', new PathStyle(stroke: '#16a085', strokeWidth: 2, fill: '#d1f2eb')),
 
                 // ── Section: text ────────────────────────────────────────────────────
-                Pdf::textAt(28, 436, 'canvas-text', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
+                L::textAt(28, 436, 'canvas-text', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
 
                 // Left-aligned (default)
-                Pdf::textAt(28, 454, 'Left-aligned text (Helvetica 12)', new TextStyle(font: 'Helvetica', size: 12, color: '#222222')),
+                L::textAt(28, 454, 'Left-aligned text (Helvetica 12)', new TextStyle(font: 'Helvetica', size: 12, color: '#222222')),
 
                 // Centered
-                Pdf::textAt(28, 474, 'Centered over 539 pt', new TextStyle(
+                L::textAt(28, 474, 'Centered over 539 pt', new TextStyle(
                     font: 'Helvetica', size: 12, color: '#2980b9', align: TextAlign::Center, width: 539,
                 )),
 
                 // Right-aligned
-                Pdf::textAt(28, 494, 'Right-aligned over 539 pt', new TextStyle(
+                L::textAt(28, 494, 'Right-aligned over 539 pt', new TextStyle(
                     font: 'Helvetica', size: 12, color: '#8e44ad', align: TextAlign::Right, width: 539,
                 )),
 
                 // Custom font
-                Pdf::textAt(28, 518, 'Montserrat Regular — custom TTF font', new TextStyle(
+                L::textAt(28, 518, 'Montserrat Regular — custom TTF font', new TextStyle(
                     font: 'montserrat', size: 13, color: '#1a3a5c',
                 )),
 
                 // Rich-text runs
-                Pdf::textAt(
+                L::textAt(
                     28, 542,
                     'Mixed runs: ',
                     new TextStyle(font: 'Helvetica', size: 12, color: '#333333'),
@@ -144,45 +144,45 @@ $section1 = Pdf::section(new SectionAttr(size: 'a4'), [
                 ),
 
                 // ── Section: layer ───────────────────────────────────────────────────
-                Pdf::textAt(28, 570, 'canvas-layer', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
+                L::textAt(28, 570, 'canvas-layer', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
 
                 // Background for the layer demo
-                Pdf::rect(28, 586, 539, 80, new RectStyle(fill: '#eaf2ff', stroke: '#aed6f1', strokeWidth: 1)),
-                Pdf::textAt(38, 596, 'Background text (behind semi-transparent layer)', new TextStyle(font: 'Helvetica', size: 10, color: '#999999')),
+                L::rect(28, 586, 539, 80, new RectStyle(fill: '#eaf2ff', stroke: '#aed6f1', strokeWidth: 1)),
+                L::textAt(38, 596, 'Background text (behind semi-transparent layer)', new TextStyle(font: 'Helvetica', size: 10, color: '#999999')),
 
                 // Labels for sub-demos (drawn in the base layer)
-                Pdf::textAt(28, 680, 'Layer with clip rect:', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
-                Pdf::textAt(260, 680, 'Layer with transform (rotate 15°):', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
+                L::textAt(28, 680, 'Layer with clip rect:', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
+                L::textAt(260, 680, 'Layer with transform (rotate 15°):', new TextStyle(font: 'Helvetica-Bold', size: 11, color: '#555555')),
 
                 // ── Footer rule ──────────────────────────────────────────────────────
-                Pdf::line(28, 808, 567, 808, new LineStyle(stroke: '#cccccc', strokeWidth: 0.5)),
-                Pdf::textAt(28, 818, 'generated with lpdf.io', new TextStyle(font: 'Helvetica', size: 9, color: '#aaaaaa')),
+                L::line(28, 808, 567, 808, new LineStyle(stroke: '#cccccc', strokeWidth: 0.5)),
+                L::textAt(28, 818, 'generated with lpdf.io', new TextStyle(font: 'Helvetica', size: 9, color: '#aaaaaa')),
 
         ]),
 
         // Semi-transparent red overlay layer
-        Pdf::layer(new LayerAttr(opacity: 0.4), [
-            Pdf::rect(28, 586, 539, 80, new RectStyle(fill: '#e74c3c')),
-            Pdf::textAt(38, 614, 'Layer at 40% opacity', new TextStyle(font: 'Helvetica-Bold', size: 14, color: '#ffffff')),
+        L::layer(new LayerAttr(opacity: 0.4), [
+            L::rect(28, 586, 539, 80, new RectStyle(fill: '#e74c3c')),
+            L::textAt(38, 614, 'Layer at 40% opacity', new TextStyle(font: 'Helvetica-Bold', size: 14, color: '#ffffff')),
         ]),
 
         // Layer with clip
-        Pdf::layer(new LayerAttr(clip: new Clip(40, 700, 160, 60, borderRadius: 8)), [
-            Pdf::rect(28, 696, 200, 80, new RectStyle(fill: '#f9e79f', stroke: '#f1c40f', strokeWidth: 2)),
-            Pdf::ellipse(128, 736, 90, 30, new EllipseStyle(fill: '#f39c12')),
+        L::layer(new LayerAttr(clip: new Clip(40, 700, 160, 60, borderRadius: 8)), [
+            L::rect(28, 696, 200, 80, new RectStyle(fill: '#f9e79f', stroke: '#f1c40f', strokeWidth: 2)),
+            L::ellipse(128, 736, 90, 30, new EllipseStyle(fill: '#f39c12')),
         ]),
 
         // Layer with transform (translate + rotate)
-        Pdf::layer(new LayerAttr(transform: Transform::rotate(15, 380.0, 720.0)), [
-            Pdf::rect(0, 0, 120, 40, new RectStyle(fill: '#d7bde2', stroke: '#8e44ad', strokeWidth: 1, borderRadius: 6)),
-            Pdf::textAt(8, 12, 'Rotated layer', new TextStyle(font: 'Helvetica', size: 11, color: '#4a235a')),
+        L::layer(new LayerAttr(transform: Transform::rotate(15, 380.0, 720.0)), [
+            L::rect(0, 0, 120, 40, new RectStyle(fill: '#d7bde2', stroke: '#8e44ad', strokeWidth: 1, borderRadius: 6)),
+            L::textAt(8, 12, 'Rotated layer', new TextStyle(font: 'Helvetica', size: 11, color: '#4a235a')),
         ]),
     ]),
 ]);
 
 // ── Assemble & render ─────────────────────────────────────────────────────────
 
-$doc = Pdf::document(
+$doc = L::document(
     new DocumentAttr(meta: new DocumentMeta(title: 'lpdf Canvas Primitives', author: 'lpdf.io')),
     [$section1],
 );

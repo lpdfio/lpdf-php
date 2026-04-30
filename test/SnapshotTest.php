@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Lpdf\Tests;
 
-use Lpdf\Pdf;
+use Lpdf\L;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentTokens;
 use Lpdf\Engine\RenderOptions;
@@ -25,7 +25,7 @@ final class SnapshotTest extends TestCase
             $this->markTestSkipped('Fixture files not available outside the monorepo.');
         }
         $xml    = file_get_contents(SnapshotHelper::fixtures() . "/$name.xml");
-        $bytes  = Pdf::engine()->setLicenseKey('test-key')->render($xml);
+        $bytes  = L::engine()->setLicenseKey('test-key')->render($xml);
         SnapshotHelper::compareOrUpdate($name, $bytes);
     }
 
@@ -35,7 +35,7 @@ final class SnapshotTest extends TestCase
             $this->markTestSkipped('Fixture files not available outside the monorepo.');
         }
         $xml   = file_get_contents(SnapshotHelper::fixtures() . '/example1.xml');
-        $bytes = Pdf::engine()->setLicenseKey('test-key')->render($xml);
+        $bytes = L::engine()->setLicenseKey('test-key')->render($xml);
         self::assertStringStartsWith('%PDF-', $bytes);
     }
 
@@ -45,7 +45,7 @@ final class SnapshotTest extends TestCase
             $this->markTestSkipped('Fixture files not available outside the monorepo.');
         }
         $xml    = file_get_contents(SnapshotHelper::fixtures() . '/example1.xml');
-        $engine = Pdf::engine()->setLicenseKey('test-key');
+        $engine = L::engine()->setLicenseKey('test-key');
 
         // Load a placeholder font (empty bytes will be ignored by the core if
         // the document does not reference it; we just assert no exception).
@@ -56,25 +56,25 @@ final class SnapshotTest extends TestCase
 
     public function testKitToXmlReturnsXmlDeclaration(): void
     {
-        $doc = Pdf::document(null, [Pdf::section(null, [])]);
-        $xml = Pdf::toXml($doc);
+        $doc = L::document(null, [L::section(null, [])]);
+        $xml = L::toXml($doc);
         self::assertStringStartsWith('<?xml version="1.0"', $xml);
     }
 
     public function testKitToXmlContainsLpdfRoot(): void
     {
-        $doc = Pdf::document(null, [Pdf::section(null, [])]);
-        $xml = Pdf::toXml($doc);
+        $doc = L::document(null, [L::section(null, [])]);
+        $xml = L::toXml($doc);
         self::assertStringContainsString('<lpdf version="1">', $xml);
     }
 
     public function testKitToXmlBuiltinFontInAssets(): void
     {
-        $doc = Pdf::document(
+        $doc = L::document(
             new DocumentAttr(tokens: new DocumentTokens(fonts: ['heading' => ['builtin' => 'Helvetica-Bold']])),
             [],
         );
-        $xml = Pdf::toXml($doc);
+        $xml = L::toXml($doc);
         self::assertStringContainsString('<assets>', $xml);
         self::assertStringNotContainsString('<fonts>', $xml, '<fonts> wrapper must not appear in flat structure');
         self::assertStringContainsString('<font ', $xml);
@@ -91,22 +91,22 @@ final class SnapshotTest extends TestCase
 
     public function testKitToXmlCustomFontUsesRefAlias(): void
     {
-        $doc = Pdf::document(
+        $doc = L::document(
             new DocumentAttr(tokens: new DocumentTokens(fonts: ['body' => ['src' => '/fonts/MyFont.ttf']])),
             [],
         );
-        $xml = Pdf::toXml($doc);
+        $xml = L::toXml($doc);
         self::assertStringContainsString('ref="body"', $xml);
         self::assertStringContainsString('src=', $xml, 'src= path should appear in XML (preserved for adapter auto-loading)');
     }
 
     public function testKitToXmlProducedXmlRendersToValidPdf(): void
     {
-        $doc = Pdf::document(null, [
-            Pdf::section(null, [Pdf::layout(null, [Pdf::text(null, ['Hello from kitToXml'])])]),
+        $doc = L::document(null, [
+            L::section(null, [L::layout(null, [L::text(null, ['Hello from kitToXml'])])]),
         ]);
-        $engine = Pdf::engine()->setLicenseKey('test-key');
-        $xml    = Pdf::toXml($doc);
+        $engine = L::engine()->setLicenseKey('test-key');
+        $xml    = L::toXml($doc);
         $bytes  = $engine->render($xml);
         self::assertStringStartsWith('%PDF-', $bytes);
     }
@@ -114,7 +114,7 @@ final class SnapshotTest extends TestCase
     public function testSetEncryptionProducesEncryptedPdf(): void
     {
         $xml    = file_get_contents(SnapshotHelper::fixtures() . '/example1.xml');
-        $engine = Pdf::engine()->setLicenseKey('test-key');
+        $engine = L::engine()->setLicenseKey('test-key');
         $engine->setEncryption('', 's3cr3t');
         $bytes  = $engine->render($xml);
         self::assertStringStartsWith('%PDF-', $bytes);
@@ -130,7 +130,7 @@ final class SnapshotTest extends TestCase
             '0000000a49444154789c6260000000020001e221bc330000000049454e44ae426082',
         );
         $xml    = file_get_contents(SnapshotHelper::fixtures() . '/example1.xml');
-        $engine = Pdf::engine()->setLicenseKey('test-key');
+        $engine = L::engine()->setLicenseKey('test-key');
         $engine->loadImage('testimg', $png1x1);
         $bytes  = $engine->render($xml);
         self::assertStringStartsWith('%PDF-', $bytes);
@@ -146,7 +146,7 @@ final class SnapshotTest extends TestCase
     public function testDataValueSubstitutesScalar(): void
     {
         $xml   = self::minDoc('<text data-value="name">Fallback</text>');
-        $bytes = Pdf::engine()->setLicenseKey('test-key')->render($xml, new RenderOptions(data: ['name' => 'Acme Inc']));
+        $bytes = L::engine()->setLicenseKey('test-key')->render($xml, new RenderOptions(data: ['name' => 'Acme Inc']));
         self::assertStringStartsWith('%PDF-', $bytes);
     }
 
@@ -154,21 +154,21 @@ final class SnapshotTest extends TestCase
     {
         $xml  = self::minDoc('<stack data-source="items" gap="xs"><text data-value="label">Item</text></stack>');
         $data = ['items' => [['label' => 'Alpha'], ['label' => 'Beta'], ['label' => 'Gamma']]];
-        $bytes = Pdf::engine()->setLicenseKey('test-key')->render($xml, new RenderOptions(data: $data));
+        $bytes = L::engine()->setLicenseKey('test-key')->render($xml, new RenderOptions(data: $data));
         self::assertStringStartsWith('%PDF-', $bytes);
     }
 
     public function testDataIfHidesNodeWhenFalse(): void
     {
         $xml   = self::minDoc('<text data-if="isPremium">Premium only</text><text>Always visible</text>');
-        $bytes = Pdf::engine()->setLicenseKey('test-key')->render($xml, new RenderOptions(data: ['isPremium' => false]));
+        $bytes = L::engine()->setLicenseKey('test-key')->render($xml, new RenderOptions(data: ['isPremium' => false]));
         self::assertStringStartsWith('%PDF-', $bytes);
     }
 
     public function testNoDataRendersWithFallbackContent(): void
     {
         $xml   = self::minDoc('<text data-value="name">Inline fallback</text>');
-        $bytes = Pdf::engine()->setLicenseKey('test-key')->render($xml);
+        $bytes = L::engine()->setLicenseKey('test-key')->render($xml);
         self::assertStringStartsWith('%PDF-', $bytes);
     }
 }
