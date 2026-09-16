@@ -39,20 +39,23 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p resources
+          DOWNLOADED=""
           for attempt in 1 2 3; do
             gh release download "$CORE_TAG" \
               --repo lpdfio/lpdf \
               --pattern "lpdf-wasi.wasm" \
-              --dir resources && break
+              --dir resources \
+              --clobber && DOWNLOADED=1 && break
             echo "Attempt $attempt failed — retrying in 10s..."
             sleep 10
           done
           # Fallback to latest release when the derived tag doesn't exist yet
-          if [ ! -f resources/lpdf-wasi.wasm ]; then
+          if [ -z "$DOWNLOADED" ]; then
             gh release download \
               --repo lpdfio/lpdf \
               --pattern "lpdf-wasi.wasm" \
-              --dir resources
+              --dir resources \
+              --clobber
           fi
 
       # ── Install wasmtime runtime ─────────────────────────────────────────────
