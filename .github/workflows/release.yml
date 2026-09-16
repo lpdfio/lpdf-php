@@ -151,7 +151,16 @@ jobs:
           PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME }}
           PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
         run: |
-          curl -sf -X POST \
+          # TEMPORARY — verbose response so we can see *why* this fails.
+          # Once diagnosed, collapse back to a plain `curl -sf`.
+          HTTP_STATUS=$(curl -s -o /tmp/packagist_response.json -w "%{http_code}" -X POST \
             "https://packagist.org/api/update-package?username=$PACKAGIST_USERNAME&apiToken=$PACKAGIST_API_TOKEN" \
             -H "Content-Type: application/json" \
-            -d '{"repository":{"url":"https://github.com/lpdfio/lpdf-php"}}'
+            -d '{"repository":{"url":"https://github.com/lpdfio/lpdf-php"}}')
+          echo "HTTP status: $HTTP_STATUS"
+          echo "Response body:"
+          cat /tmp/packagist_response.json
+          echo
+          if [ "$HTTP_STATUS" -ge 400 ]; then
+            exit 1
+          fi
