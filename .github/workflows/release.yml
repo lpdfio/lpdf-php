@@ -145,22 +145,7 @@ jobs:
             --title "$ADAPTER_TAG" \
             --generate-notes
 
-      # ── Notify Packagist ─────────────────────────────────────────────────────
-      - name: Notify Packagist
-        env:
-          PACKAGIST_USERNAME: ${{ vars.PACKAGIST_USERNAME }}
-          PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
-        run: |
-          # TEMPORARY — verbose response so we can see *why* this fails.
-          # Once diagnosed, collapse back to a plain `curl -sf`.
-          HTTP_STATUS=$(curl -s -o /tmp/packagist_response.json -w "%{http_code}" -X POST \
-            "https://packagist.org/api/update-package?username=$PACKAGIST_USERNAME&apiToken=$PACKAGIST_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"repository":{"url":"https://github.com/lpdfio/lpdf-php"}}')
-          echo "HTTP status: $HTTP_STATUS"
-          echo "Response body:"
-          cat /tmp/packagist_response.json
-          echo
-          if [ "$HTTP_STATUS" -ge 400 ]; then
-            exit 1
-          fi
+      # Notify Packagist step removed 2026-09-16: Packagist's own auto-update
+      # (webhook/polling) already picks up new tags on its own — confirmed by
+      # v0.12.1-v0.12.3 appearing on Packagist despite this call failing every
+      # time on invalid/legacy credentials. Not required for a release to ship.

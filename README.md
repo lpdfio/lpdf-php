@@ -1,4 +1,4 @@
-<img src="lpdf-mark.svg" height="48" alt="Lpdf - PDF as Code" />
+<img src="https://raw.githubusercontent.com/lpdfio/lpdf-php/main/lpdf-mark.svg" height="48" alt="Lpdf - PDF as Code" />
 
 # lpdfio/lpdf
 
