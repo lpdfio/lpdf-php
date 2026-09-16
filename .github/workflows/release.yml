@@ -47,6 +47,13 @@ jobs:
             echo "Attempt $attempt failed — retrying in 10s..."
             sleep 10
           done
+          # Fallback to latest release when the derived tag doesn't exist yet
+          if [ ! -f resources/lpdf-wasi.wasm ]; then
+            gh release download \
+              --repo lpdfio/lpdf \
+              --pattern "lpdf-wasi.wasm" \
+              --dir resources
+          fi
 
       # ── Install wasmtime runtime ─────────────────────────────────────────────
       - name: Install wasmtime
