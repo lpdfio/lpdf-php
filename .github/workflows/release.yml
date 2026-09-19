@@ -49,13 +49,13 @@ jobs:
             echo "Attempt $attempt failed — retrying in 10s..."
             sleep 10
           done
-          # Fallback to latest release when the derived tag doesn't exist yet
+          # No fallback to the latest core: vX.Y.Z must ship engine vX.Y.0
+          # (var/VERSIONING.md in lpdfio/lpdf). ci.yml keeps its fallback.
+          # The flag matters here: resources/lpdf-wasi.wasm is tracked in git,
+          # so the file exists even when this download failed.
           if [ -z "$DOWNLOADED" ]; then
-            gh release download \
-              --repo lpdfio/lpdf \
-              --pattern "lpdf-wasi.wasm" \
-              --dir resources \
-              --clobber
+            echo "::error::Could not download core $CORE_TAG. This release must ship engine $CORE_TAG — publish that core release first, or check the tag."
+            exit 1
           fi
 
       # ── Install wasmtime runtime ─────────────────────────────────────────────
