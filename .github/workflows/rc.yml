@@ -1,0 +1,128 @@
+name: Release candidate
+run-name: "RC ${{ github.event.client_payload.version }}: build and test, no publish"
+
+# Answers core's `core-rc` dispatch for a vX.Y.0-rc.N tag (Lpdf-devcycle.md
+# §4.2 in lpdfio/lpdf). Tests this repo's main against the RC engine.
+# Publishes nothing: no commit (the downloaded wasm is never committed), no
+# tag, no changelog, no GitHub Release, and no write token. Packagist ships
+# the git tree itself, so there is no package to keep. release.yml stays the
+# only path to Packagist.
+
+on:
+  repository_dispatch:
+    types: [core-rc]
+
+permissions:
+  contents: read
+
+jobs:
+  rc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history and tags, for "Unreleased commits"
+
+      # ── Resolve version ──────────────────────────────────────────────────────
+      # The payload is the core RC tag itself. Unlike release.yml, nothing is
+      # derived from it: stripping the last number of v0.17.0-rc.1 would give
+      # v0.17.0-rc.0.
+      - name: Resolve version
+        env:
+          PAYLOAD_VERSION: ${{ github.event.client_payload.version }}
+        run: |
+          if ! echo "$PAYLOAD_VERSION" | grep -qE '^v[0-9]+\.[0-9]+\.0-rc\.[0-9]+$'; then
+            echo "::error::Expected a core release-candidate tag like v0.17.0-rc.1, got '$PAYLOAD_VERSION'"
+            exit 1
+          fi
+          echo "CORE_TAG=$PAYLOAD_VERSION"          >> "$GITHUB_ENV"
+          echo "FINAL_TAG=${PAYLOAD_VERSION%-rc.*}" >> "$GITHUB_ENV"
+
+      # ── Download WASI binary from the RC pre-release ─────────────────────────
+      # No fallback: a test against any other engine proves nothing about this RC.
+      # The flag matters here: resources/lpdf-wasi.wasm is tracked in git, so the
+      # file exists even when this download failed.
+      - name: Download lpdf-wasi.wasm
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p resources
+          DOWNLOADED=""
+          for attempt in 1 2 3; do
+            gh release download "$CORE_TAG" \
+              --repo lpdfio/lpdf \
+              --pattern "lpdf-wasi.wasm" \
+              --dir resources \
+              --clobber && DOWNLOADED=1 && break
+            echo "Attempt $attempt failed — retrying in 10s..."
+            sleep 10
+          done
+          if [ -z "$DOWNLOADED" ]; then
+            echo "::error::Could not download core RC $CORE_TAG."
+            exit 1
+          fi
+
+      # ── Install wasmtime runtime ─────────────────────────────────────────────
+      - name: Install wasmtime
+        run: |
+          curl -sSf https://wasmtime.dev/install.sh | bash
+          echo "$HOME/.wasmtime/bin" >> "$GITHUB_PATH"
+
+      # ── Install PHP and dependencies ─────────────────────────────────────────
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Install composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      # ── Fetch test fixtures and snapshots from core ──────────────────────────
+      # At the RC tag, so the golden snapshots match the engine under test.
+      - name: Fetch test fixtures and snapshots from core
+        run: |
+          git clone --depth 1 --branch "$CORE_TAG" --filter=blob:none --sparse \
+            https://github.com/lpdfio/lpdf.git _core
+          git -C _core sparse-checkout set test/fixtures test/snapshots
+          mkdir -p test/fixtures test/snapshots
+          cp -r _core/test/fixtures/. test/fixtures/
+          cp -r _core/test/snapshots/. test/snapshots/
+          rm -rf _core
+
+      # ── Test ─────────────────────────────────────────────────────────────────
+      - name: Test
+        run: php vendor/bin/phpunit test
+
+      # ── What ships from this repo ────────────────────────────────────────────
+      # The final core release publishes this repo's main as it stands. Anything
+      # on main since the last release tag ships in FINAL_TAG with only core's
+      # release notes (Lpdf-devcycle.md §4.1). Runs even if the tests failed.
+      # Skips the bot's own "release: …" commits.
+      - name: Unreleased commits
+        if: always()
+        run: |
+          REPO="${GITHUB_REPOSITORY#*/}"
+          LAST=$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || true)
+          COMMITS=""
+          if [ -n "$LAST" ]; then
+            COMMITS=$(git log --oneline --no-merges --invert-grep \
+              --grep='^changelog: ' --grep='^release: ' "$LAST..HEAD")
+          fi
+          {
+            echo "### $REPO: release candidate $CORE_TAG"
+            echo
+            if [ -z "$LAST" ]; then
+              echo "No release tag in this repo yet."
+            elif [ -z "$COMMITS" ]; then
+              echo "Nothing unreleased since $LAST. $FINAL_TAG changes only the engine."
+            else
+              echo "Unreleased since $LAST. These ship in $FINAL_TAG, with only core's release notes:"
+              echo
+              echo '```'
+              echo "$COMMITS"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$COMMITS" ]; then
+            echo "::notice::$(echo "$COMMITS" | wc -l | tr -d ' ') unreleased commit(s) since $LAST will ship in $FINAL_TAG"
+          fi
