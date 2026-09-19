@@ -9,7 +9,7 @@
   ],
   "support": {
     "source": "https://github.com/lpdfio/lpdf-php",
-    "issues": "https://github.com/lpdfio/lpdf-php/issues"
+    "issues": "https://github.com/lpdfio/lpdf/issues"
   },
   "require": {
     "php": ">=8.2"

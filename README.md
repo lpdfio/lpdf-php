@@ -57,6 +57,10 @@ To stay on one engine and still get this package's fixes: `composer require lpdf
 
 [lpdf.io/docs/php](https://lpdf.io/docs/php)
 
+## Issues
+
+Report bugs and request features at [github.com/lpdfio/lpdf/issues](https://github.com/lpdfio/lpdf/issues), the one tracker for the engine, the SDKs and the VS Code extension. Pull requests are not accepted.
+
 --
 
 Dual-licensed: Community License (free) and Commercial License (paid). See [LICENSE](LICENSE) for full terms.
