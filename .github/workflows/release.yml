@@ -13,13 +13,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      # ── SECURITY: mask the write_token before ANY other step ────────────────
-      # The token arrives in client_payload (not secrets.*) so GitHub Actions
-      # will NOT automatically redact it. This step must be first.
-      - name: Mask write token
-        if: github.event.client_payload.write_token != ''
-        run: echo "::add-mask::${{ github.event.client_payload.write_token }}"
-
       - uses: actions/checkout@v4
 
       # ── Resolve version ──────────────────────────────────────────────────────
@@ -103,8 +96,9 @@ jobs:
         run: php vendor/bin/phpunit test
 
       # ── Commit new wasm, tag, and push ───────────────────────────────────────
-      # The write_token (GitHub App, short-lived) authorises the push.
-      # On direct tag triggers (adapter patch), GITHUB_TOKEN is used instead.
+      # Every push uses this run's GITHUB_TOKEN, which actions/checkout leaves
+      # in the git config. That also keeps the tag push below from starting
+      # this workflow again: GitHub starts no workflow for a GITHUB_TOKEN push.
       - name: Set git identity
         run: |
           git config user.name  "github-actions[bot]"
@@ -182,22 +176,41 @@ jobs:
           git add CHANGELOG.md
           git diff --cached --quiet || git commit -m "release: $ADAPTER_TAG"
 
-      - name: Tag and push (dispatch — use write_token)
-        if: github.event_name == 'repository_dispatch'
+      # main can move while this job runs: v0.17.0 never shipped from here
+      # because a commit landed on main mid-release and this push was rejected.
+      # So a rejected push fetches main, merges the release commit into it and
+      # tries again. Merge, not rebase: Packagist ships the tagged tree itself,
+      # so the tag stays on the release commit, the tree that was tested here,
+      # and the newer commit on main waits for the next release. If the newer
+      # commit also changed the wasm or the top of CHANGELOG.md, the job stops
+      # with nothing pushed.
+      #
+      # On a direct tag trigger (adapter patch) the tag already exists; only
+      # the release commit is pushed.
+      - name: Push to main, then tag
         run: |
-          git tag "$ADAPTER_TAG"
-          git remote set-url origin \
-            "https://x-access-token:${{ github.event.client_payload.write_token }}@github.com/lpdfio/lpdf-php.git"
-          git push origin HEAD:main
-          git push origin "$ADAPTER_TAG"
+          RELEASE_COMMIT=$(git rev-parse HEAD)
+          PUSHED=""
+          for attempt in 1 2 3; do
+            git push origin HEAD:main && PUSHED=1 && break
+            echo "main moved during the release (attempt $attempt): merging the release commit into it..."
+            git fetch origin main
+            git checkout -q --detach FETCH_HEAD
+            if ! git merge --no-edit -m "release: merge $ADAPTER_TAG into main" "$RELEASE_COMMIT"; then
+              git merge --abort
+              echo "::error::A commit pushed to main during the release conflicts with the release commit (resources/lpdf-wasi.wasm or CHANGELOG.md). Nothing was pushed. Resolve it on main, then re-run this job."
+              exit 1
+            fi
+          done
+          if [ -z "$PUSHED" ]; then
+            echo "::error::Could not push the release commit to main after 3 attempts. Nothing was pushed."
+            exit 1
+          fi
 
-      - name: Tag and push (direct tag — use GITHUB_TOKEN)
-        if: github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # On direct tag push the tag already exists; just push the wasm commit.
-          git push origin HEAD:main
+          if [ "$GITHUB_EVENT_NAME" = "repository_dispatch" ]; then
+            git tag "$ADAPTER_TAG" "$RELEASE_COMMIT"
+            git push origin "$ADAPTER_TAG"
+          fi
 
       # ── Create GitHub Release (core-triggered only) ──────────────────────────
       # --notes carries core's text onto this repo's Releases page, which

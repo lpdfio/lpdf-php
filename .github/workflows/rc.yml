@@ -4,7 +4,7 @@ run-name: "RC ${{ github.event.client_payload.version }}: build and test, no pub
 # Answers core's `core-rc` dispatch for a vX.Y.0-rc.N tag (Lpdf-devcycle.md
 # §4.2 in lpdfio/lpdf). Tests this repo's main against the RC engine.
 # Publishes nothing: no commit (the downloaded wasm is never committed), no
-# tag, no changelog, no GitHub Release, and no write token. Packagist ships
+# tag, no changelog, no GitHub Release, and no push. Packagist ships
 # the git tree itself, so there is no package to keep. release.yml stays the
 # only path to Packagist.
 
