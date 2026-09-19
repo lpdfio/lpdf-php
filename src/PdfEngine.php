@@ -43,6 +43,35 @@ final class PdfEngine
     }
 
     /**
+     * Ask the engine what a license key is: valid, expired, for another product, and which
+     * license and key it is.
+     *
+     * The engine's own verdict, from the same code a render runs — so a `licensed` status means
+     * PDFs come out without the attribution line here. A key the portal considers perfectly good
+     * still reads `unknown_key` in a build that does not trust the key it was signed with, which
+     * is the answer worth having.
+     *
+     * @param  string|null $key  The key to check, or null for the one set on this engine.
+     * @return array{status: string, product?: string, tier?: string, expires?: string,
+     *               license?: string, key?: int}
+     *         `status` is always present; the rest only once the signature verified.
+     */
+    public function checkLicenseKey(?string $key = null): array
+    {
+        $runner = new WasmRunner(
+            wasmBinary: $this->options->wasmBinary ?? self::defaultBinary(),
+            wasmRunner: $this->options->wasmRunner ?? 'wasmtime',
+            timeout:    $this->options->timeout    ?? 30,
+        );
+
+        return $runner->invoke([
+            'method' => 'check_license',
+            'key'    => $key ?? $this->licenseKey,
+            'now'    => time(),
+        ]);
+    }
+
+    /**
      * Configure RC4-128 encryption for all subsequent render() calls.
      * Pass null to clear previously set encryption.
      *
@@ -152,6 +181,9 @@ final class PdfEngine
             'method' => $method,
             'key'    => $this->licenseKey,
             'input'  => $inputStr,
+            // The engine is WebAssembly and has no clock of its own: without this it cannot
+            // check the key's expiry, and an expired key renders as though it were current.
+            'now'    => time(),
         ];
 
         if ($mergedFonts !== []) {
