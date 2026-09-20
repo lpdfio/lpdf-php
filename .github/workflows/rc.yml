@@ -63,10 +63,25 @@ jobs:
           fi
 
       # ── Install wasmtime runtime ─────────────────────────────────────────────
+      # Pinned, straight from the release archive — see ci.yml for why
+      # wasmtime.dev/install.sh cannot be trusted to fail loudly.
       - name: Install wasmtime
+        env:
+          WASMTIME_VERSION: v48.0.2
         run: |
-          curl -sSf https://wasmtime.dev/install.sh | bash
+          ARCHIVE="wasmtime-${WASMTIME_VERSION}-$(uname -m)-linux"
+          curl -sSfL --retry 3 \
+            "https://github.com/bytecodealliance/wasmtime/releases/download/${WASMTIME_VERSION}/${ARCHIVE}.tar.xz" \
+            -o wasmtime.tar.xz
+          mkdir -p "$HOME/.wasmtime/bin"
+          tar -xJf wasmtime.tar.xz -C "$HOME/.wasmtime/bin" --strip-components=1 "${ARCHIVE}/wasmtime"
+          rm wasmtime.tar.xz
           echo "$HOME/.wasmtime/bin" >> "$GITHUB_PATH"
+
+      - name: Verify wasmtime on PATH
+        run: |
+          which wasmtime
+          wasmtime --version
 
       # ── Install PHP and dependencies ─────────────────────────────────────────
       - uses: shivammathur/setup-php@v2
