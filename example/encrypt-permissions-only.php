@@ -26,7 +26,7 @@ $outputFile = 'encrypt-permissions-only-php.pdf';
 
 $xml = file_get_contents($xmlFile);
 
-$engine = L::engine();  // empty key → free tier (watermark)
+$engine = L::engine();  // no key → renders with the attribution line
 
 // Permissions only — no open password.
 // File opens freely; cooperative viewers enforce print: false, copy: false.

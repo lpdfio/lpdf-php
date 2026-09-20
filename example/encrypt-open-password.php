@@ -26,7 +26,7 @@ $outputFile = 'encrypt-open-password-php.pdf';
 
 $xml = file_get_contents($xmlFile);
 
-$engine = L::engine();  // empty key → free tier (watermark)
+$engine = L::engine();  // no key → renders with the attribution line
 
 // With open password — viewers prompt for 'password' before displaying content.
 $engine->setEncryption('password', 'owner', ['copy' => false]);

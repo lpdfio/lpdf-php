@@ -27,7 +27,7 @@ $outputFile = 'example-data-php.pdf';
 $xml  = file_get_contents($xmlFile);
 $data = json_decode(file_get_contents($jsonFile), associative: true);
 
-$engine = L::engine();  // empty key → free tier (watermark)
+$engine = L::engine();  // no key → renders with the attribution line
 
 $pdf = $engine->render($xml, new RenderOptions(data: $data));
 
