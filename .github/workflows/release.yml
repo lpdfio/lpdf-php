@@ -76,7 +76,7 @@ jobs:
       # ── Install PHP and dependencies ─────────────────────────────────────────
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           tools: composer
 
       - name: Install composer dependencies
