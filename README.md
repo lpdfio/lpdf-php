@@ -2,7 +2,7 @@
 
 # lpdfio/lpdf
 
-**PHP SDK for [Lpdf](https://lpdf.io) — PDF as Code on every platform**
+**PHP SDK for [Lpdf](https://lpdf.io?utm_source=readme&utm_medium=referral&utm_campaign=sdk-php) — PDF as Code on every platform**
 
 You describe a document as code or XML. Lpdf renders a compact, pixel-perfect PDF — identical across platforms.
 
@@ -49,7 +49,7 @@ $pdf = $engine->render($doc);
 
 ## Docs
 
-[lpdf.io/docs/php](https://lpdf.io/docs/php?utm_source=readme&utm_medium=referral&utm_campaign=sdk-php)
+[lpdf.io/docs](https://lpdf.io/docs/?sdk=php&p=install&utm_source=readme&utm_medium=referral&utm_campaign=sdk-php)
 
 ## Issues
 
