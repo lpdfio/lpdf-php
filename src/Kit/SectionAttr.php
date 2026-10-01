@@ -8,7 +8,7 @@ final readonly class SectionAttr
 {
     public function __construct(
         public ?string      $size        = null,
-        public ?Orientation $orientation = null,
+        public ?string $orientation = null,
         public ?string      $margin      = null,
         public ?string      $background  = null,
         public ?string      $title       = null,

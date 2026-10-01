@@ -4,23 +4,18 @@ declare(strict_types=1);
 
 namespace Lpdf\Canvas;
 
-/** @internal Use Canvas::circle() to construct. */
+/**
+ * A `circle` on the canvas.
+ *
+ * @internal Use L::circle() to construct.
+ */
 final readonly class CircleNode extends Node
 {
-    public function __construct(
-        private float         $cx,
-        private float         $cy,
-        private float         $r,
-        private ?EllipseStyle $style = null,
-    ) {}
+    /** @param array<string,string> $attrs */
+    public function __construct(private array $attrs) {}
 
     public function jsonSerialize(): mixed
     {
-        $attrs = ['x' => (string)$this->cx, 'y' => (string)$this->cy, 'r' => (string)$this->r];
-        if ($this->style?->fill        !== null) $attrs['fill']         = $this->style->fill;
-        if ($this->style?->stroke      !== null) $attrs['stroke']       = $this->style->stroke;
-        if ($this->style?->strokeWidth !== null) $attrs['stroke-width'] = (string)$this->style->strokeWidth;
-        if ($this->style?->strokeDash  !== null) $attrs['stroke-dash']  = implode(' ', $this->style->strokeDash);
-        return ['type' => 'canvas-circle', 'attrs' => (object) $attrs];
+        return ['type' => 'circle', 'attrs' => (object) $this->attrs];
     }
 }

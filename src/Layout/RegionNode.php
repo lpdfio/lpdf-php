@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Layout;
 
 /**
- * A layout-region node for pinned/absolute layout regions.
+ * A region node, pinned to the top or bottom of the page.
  *
  * @internal Use Layout::region() to construct.
  */
@@ -23,7 +23,7 @@ final readonly class RegionNode extends Node
     public function jsonSerialize(): mixed
     {
         return [
-            'type'  => 'layout-region',
+            'type'  => 'region',
             'attrs' => (object) $this->attrs,
             'nodes' => $this->nodes,
         ];

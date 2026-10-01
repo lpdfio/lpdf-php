@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace Lpdf\Canvas;
 
-use Lpdf\Shared\PageScope;
-
+/**
+ * Groups canvas shapes and sets what applies to all of them: which pages they appear on, opacity,
+ * transform and clip. Layers cannot be nested.
+ *
+ * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
+ * Do not edit: change the schema and run `make gen-sdk-api`.
+ */
 final readonly class LayerAttr
 {
-    /**
-     * @param PageScope|string|null $page  Named scope or numeric range, e.g. '2-4', '1,3-5'.
-     */
     public function __construct(
-        public PageScope|string|null $page      = null,
-        public ?float                $opacity   = null,
-        public ?Transform            $transform = null,
-        public ?Clip                 $clip      = null,
+        public ?string $page = null,
+        public ?string $opacity = null,
+        public ?string $transform = null,
+        public ?string $clip = null,
     ) {}
 }

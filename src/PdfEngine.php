@@ -153,7 +153,7 @@ final class PdfEngine
         $mergedFonts = $this->fonts;
         $fontSrcs = $method === 'render_pdf'
             ? self::xmlFontSrcs($inputStr)
-            : self::jsonFontSrcs($inputStr);
+            : self::jsonAssetSrcs($inputStr, 'fonts');
         foreach ($fontSrcs as $key => $path) {
             if (!array_key_exists($key, $mergedFonts) && is_readable($path)) {
                 $bytes = file_get_contents($path);
@@ -167,7 +167,7 @@ final class PdfEngine
         $mergedImages = $this->images;
         $imageSrcs = $method === 'render_pdf'
             ? self::xmlImageSrcs($inputStr)
-            : self::jsonImageSrcs($inputStr);
+            : self::jsonAssetSrcs($inputStr, 'images');
         foreach ($imageSrcs as $key => $path) {
             if (!array_key_exists($key, $mergedImages) && is_readable($path)) {
                 $bytes = file_get_contents($path);
@@ -252,29 +252,18 @@ final class PdfEngine
         return $srcs;
     }
 
-    /** @return array<string,string> Font ref/name → file path from a serialised tree's `tokens.fonts`. */
-    private static function jsonFontSrcs(string $json): array
+    /**
+     * @param 'fonts'|'images' $kind
+     * @return array<string,string> `ref ?? name` → file path of the fonts or images a serialised tree
+     *                              declares with a `src` in its `assets`.
+     */
+    private static function jsonAssetSrcs(string $json, string $kind): array
     {
         $srcs = [];
         $doc  = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-        foreach ($doc['attrs']['tokens']['fonts'] ?? [] as $name => $def) {
-            if (isset($def['src'])) {
-                $key = $def['ref'] ?? $name;
-                $srcs[$key] = $def['src'];
-            }
-        }
-        return $srcs;
-    }
-
-    /** @return array<string,string> Image ref/name → file path from a serialised tree's `tokens.images`. */
-    private static function jsonImageSrcs(string $json): array
-    {
-        $srcs = [];
-        $doc  = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-        foreach ($doc['attrs']['tokens']['images'] ?? [] as $name => $def) {
-            if (isset($def['src'])) {
-                $key = $def['ref'] ?? $name;
-                $srcs[$key] = $def['src'];
+        foreach ($doc['attrs']['assets'][$kind] ?? [] as $asset) {
+            if (isset($asset['src'])) {
+                $srcs[$asset['ref'] ?? $asset['name']] = $asset['src'];
             }
         }
         return $srcs;

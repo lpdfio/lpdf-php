@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace Lpdf\Kit;
 
-/**
- * Design-token overrides applied to the whole document.
- *
- * @phpstan-type FontDef array{src: string}|array{builtin: string}
- */
+/** Design-token overrides applied to the whole document. */
 final readonly class DocumentTokens implements \JsonSerializable
 {
     /**
@@ -19,7 +15,6 @@ final readonly class DocumentTokens implements \JsonSerializable
      * @param array<string,string>|null $radius
      * @param array<string,string>|null $width
      * @param array<string,string>|null $textSize
-     * @param array<string,array{src?:string,builtin?:string}>|null $fonts
      */
     public function __construct(
         public ?array $colors = null,
@@ -29,7 +24,6 @@ final readonly class DocumentTokens implements \JsonSerializable
         public ?array $radius = null,
         public ?array $width  = null,
         public ?array $textSize = null,
-        public ?array $fonts  = null,
     ) {}
 
     public function jsonSerialize(): mixed
@@ -43,7 +37,6 @@ final readonly class DocumentTokens implements \JsonSerializable
                 'radius' => $this->radius,
                 'width'  => $this->width,
                 'text-size' => $this->textSize,
-                'fonts'  => $this->fonts,
             ],
             static fn($v) => $v !== null,
         );

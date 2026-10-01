@@ -12,6 +12,12 @@ final readonly class Transform
      */
     public function __construct(public array $matrix) {}
 
+    /** The `matrix(a,b,c,d,e,f)` form, which a layer's `transform` attribute accepts. */
+    public function __toString(): string
+    {
+        return 'matrix(' . implode(',', $this->matrix) . ')';
+    }
+
     // ── Factory helpers ───────────────────────────────────────────────────────
 
     /**

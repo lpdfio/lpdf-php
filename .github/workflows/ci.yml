@@ -98,6 +98,26 @@ jobs:
       - name: Install composer dependencies
         run: composer install --no-interaction --prefer-dist
 
+      # The check below is a Node script.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # ── Check the API against the schema ─────────────────────────────────────
+      # The attribute classes and constants follow from schema/lpdf.xsd, and the scripts that check
+      # them live in core. Fails if a generated file differs from what the schema gives, or a class
+      # has other attributes than the schema's element.
+      # The schema is the one at the core tag the engine was taken from.
+      - name: Check the API against the schema
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse \
+            --branch "$EFFECTIVE_CORE_TAG" \
+            https://github.com/lpdfio/lpdf.git _schema
+          git -C _schema sparse-checkout set schema scripts
+          node _schema/scripts/gen-sdk-api.mjs --check --sdk php=.
+          node _schema/scripts/check-sdk-parity.mjs --sdk php=.
+          rm -rf _schema
+
       # ── Fetch test fixtures and snapshots from core ──────────────────────────
       - name: Fetch test fixtures and snapshots from core
         run: |

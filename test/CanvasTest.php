@@ -4,25 +4,25 @@ declare(strict_types=1);
 namespace Lpdf\Tests;
 
 use Lpdf\L;
-use Lpdf\Canvas\Clip;
-use Lpdf\Canvas\EllipseStyle;
+use Lpdf\Canvas\CanvasImgAttr;
+use Lpdf\Canvas\CanvasTextAttr;
+use Lpdf\Canvas\CircleAttr;
+use Lpdf\Canvas\EllipseAttr;
 use Lpdf\Canvas\LayerAttr;
-use Lpdf\Shared\PageScope;
-use Lpdf\Canvas\PathStyle;
-use Lpdf\Canvas\RectStyle;
-use Lpdf\Canvas\Run;
-use Lpdf\Canvas\TextStyle;
+use Lpdf\Canvas\LineAttr;
+use Lpdf\Canvas\PathAttr;
+use Lpdf\Canvas\RectAttr;
 use Lpdf\Canvas\Transform;
 use Lpdf\Kit\DocumentAttr;
-use Lpdf\Kit\SectionAttr;
-use Lpdf\Kit\DocumentTokens;
 use Lpdf\Kit\PdfDocument;
+use Lpdf\Kit\SectionAttr;
 use Lpdf\Layout\RegionAttr;
+use Lpdf\Layout\SpanAttr;
 use PHPUnit\Framework\TestCase;
 
 final class CanvasTest extends TestCase
 {
-    // â”€â”€ Integration: engine produces a valid PDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Integration: engine produces a valid PDF ------------------------------------------------
 
     public function testCanvasOutputIsPdf(): void
     {
@@ -39,22 +39,29 @@ final class CanvasTest extends TestCase
         SnapshotHelper::compareOrUpdate('canvas_comprehensive', $bytes);
     }
 
-    // â”€â”€ Document / section serialisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Document / section serialisation --------------------------------------------------------
 
     public function testDocumentSerializesToDocument(): void
     {
         $doc  = L::document(null, [L::section(null, [])]);
-        $json = json_decode(json_encode($doc, JSON_THROW_ON_ERROR), true);
+        $json = $this->json($doc);
 
         self::assertSame(1, $json['version']);
         self::assertSame('document', $json['type']);
         self::assertArrayHasKey('nodes', $json);
     }
 
+    public function testDocumentFontAndDebugAreWritten(): void
+    {
+        $json = $this->json(L::document(new DocumentAttr(font: 'Times-Roman', debug: 'true')));
+
+        self::assertSame('Times-Roman', $json['attrs']['font']);
+        self::assertSame('true', $json['attrs']['debug']);
+    }
+
     public function testSectionSerializesToSection(): void
     {
-        $section = L::section(new SectionAttr(size: 'a4', margin: '20pt'), []);
-        $json    = json_decode(json_encode($section, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::section(new SectionAttr(size: 'a4', margin: '20pt'), []));
 
         self::assertSame('section', $json['type']);
         self::assertSame('a4', $json['attrs']['size']);
@@ -63,9 +70,9 @@ final class CanvasTest extends TestCase
 
     public function testSectionWithCanvasLayersSerializesKindNodes(): void
     {
-        $layer   = L::layer(null, [L::rect(0, 0, 100, 100)]);
+        $layer   = L::layer(null, [L::rect(new RectAttr(w: '100pt', h: '100pt'))]);
         $section = L::section(null, [L::canvas(null, [$layer])]);
-        $json    = json_decode(json_encode($section, JSON_THROW_ON_ERROR), true);
+        $json    = $this->json($section);
 
         self::assertSame('section', $json['type']);
         self::assertCount(1, $json['nodes']);
@@ -75,12 +82,12 @@ final class CanvasTest extends TestCase
 
     public function testSectionWithBothLayoutAndCanvas(): void
     {
-        $layer   = L::layer(null, [L::rect(0, 0, 100, 100)]);
+        $layer   = L::layer(null, [L::rect(new RectAttr(w: '100pt', h: '100pt'))]);
         $section = L::section(null, [
             L::layout(null, [L::text(null, ['Hello'])]),
             L::canvas(null, [$layer]),
         ]);
-        $json = json_decode(json_encode($section, JSON_THROW_ON_ERROR), true);
+        $json = $this->json($section);
 
         // Layout first, canvas on top (overlay)
         self::assertSame('layout', $json['nodes'][0]['type']);
@@ -89,12 +96,12 @@ final class CanvasTest extends TestCase
 
     public function testSectionWithCanvasUnderlayOrder(): void
     {
-        $layer   = L::layer(null, [L::rect(0, 0, 100, 100)]);
+        $layer   = L::layer(null, [L::rect(new RectAttr(w: '100pt', h: '100pt'))]);
         $section = L::section(null, [
             L::canvas(null, [$layer]),
             L::layout(null, [L::text(null, ['Hello'])]),
         ]);
-        $json = json_decode(json_encode($section, JSON_THROW_ON_ERROR), true);
+        $json = $this->json($section);
 
         self::assertSame('canvas', $json['nodes'][0]['type']);
         self::assertSame('layout', $json['nodes'][1]['type']);
@@ -102,189 +109,181 @@ final class CanvasTest extends TestCase
 
     public function testSectionWithTitleSerializesAttr(): void
     {
-        $section = L::section(new SectionAttr(title: 'Cover'), []);
-        $json    = json_decode(json_encode($section, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::section(new SectionAttr(title: 'Cover'), []));
 
         self::assertSame('Cover', $json['attrs']['title']);
     }
 
-    // â”€â”€ Region serialisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Region serialisation --------------------------------------------------------------------
 
-    public function testRegionSerializesToLayoutRegion(): void
+    public function testRegionSerializesToRegion(): void
     {
-        $region = L::region(new RegionAttr(pin: 'top-right'), [L::text(null, ['Header'])]);
-        $json   = json_decode(json_encode($region, JSON_THROW_ON_ERROR), true);
+        $region = L::region(new RegionAttr(pin: 'top'), [L::text(null, ['Header'])]);
+        $json   = $this->json($region);
 
-        self::assertSame('layout-region', $json['type']);
-        self::assertSame('top-right', $json['attrs']['pin']);
-        self::assertArrayHasKey('nodes', $json);
+        self::assertSame('region', $json['type']);
+        self::assertSame('top', $json['attrs']['pin']);
         self::assertCount(1, $json['nodes']);
     }
 
-    // â”€â”€ Canvas primitive serialisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Canvas primitive serialisation ----------------------------------------------------------
 
-    public function testRectSerializesCorrectly(): void
+    public function testRectWritesItsAttributesAsGiven(): void
     {
-        $node = L::rect(10, 20, 100, 50, new RectStyle(fill: '#ff0000', borderRadius: 5));
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::rect(new RectAttr(
+            w: '100pt', h: '50pt', x: '10pt', y: '20pt', fill: '#ff0000', radius: '5pt',
+        )));
 
-        self::assertSame('canvas-rect', $json['type']);
-        self::assertSame(10.0, (float) $json['attrs']['x']);
-        self::assertSame(20.0, (float) $json['attrs']['y']);
-        self::assertSame(100.0, (float) $json['attrs']['w']);
-        self::assertSame(50.0, (float) $json['attrs']['h']);
-        self::assertSame('#ff0000', $json['attrs']['fill']);
-        self::assertSame(5.0, (float) $json['attrs']['radius']);
+        self::assertSame('rect', $json['type']);
+        self::assertEquals(
+            ['w' => '100pt', 'h' => '50pt', 'x' => '10pt', 'y' => '20pt', 'fill' => '#ff0000', 'radius' => '5pt'],
+            $json['attrs'],
+        );
+    }
+
+    public function testStrokeAttributesUseTheSchemaNames(): void
+    {
+        $json = $this->json(L::rect(new RectAttr(
+            w: '10pt', h: '10pt', stroke: '#000', strokeWidth: '2pt', strokeDash: '4 2', opacity: '0.5', anchor: 'center',
+        )));
+
+        self::assertSame('2pt', $json['attrs']['stroke-width']);
+        self::assertSame('4 2', $json['attrs']['stroke-dash']);
+        self::assertSame('0.5', $json['attrs']['opacity']);
+        self::assertSame('center', $json['attrs']['anchor']);
     }
 
     public function testLineSerializesCorrectly(): void
     {
-        $node = L::line(0, 0, 100, 100);
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::line(new LineAttr(x1: '0pt', y1: '0pt', x2: '100pt', y2: '100pt', lineCap: 'round')));
 
-        self::assertSame('canvas-line', $json['type']);
-        self::assertSame(0.0, (float) $json['attrs']['x1']);
-        self::assertSame(0.0, (float) $json['attrs']['y1']);
-        self::assertSame(100.0, (float) $json['attrs']['x2']);
-        self::assertSame(100.0, (float) $json['attrs']['y2']);
+        self::assertSame('line', $json['type']);
+        self::assertSame('100pt', $json['attrs']['x2']);
+        self::assertSame('round', $json['attrs']['line-cap']);
     }
 
     public function testEllipseSerializesCorrectly(): void
     {
-        $node = L::ellipse(50, 50, 40, 20, new EllipseStyle(fill: '#00ff00'));
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::ellipse(new EllipseAttr(rx: '40pt', ry: '20pt', cx: '50pt', cy: '50pt', fill: '#00ff00')));
 
-        self::assertSame('canvas-ellipse', $json['type']);
-        self::assertSame(50.0, (float) $json['attrs']['x']);
-        self::assertSame(50.0, (float) $json['attrs']['y']);
-        self::assertSame(40.0, (float) $json['attrs']['rx']);
-        self::assertSame(20.0, (float) $json['attrs']['ry']);
+        self::assertSame('ellipse', $json['type']);
+        self::assertSame('40pt', $json['attrs']['rx']);
         self::assertSame('#00ff00', $json['attrs']['fill']);
     }
 
-    public function testCircleSerializesToCanvasCircle(): void
+    public function testCircleSerializesCorrectly(): void
     {
-        $node = L::circle(100, 100, 30);
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::circle(new CircleAttr(r: '30pt', cx: '100pt', cy: '100pt')));
 
-        self::assertSame('canvas-circle', $json['type']);
-        self::assertSame(100.0, (float) $json['attrs']['x']);
-        self::assertSame(100.0, (float) $json['attrs']['y']);
-        self::assertSame(30.0, (float) $json['attrs']['r']);
+        self::assertSame('circle', $json['type']);
+        self::assertSame('30pt', $json['attrs']['r']);
     }
 
     public function testPathSerializesCorrectly(): void
     {
-        $node = L::path('M 0 0 L 100 100 Z', new PathStyle(fill: '#0000ff', fillRuleEvenodd: true));
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::path(new PathAttr(d: 'M 0 0 L 100 100 Z', fill: '#0000ff', fillRule: 'evenodd')));
 
-        self::assertSame('canvas-path', $json['type']);
+        self::assertSame('path', $json['type']);
         self::assertSame('M 0 0 L 100 100 Z', $json['attrs']['d']);
-        self::assertSame('#0000ff', $json['attrs']['fill']);
         self::assertSame('evenodd', $json['attrs']['fill-rule']);
     }
 
-    public function testImgSerializesToCanvasImg(): void
+    public function testImgSerializesCorrectly(): void
     {
-        $node = L::imgAt(10, 20, 200, 150, 'logo');
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::imgAt(new CanvasImgAttr(name: 'logo', w: '200pt', h: '150pt', x: '10pt', y: '20pt')));
 
-        self::assertSame('canvas-img', $json['type']);
+        self::assertSame('img', $json['type']);
         self::assertSame('logo', $json['attrs']['name']);
-        self::assertSame(200.0, (float) $json['attrs']['w']);
+        self::assertSame('200pt', $json['attrs']['w']);
     }
 
-    public function testTextSerializesCorrectly(): void
+    public function testTextTakesItsAttributesFirstAndItsContentSecond(): void
     {
-        $node = L::textAt(20, 40, 'Hello', new TextStyle(font: 'Helvetica', size: 14, color: '#333333'));
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::textAt(
+            new CanvasTextAttr(x: '20pt', y: '40pt', font: 'Helvetica', fontSize: '14pt', color: '#333333'),
+            ['Hello'],
+        ));
 
-        self::assertSame('canvas-text', $json['type']);
-        self::assertSame('Hello', $json['text']);
+        self::assertSame('text', $json['type']);
+        self::assertSame(['Hello'], $json['nodes']);
         self::assertSame('Helvetica', $json['attrs']['font']);
-        self::assertSame(14.0, (float) $json['attrs']['font-size']);
-        self::assertSame('#333333', $json['attrs']['color']);
-        self::assertArrayNotHasKey('runs', $json);
+        self::assertSame('14pt', $json['attrs']['font-size']);
     }
 
-    public function testTextWithRunsSerializesRuns(): void
+    public function testTextContentCanMixStringsAndSpans(): void
     {
-        $node = L::textAt(
-            x: 0, y: 0, content: 'base',
-            runs: [new Run('bold', font: 'Helvetica-Bold', color: '#ff0000')],
-        );
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::textAt(
+            new CanvasTextAttr(x: '0pt', y: '0pt'),
+            ['base ', L::span(new SpanAttr(font: 'Helvetica-Bold', color: '#ff0000'), ['bold'])],
+        ));
 
-        self::assertArrayHasKey('runs', $json);
-        self::assertCount(1, $json['runs']);
-        self::assertSame('bold', $json['runs'][0]['text']);
-        self::assertSame('Helvetica-Bold', $json['runs'][0]['attrs']['font']);
-        self::assertSame('#ff0000', $json['runs'][0]['attrs']['color']);
+        self::assertSame('base ', $json['nodes'][0]);
+        self::assertSame('span', $json['nodes'][1]['type']);
+        self::assertSame('Helvetica-Bold', $json['nodes'][1]['attrs']['font']);
     }
 
-    // â”€â”€ Layer serialisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Layer serialisation ---------------------------------------------------------------------
 
     public function testLayerSerializesWithOpacity(): void
     {
-        $node = L::layer(
-            new LayerAttr(opacity: 0.5),
-            [L::rect(0, 0, 100, 100)],
-        );
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::layer(new LayerAttr(opacity: '0.5'), [L::rect(new RectAttr(w: '100pt', h: '100pt'))]));
 
-        self::assertSame('canvas-layer', $json['type']);
+        self::assertSame('layer', $json['type']);
         self::assertSame('0.5', $json['attrs']['opacity']);
         self::assertCount(1, $json['nodes']);
     }
 
     public function testLayerWithPageScopeSerializesPage(): void
     {
-        $node = L::layer(new LayerAttr(page: PageScope::Each), []);
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::layer(new LayerAttr(page: 'each'), []));
 
         self::assertSame('each', $json['attrs']['page']);
     }
 
-    public function testLayerSerializesWithClip(): void
+    public function testLayerClipIsWrittenAsGiven(): void
     {
-        $node = L::layer(new LayerAttr(clip: new Clip(10, 10, 100, 50, 5)), []);
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::layer(new LayerAttr(clip: '10 10 100 50'), []));
 
-        self::assertSame(10.0, (float) $json['attrs']['clip']['x']);
-        self::assertSame(100.0, (float) $json['attrs']['clip']['w']);
-        self::assertSame(5.0, (float) $json['attrs']['clip']['borderRadius']);
+        self::assertSame('10 10 100 50', $json['attrs']['clip']);
     }
 
-    public function testLayerSerializesWithTransform(): void
+    public function testLayerTransformAcceptsATransformAsAString(): void
     {
-        $matrix = [1.0, 0.0, 0.0, 1.0, 50.0, 100.0];
-        $node   = L::layer(new LayerAttr(transform: new Transform($matrix)), []);
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $transform = new Transform([1.0, 0.0, 0.0, 1.0, 50.0, 100.0]);
+        $json      = $this->json(L::layer(new LayerAttr(transform: (string) $transform), []));
 
-        self::assertEquals($matrix, $json['attrs']['transform']);
+        self::assertSame('matrix(1,0,0,1,50,100)', $json['attrs']['transform']);
     }
 
-    public function testNullStyleAttrsAreOmitted(): void
+    public function testUnsetAttributesAreOmitted(): void
     {
-        $node = L::rect(0, 0, 50, 50); // no style
-        $json = json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+        $json = $this->json(L::rect(new RectAttr(w: '50pt', h: '50pt')));
 
         self::assertArrayNotHasKey('fill', $json['attrs']);
         self::assertArrayNotHasKey('stroke', $json['attrs']);
     }
 
-    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Helpers ---------------------------------------------------------------------------------
+
+    /** @return array<string,mixed> */
+    private function json(object $node): array
+    {
+        return json_decode(json_encode($node, JSON_THROW_ON_ERROR), true);
+    }
 
     private function minimalDoc(): PdfDocument
     {
         return L::document(
-            new DocumentAttr(tokens: new DocumentTokens(fonts: ['Helvetica' => ['builtin' => 'Helvetica']])),
+            null,
             [
                 L::section(new SectionAttr(size: 'a4'), [
                     L::canvas(null, [
                         L::layer(null, [
-                            L::rect(40, 40, 200, 100, new RectStyle(fill: '#4a90e2')),
-                            L::textAt(40, 160, 'Hello Canvas!', new TextStyle(font: 'Helvetica', size: 16, color: '#000000')),
+                            L::rect(new RectAttr(x: '40pt', y: '40pt', w: '200pt', h: '100pt', fill: '#4a90e2')),
+                            L::textAt(
+                                new CanvasTextAttr(x: '40pt', y: '160pt', font: 'Helvetica', fontSize: '16pt', color: '#000000'),
+                                ['Hello Canvas!'],
+                            ),
                         ]),
                     ]),
                 ]),
@@ -295,20 +294,26 @@ final class CanvasTest extends TestCase
     private function comprehensiveDoc(): PdfDocument
     {
         return L::document(
-            new DocumentAttr(tokens: new DocumentTokens(fonts: ['Helvetica' => ['builtin' => 'Helvetica']])),
+            null,
             [
                 L::section(new SectionAttr(size: 'a4'), [
                     L::canvas(null, [
                         L::layer(null, [
-                            L::rect(40, 40, 200, 100, new RectStyle(fill: '#4a90e2', stroke: '#1a5276', strokeWidth: 2, borderRadius: 8)),
-                            L::line(40, 170, 555, 170),
-                            L::ellipse(140, 250, 80, 50, new EllipseStyle(fill: '#f39c12')),
-                            L::circle(400, 250, 60, new EllipseStyle(fill: '#27ae60')),
-                            L::path('M 40 360 L 200 310 L 360 360 Z', new PathStyle(fill: '#8e44ad')),
-                            L::textAt(40, 420, 'Canvas text', new TextStyle(font: 'Helvetica', size: 18, color: '#1a1a1a')),
+                            L::rect(new RectAttr(
+                                x: '40pt', y: '40pt', w: '200pt', h: '100pt',
+                                fill: '#4a90e2', stroke: '#1a5276', strokeWidth: '2pt', radius: '8pt',
+                            )),
+                            L::line(new LineAttr(x1: '40pt', y1: '170pt', x2: '555pt', y2: '170pt')),
+                            L::ellipse(new EllipseAttr(cx: '140pt', cy: '250pt', rx: '80pt', ry: '50pt', fill: '#f39c12')),
+                            L::circle(new CircleAttr(cx: '400pt', cy: '250pt', r: '60pt', fill: '#27ae60')),
+                            L::path(new PathAttr(d: 'M 40 360 L 200 310 L 360 360 Z', fill: '#8e44ad')),
+                            L::textAt(
+                                new CanvasTextAttr(x: '40pt', y: '420pt', font: 'Helvetica', fontSize: '18pt', color: '#1a1a1a'),
+                                ['Canvas text'],
+                            ),
                         ]),
-                        L::layer(new LayerAttr(opacity: 0.5), [
-                            L::rect(40, 460, 515, 60, new RectStyle(fill: '#e74c3c')),
+                        L::layer(new LayerAttr(opacity: '0.5'), [
+                            L::rect(new RectAttr(x: '40pt', y: '460pt', w: '515pt', h: '60pt', fill: '#e74c3c')),
                         ]),
                     ]),
                 ]),

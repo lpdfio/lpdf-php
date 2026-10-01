@@ -4,26 +4,28 @@ declare(strict_types=1);
 
 namespace Lpdf;
 
+use Lpdf\Canvas\CanvasImgAttr;
+use Lpdf\Canvas\CanvasTextAttr;
+use Lpdf\Canvas\CircleAttr;
 use Lpdf\Canvas\CircleNode;
+use Lpdf\Canvas\EllipseAttr;
 use Lpdf\Canvas\EllipseNode;
-use Lpdf\Canvas\EllipseStyle;
 use Lpdf\Canvas\ImageNode;
 use Lpdf\Canvas\LayerAttr;
 use Lpdf\Canvas\LayerNode;
+use Lpdf\Canvas\LineAttr;
 use Lpdf\Canvas\LineNode;
-use Lpdf\Canvas\LineStyle;
 use Lpdf\Canvas\Node as CanvasNode;
+use Lpdf\Canvas\PathAttr;
 use Lpdf\Canvas\PathNode;
-use Lpdf\Canvas\PathStyle;
+use Lpdf\Canvas\RectAttr;
 use Lpdf\Canvas\RectNode;
-use Lpdf\Canvas\RectStyle;
-use Lpdf\Canvas\Run;
 use Lpdf\Canvas\TextNode as CanvasTextNode;
-use Lpdf\Canvas\TextStyle;
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\EngineOptions;
 use Lpdf\Engine\WasmRunner;
 use Lpdf\Kit\DocumentAttr;
+use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentTokens;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\Kit\SectionAttr;
@@ -38,7 +40,6 @@ use Lpdf\Layout\DividerAttr;
 use Lpdf\Layout\DividerNode;
 use Lpdf\Layout\FieldAttr;
 use Lpdf\Layout\FieldNode;
-use Lpdf\Layout\FieldType;
 use Lpdf\Layout\FlankAttr;
 use Lpdf\Layout\FrameAttr;
 use Lpdf\Layout\GridAttr;
@@ -46,7 +47,6 @@ use Lpdf\Layout\ImgAttr;
 use Lpdf\Layout\ImgNode;
 use Lpdf\Layout\LinkAttr;
 use Lpdf\Layout\Node;
-use Lpdf\Layout\Pin;
 use Lpdf\Layout\RegionAttr;
 use Lpdf\Layout\RegionNode;
 use Lpdf\Layout\SpanAttr;
@@ -111,11 +111,14 @@ final class L
     // ── Document / section ─────────────────────────────────────────────────────
 
     /** Build the root document node. */
-    public static function document(?DocumentAttr $attrs, array $sections = []): PdfDocument
+    public static function document(?DocumentAttr $attrs = null, array $sections = []): PdfDocument
     {
         $a = $attrs ?? new DocumentAttr();
-        $flatAttrs = self::optionsToAttrs($a, skip: ['tokens', 'meta']);
+        $flatAttrs = self::optionsToAttrs($a, skip: ['assets', 'tokens', 'meta']);
 
+        if ($a->assets !== null) {
+            $flatAttrs['assets'] = $a->assets;
+        }
         if ($a->tokens !== null) {
             $flatAttrs['tokens'] = $a->tokens;
         }
@@ -127,7 +130,7 @@ final class L
     }
 
     /** Build a section (page) node. */
-    public static function section(?SectionAttr $attrs, array $nodes = []): SectionNode
+    public static function section(?SectionAttr $attrs = null, array $nodes = []): SectionNode
     {
         return new SectionNode(self::optionsToAttrs($attrs), $nodes);
     }
@@ -142,6 +145,12 @@ final class L
     public static function canvas(mixed $attrs, array $layers = []): SectionCanvas
     {
         return new SectionCanvas($layers);
+    }
+
+    /** Create a {@see DocumentAssets} instance (convenience factory). */
+    public static function assets(DocumentAssets $attrs): DocumentAssets
+    {
+        return $attrs;
     }
 
     /** Create a {@see DocumentTokens} instance (convenience factory). */
@@ -189,7 +198,7 @@ final class L
     }
 
     /** @param Node[] $nodes */
-    public static function link(?LinkAttr $attrs = null, array $nodes = []): ContainerNode
+    public static function link(LinkAttr $attrs, array $nodes = []): ContainerNode
     {
         return new ContainerNode('link', self::optionsToAttrs($attrs), $nodes);
     }
@@ -197,7 +206,7 @@ final class L
     // ── Table ──────────────────────────────────────────────────────────────────
 
     /** @param Node[] $nodes */
-    public static function table(?TableAttr $attrs = null, array $nodes = []): ContainerNode
+    public static function table(TableAttr $attrs, array $nodes = []): ContainerNode
     {
         return new ContainerNode('table', self::optionsToAttrs($attrs), $nodes);
     }
@@ -227,7 +236,7 @@ final class L
      *
      * @param array<string|SpanNode> $nodes
      */
-    public static function text(?TextAttr $attrs, array $nodes = []): TextNode
+    public static function text(?TextAttr $attrs = null, array $nodes = []): TextNode
     {
         foreach ($nodes as $i => $child) {
             if (!is_string($child) && !$child instanceof SpanNode) {
@@ -244,7 +253,7 @@ final class L
      *
      * @param string[] $nodes
      */
-    public static function span(?SpanAttr $attrs, array $nodes = []): SpanNode
+    public static function span(?SpanAttr $attrs = null, array $nodes = []): SpanNode
     {
         foreach ($nodes as $i => $child) {
             if (!is_string($child)) {
@@ -275,86 +284,76 @@ final class L
     }
 
     /**
-     * Build a pinned layout-region node.
+     * Build a pinned region node.
      *
      * @param Node[] $nodes
      */
     public static function region(RegionAttr $attrs, array $nodes = []): RegionNode
     {
-        $flatAttrs = self::optionsToAttrs($attrs);
-        return new RegionNode($flatAttrs, $nodes);
+        return new RegionNode(self::optionsToAttrs($attrs), $nodes);
     }
 
-    /**
-     * Build an interactive form field node.
-     *
-     * @param FieldType|string $type  Field type.
-     * @param string           $name  Unique field name within the document.
-     */
-    public static function field(FieldType|string $type, string $name, ?FieldAttr $attrs = null): FieldNode
+    /** Build an interactive form field node. The attributes carry its type and its name. */
+    public static function field(FieldAttr $attrs): FieldNode
     {
-        $flatAttrs = array_merge(
-            ['type' => $type instanceof FieldType ? $type->value : $type, 'name' => $name],
-            self::optionsToAttrs($attrs),
-        );
-        return new FieldNode($flatAttrs);
+        return new FieldNode(self::optionsToAttrs($attrs));
     }
 
     // ── Canvas ─────────────────────────────────────────────────────────────────
 
     /**
-     * Build a canvas-layer node.
+     * Build a canvas layer node.
      *
      * @param CanvasNode[] $nodes
      */
-    public static function layer(?LayerAttr $attrs, array $nodes = []): LayerNode
+    public static function layer(?LayerAttr $attrs = null, array $nodes = []): LayerNode
     {
-        return new LayerNode($nodes, $attrs);
+        return new LayerNode(self::optionsToAttrs($attrs), $nodes);
     }
 
-    /** Build a canvas-rect node. */
-    public static function rect(float $x, float $y, float $w, float $h, ?RectStyle $style = null): RectNode
+    /** Build a rect on the canvas. */
+    public static function rect(RectAttr $attrs): RectNode
     {
-        return new RectNode($x, $y, $w, $h, $style);
+        return new RectNode(self::optionsToAttrs($attrs));
     }
 
-    /** Build a canvas-line node. */
-    public static function line(float $x1, float $y1, float $x2, float $y2, ?LineStyle $style = null): LineNode
+    /** Build a line on the canvas. */
+    public static function line(LineAttr $attrs): LineNode
     {
-        return new LineNode($x1, $y1, $x2, $y2, $style);
+        return new LineNode(self::optionsToAttrs($attrs));
     }
 
-    /** Build a canvas-ellipse node. */
-    public static function ellipse(float $cx, float $cy, float $rx, float $ry, ?EllipseStyle $style = null): EllipseNode
+    /** Build an ellipse on the canvas. */
+    public static function ellipse(EllipseAttr $attrs): EllipseNode
     {
-        return new EllipseNode($cx, $cy, $rx, $ry, $style);
+        return new EllipseNode(self::optionsToAttrs($attrs));
     }
 
-    /** Build a canvas-circle node. */
-    public static function circle(float $cx, float $cy, float $r, ?EllipseStyle $style = null): CircleNode
+    /** Build a circle on the canvas. */
+    public static function circle(CircleAttr $attrs): CircleNode
     {
-        return new CircleNode($cx, $cy, $r, $style);
+        return new CircleNode(self::optionsToAttrs($attrs));
     }
 
-    /** Build a canvas-path node from an SVG path string. */
-    public static function path(string $d, ?PathStyle $style = null): PathNode
+    /** Build a path on the canvas from an SVG path string in `d`. */
+    public static function path(PathAttr $attrs): PathNode
     {
-        return new PathNode($d, $style);
+        return new PathNode(self::optionsToAttrs($attrs));
     }
 
     /**
-     * Build a canvas-text node at the given coordinates.
+     * Build text on the canvas.
      *
-     * @param Run[] $runs Optional rich-text runs.
+     * @param array<string|SpanNode> $nodes
      */
-    public static function textAt(float $x, float $y, string $content, ?TextStyle $style = null, array $runs = []): CanvasTextNode
+    public static function textAt(CanvasTextAttr $attrs, array $nodes = []): CanvasTextNode
     {
-        return new CanvasTextNode($x, $y, $content, $style, $runs);
+        return new CanvasTextNode(self::optionsToAttrs($attrs), $nodes);
     }
 
-    /** Build a canvas-image node at (x, y) with dimensions (w × h). */
-    public static function imgAt(float $x, float $y, float $w, float $h, string $name, ?string $anchor = null): ImageNode
+    /** Build an image on the canvas. */
+    public static function imgAt(CanvasImgAttr $attrs): ImageNode
     {
-        return new ImageNode($x, $y, $w, $h, $name, $anchor);
+        return new ImageNode(self::optionsToAttrs($attrs));
     }
 }

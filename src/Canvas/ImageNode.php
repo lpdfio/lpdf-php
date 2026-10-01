@@ -4,22 +4,18 @@ declare(strict_types=1);
 
 namespace Lpdf\Canvas;
 
-/** @internal Use Canvas::img() to construct. */
+/**
+ * An `img` on the canvas.
+ *
+ * @internal Use L::imgAt() to construct.
+ */
 final readonly class ImageNode extends Node
 {
-    public function __construct(
-        private float   $x,
-        private float   $y,
-        private float   $w,
-        private float   $h,
-        private string  $name,
-        private ?string $anchor = null,
-    ) {}
+    /** @param array<string,string> $attrs */
+    public function __construct(private array $attrs) {}
 
     public function jsonSerialize(): mixed
     {
-        $attrs = ['x' => (string)$this->x, 'y' => (string)$this->y, 'w' => (string)$this->w, 'h' => (string)$this->h, 'name' => $this->name];
-        if ($this->anchor !== null) $attrs['anchor'] = $this->anchor;
-        return ['type' => 'canvas-img', 'attrs' => (object) $attrs];
+        return ['type' => 'img', 'attrs' => (object) $this->attrs];
     }
 }

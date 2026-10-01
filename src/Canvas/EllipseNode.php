@@ -4,26 +4,18 @@ declare(strict_types=1);
 
 namespace Lpdf\Canvas;
 
-/** @internal Use Canvas::ellipse() to construct. */
+/**
+ * A `ellipse` on the canvas.
+ *
+ * @internal Use L::ellipse() to construct.
+ */
 final readonly class EllipseNode extends Node
 {
-    public function __construct(
-        private float         $cx,
-        private float         $cy,
-        private float         $rx,
-        private float         $ry,
-        private ?EllipseStyle $style = null,
-    ) {}
+    /** @param array<string,string> $attrs */
+    public function __construct(private array $attrs) {}
 
     public function jsonSerialize(): mixed
     {
-        $attrs = ['x' => (string)$this->cx, 'y' => (string)$this->cy, 'rx' => (string)$this->rx, 'ry' => (string)$this->ry];
-        if ($this->style?->fill        !== null) $attrs['fill']         = $this->style->fill;
-        if ($this->style?->stroke      !== null) $attrs['stroke']       = $this->style->stroke;
-        if ($this->style?->strokeWidth !== null) $attrs['stroke-width'] = (string)$this->style->strokeWidth;
-        if ($this->style?->strokeDash  !== null) $attrs['stroke-dash']  = implode(' ', $this->style->strokeDash);
-        if ($this->style?->opacity     !== null) $attrs['opacity']      = (string)$this->style->opacity;
-        if ($this->style?->anchor      !== null) $attrs['anchor']       = $this->style->anchor;
-        return ['type' => 'canvas-ellipse', 'attrs' => (object) $attrs];
+        return ['type' => 'ellipse', 'attrs' => (object) $this->attrs];
     }
 }

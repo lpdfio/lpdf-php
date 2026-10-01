@@ -6,7 +6,9 @@ namespace Lpdf\Tests;
 
 use Lpdf\L;
 use Lpdf\Kit\DocumentAttr;
-use Lpdf\Kit\DocumentTokens;
+use Lpdf\Kit\DocumentAssets;
+use Lpdf\Kit\FontAttr;
+use Lpdf\Kit\ImageAttr;
 use Lpdf\Engine\RenderOptions;
 use PHPUnit\Framework\TestCase;
 
@@ -68,36 +70,22 @@ final class SnapshotTest extends TestCase
         self::assertStringContainsString('<lpdf version="1">', $xml);
     }
 
-    public function testKitToXmlBuiltinFontInAssets(): void
+    public function testKitToXmlWritesTheAssetsUnderTheSchemaNames(): void
     {
         $doc = L::document(
-            new DocumentAttr(tokens: new DocumentTokens(fonts: ['heading' => ['builtin' => 'Helvetica-Bold']])),
+            new DocumentAttr(assets: new DocumentAssets(
+                fonts: [
+                    new FontAttr(name: 'heading', core: 'Helvetica-Bold'),
+                    new FontAttr(name: 'body', ref: 'body-font', src: '/fonts/MyFont.ttf'),
+                ],
+                images: [new ImageAttr(name: 'logo', src: 'logo.png')],
+            )),
             [],
         );
         $xml = L::toXml($doc);
-        self::assertStringContainsString('<assets>', $xml);
-        self::assertStringNotContainsString('<fonts>', $xml, '<fonts> wrapper must not appear in flat structure');
-        self::assertStringContainsString('<font ', $xml);
-        self::assertStringContainsString('core="Helvetica-Bold"', $xml);
-        // Font must NOT appear inside <tokens>
-        $tokensStart = strpos($xml, '<tokens>');
-        $tokensEnd   = strpos($xml, '</tokens>');
-        $fontInTokens = strpos($xml, '<font ', $tokensStart ?: 0);
-        self::assertTrue(
-            $tokensStart === false || $fontInTokens === false || $fontInTokens > $tokensEnd,
-            'Font was incorrectly placed inside <tokens>',
-        );
-    }
-
-    public function testKitToXmlCustomFontUsesRefAlias(): void
-    {
-        $doc = L::document(
-            new DocumentAttr(tokens: new DocumentTokens(fonts: ['body' => ['src' => '/fonts/MyFont.ttf']])),
-            [],
-        );
-        $xml = L::toXml($doc);
-        self::assertStringContainsString('ref="body"', $xml);
-        self::assertStringContainsString('src=', $xml, 'src= path should appear in XML (preserved for adapter auto-loading)');
+        self::assertStringContainsString('<font name="heading" core="Helvetica-Bold"/>', $xml);
+        self::assertStringContainsString('<font name="body" ref="body-font" src="/fonts/MyFont.ttf"/>', $xml);
+        self::assertStringContainsString('<image name="logo" src="logo.png"/>', $xml);
     }
 
     public function testKitToXmlProducedXmlRendersToValidPdf(): void
