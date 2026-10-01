@@ -16,6 +16,11 @@ composer require lpdfio/lpdf
 
 ```php
 use Lpdf\L;
+use Lpdf\Kit\DocumentAttr;
+use Lpdf\Layout\DividerAttr;
+use Lpdf\Layout\FlankAttr;
+use Lpdf\Layout\StackAttr;
+use Lpdf\Layout\TextAttr;
 use const Lpdf\NoAttr;
 
 $engine = L::engine();
