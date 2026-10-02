@@ -24,47 +24,36 @@ jobs:
           tools: composer
 
       # ── Download WASI binary from core release ───────────────────────────────
-      # Derives the core tag from the latest semver git tag in this repo
-      # (strip patch → .0).  Falls back to the latest core release when no
-      # adapter tag exists yet.
+      # The newest core release, pre-releases included. `main` is built against the engine it will
+      # ship with, and between a core RC and its final release that engine is the RC: an SDK API change
+      # lands with the core release that carries it (Lpdf-devcycle.md §4.2 in lpdfio/lpdf), so pinning
+      # to the last final release fails the build for the whole window. release.yml and rc.yml stay
+      # pinned to the tag they ship.
       - name: Download lpdf-wasi.wasm
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p resources
-          ADAPTER_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]' | head -1)
-          CORE_TAG=$(echo "${ADAPTER_TAG:-v0.0.0}" | sed 's/\.[0-9]*$/.0/')
-          echo "Resolved adapter tag: ${ADAPTER_TAG:-<none>}"
+          CORE_TAG=$(gh api repos/lpdfio/lpdf/releases \
+            --jq 'map(select(.draft | not))[0].tag_name // empty')
+          if [ -z "$CORE_TAG" ]; then
+            echo "::error::No published release in lpdfio/lpdf to build against."
+            exit 1
+          fi
           echo "Resolved core tag: $CORE_TAG"
-          # No adapter tags yet — go straight to latest
-          if [ -z "$ADAPTER_TAG" ] || [ "$CORE_TAG" = "v0.0.0" ]; then
-            echo "No adapter tag — downloading latest release"
-            gh release download \
+          DOWNLOADED=""
+          for attempt in 1 2 3; do
+            gh release download "$CORE_TAG" \
               --repo lpdfio/lpdf \
               --pattern "lpdf-wasi.wasm" \
               --dir resources \
-              --clobber
-            CORE_TAG=$(gh release view --repo lpdfio/lpdf --json tagName --jq .tagName)
-            echo "Resolved latest core tag: $CORE_TAG"
-          else
-            for attempt in 1 2 3; do
-              gh release download "$CORE_TAG" \
-                --repo lpdfio/lpdf \
-                --pattern "lpdf-wasi.wasm" \
-                --dir resources \
-                --clobber && break
-              echo "Attempt $attempt failed — retrying in 10s..."
-              sleep 10
-            done
-            # Fallback to latest release when the derived tag doesn't exist yet
-            if [ ! -f resources/lpdf-wasi.wasm ]; then
-              gh release download \
-                --repo lpdfio/lpdf \
-                --pattern "lpdf-wasi.wasm" \
-                --dir resources \
-                --clobber
-              CORE_TAG=$(gh release view --repo lpdfio/lpdf --json tagName --jq .tagName)
-            fi
+              --clobber && DOWNLOADED=1 && break
+            echo "Attempt $attempt failed — retrying in 10s..."
+            sleep 10
+          done
+          if [ -z "$DOWNLOADED" ]; then
+            echo "::error::Could not download the engine file from core $CORE_TAG."
+            exit 1
           fi
           echo "EFFECTIVE_CORE_TAG=$CORE_TAG" >> "$GITHUB_ENV"
 
