@@ -25,6 +25,7 @@ final readonly class TableAttr
         public ?string $background = null,
         public ?string $width = null,
         public ?string $height = null,
+        public ?string $paginate = null,
         public ?string $debug = null,
     ) {}
 }

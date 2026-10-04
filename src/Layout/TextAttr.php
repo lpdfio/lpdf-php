@@ -26,6 +26,7 @@ final readonly class TextAttr
         public ?string $color = null,
         public ?string $align = null,
         public ?string $width = null,
+        public ?string $paginate = null,
         public ?string $debug = null,
     ) {}
 }

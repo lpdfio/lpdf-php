@@ -22,6 +22,7 @@ final readonly class BarcodeAttr
         public ?string $hrt = null,
         public ?string $color = null,
         public ?string $background = null,
+        public ?string $paginate = null,
         public ?string $debug = null,
     ) {}
 }
