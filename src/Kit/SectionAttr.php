@@ -13,5 +13,7 @@ final readonly class SectionAttr
         public ?string      $background  = null,
         public ?string      $title       = null,
         public ?string      $debug       = null,
+        public ?string      $type        = null,
+        public ?string      $tocIndentStep = null,
     ) {}
 }

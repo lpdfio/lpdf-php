@@ -34,6 +34,8 @@ use Lpdf\Kit\SectionLayout;
 use Lpdf\Kit\SectionNode;
 use Lpdf\Layout\BarcodeAttr;
 use Lpdf\Layout\BarcodeNode;
+use Lpdf\Layout\BookmarkAttr;
+use Lpdf\Layout\BookmarkNode;
 use Lpdf\Layout\ClusterAttr;
 use Lpdf\Layout\ContainerNode;
 use Lpdf\Layout\DividerAttr;
@@ -297,6 +299,15 @@ final class L
     public static function field(FieldAttr $attrs): FieldNode
     {
         return new FieldNode(self::optionsToAttrs($attrs));
+    }
+
+    /**
+     * Build a bookmark: an entry of the PDF's outline and a target for href="#id" links. It marks the node that
+     * follows it; in a section's nodes, it marks the section's first page.
+     */
+    public static function bookmark(BookmarkAttr $attrs): BookmarkNode
+    {
+        return new BookmarkNode(self::optionsToAttrs($attrs));
     }
 
     // ── Canvas ─────────────────────────────────────────────────────────────────

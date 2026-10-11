@@ -13,6 +13,10 @@ namespace Lpdf\Layout;
 final readonly class LinkAttr
 {
     public function __construct(
+        /**
+         * Where the link goes: a URL, or #id to jump to the bookmark with that id. In an entry of a
+         * table of contents, # alone jumps to that entry's bookmark.
+         */
         public string $href,
         public ?string $gap = null,
         public ?string $width = null,
