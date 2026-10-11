@@ -13,6 +13,9 @@ use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\FontAttr;
 use Lpdf\Kit\ImageAttr;
 use Lpdf\Kit\Orientation;
+use Lpdf\Kit\SectionAttr;
+use Lpdf\Kit\SectionType;
+use Lpdf\Layout\BookmarkAttr;
 use Lpdf\Layout\FieldType;
 use Lpdf\Layout\ImgAttr;
 use Lpdf\Layout\Pin;
@@ -103,6 +106,41 @@ final class SchemaTest extends TestCase
 
         self::assertSame($this->render($doc('bold="true"')), $this->render($doc('font="Helvetica-Bold"')));
         self::assertNotSame($this->render($doc('bold="true"')), $this->render($doc('')));
+    }
+
+    // -- Bookmarks and the table of contents -----------------------------------------------------
+
+    public function testABookmarkGoesInALayoutAndDirectlyInASection(): void
+    {
+        $bookmark = $this->json(L::bookmark(new BookmarkAttr(label: 'Methods', level: '2', id: 'methods')));
+        self::assertEquals(['type' => 'bookmark', 'attrs' => ['label' => 'Methods', 'level' => '2', 'id' => 'methods']], $bookmark);
+
+        $section = $this->json(L::section(new SectionAttr(type: SectionType::Toc, tocIndentStep: '14pt'), [
+            L::bookmark(new BookmarkAttr(label: 'Contents')),
+            L::layout(null, []),
+        ]));
+        self::assertEquals(['type' => 'toc', 'toc-indent-step' => '14pt'], $section['attrs']);
+        self::assertSame('bookmark', $section['nodes'][0]['type']);
+    }
+
+    public function testBookmarksFillTheOutlineAndRenderLikeTheirXml(): void
+    {
+        $built = L::document(null, [
+            L::section(null, [L::bookmark(new BookmarkAttr(label: 'Cover')), L::layout(null, [L::text(null, ['Cover'])])]),
+            L::section(null, [
+                L::layout(null, [
+                    L::link(new LinkAttr(href: '#methods'), [L::text(null, ['Go to Methods'])]),
+                    L::bookmark(new BookmarkAttr(label: 'Methods')),
+                    L::text(null, ['Methods']),
+                ]),
+            ]),
+        ]);
+        $pdf = $this->render($built);
+
+        self::assertStringContainsString('/Title (Cover)', $pdf);
+        self::assertStringContainsString('/Title (Methods)', $pdf);
+        self::assertStringContainsString('/D /methods', $pdf);
+        self::assertSame($pdf, $this->render(L::toXml($built)));
     }
 
     // -- Assets ----------------------------------------------------------------------------------
