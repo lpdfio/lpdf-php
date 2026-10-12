@@ -185,6 +185,18 @@ jobs:
           git add CHANGELOG.md
           git diff --cached --quiet || git commit -m "release: $ADAPTER_TAG"
 
+      # main's ruleset takes changes through a PR only, and the lpdf release App
+      # is its one bypass actor. So the release commit below is pushed to main
+      # with a token of that App, minted here for this repo. The App's key is a
+      # secret of this job's environment, never of the repo: only a run the user
+      # approved can mint it.
+      - name: Mint GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.LPDF_RELEASE_APP_ID }}
+          private-key: ${{ secrets.LPDF_RELEASE_APP_PRIVATE_KEY }}
+
       # main can move while this job runs: v0.17.0 never shipped from here
       # because a commit landed on main mid-release and this push was rejected.
       # So a rejected push fetches main, merges the release commit into it and
@@ -196,12 +208,20 @@ jobs:
       #
       # On a direct tag trigger (adapter patch) the tag already exists; only
       # the release commit is pushed.
+      #
+      # The push to main goes as the App: the empty extraheader drops the
+      # GITHUB_TOKEN header that checkout set, so git sends the App token from
+      # the URL instead. The tag push stays on GITHUB_TOKEN; the ruleset covers
+      # branches only.
       - name: Push to main, then tag
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           RELEASE_COMMIT=$(git rev-parse HEAD)
           PUSHED=""
           for attempt in 1 2 3; do
-            git push origin HEAD:main && PUSHED=1 && break
+            git -c http.https://github.com/.extraheader= push \
+              "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main && PUSHED=1 && break
             echo "main moved during the release (attempt $attempt): merging the release commit into it..."
             git fetch origin main
             git checkout -q --detach FETCH_HEAD
