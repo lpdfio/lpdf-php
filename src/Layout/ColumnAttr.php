@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Lpdf\Layout;
 
 /**
- * A row that wraps: children sit side by side, and continue on the next line when they run out of
- * width. Splits across pages between lines.
+ * Places children top to bottom, each at the full width, with gap between them. Can split across
+ * pages between children.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
  */
-final readonly class ClusterAttr
+final readonly class ColumnAttr
 {
     public function __construct(
         public ?string $font = null,
