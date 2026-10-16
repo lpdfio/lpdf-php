@@ -2,26 +2,24 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
 
 /**
- * example-data.php — render data-invoice.xml with dynamic data from data-invoice.json.
+ * example-data.php — render the invoice in lpdf's examples/ with its data from document.json.
  *
- * Run (after 'make build-adapter-php'):
- *   docker run --rm \
- *     -v "$(pwd)/src/adapters/php/example:/app/src/adapters/php/example" \
- *     -v "$(pwd)/example:/app/example" \
- *     -w /app lpdf-php php src/adapters/php/example/example-data.php
+ * Run from lpdf's root (after 'make build-sdk-php'):
+ *   make example-php
  *
- * Output: example/result/data-invoice-php.pdf
+ * Output: tmp/sdk-examples/example-data-php.pdf in lpdf's root.
  */
 
 use Lpdf\L;
 use Lpdf\Engine\RenderOptions;
 
-$root       = __DIR__ . '/../../../../example/';
-$xmlFile    = $root . 'xml/data-invoice.xml';
-$jsonFile   = $root . 'xml/data-invoice.json';
+$lpdf       = dirname(__DIR__, 3);
+$xmlFile    = "$lpdf/examples/2-invoice/document.xml";
+$jsonFile   = "$lpdf/examples/2-invoice/document.json";
+$output     = "$lpdf/tmp/sdk-examples";
 $outputFile = 'example-data-php.pdf';
 
 $xml  = file_get_contents($xmlFile);
@@ -31,5 +29,8 @@ $engine = L::engine();  // no key → renders with the attribution line
 
 $pdf = $engine->render($xml, new RenderOptions(data: $data));
 
-file_put_contents($root . "result/{$outputFile}", $pdf);
+if (!is_dir($output)) {
+    mkdir($output, 0777, true);
+}
+file_put_contents("$output/$outputFile", $pdf);
 echo "output: $outputFile (" . number_format(strlen($pdf)) . " bytes)\n";

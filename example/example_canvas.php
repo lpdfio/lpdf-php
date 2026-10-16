@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use Lpdf\Canvas\CanvasTextAttr;
 use Lpdf\Canvas\CircleAttr;
@@ -20,11 +20,11 @@ use Lpdf\Layout\SpanAttr;
 
 use const Lpdf\NoAttr;
 
-$root = __DIR__ . '/../../../../example/';
+$output = dirname(__DIR__, 3) . '/tmp/sdk-examples';
 
 // ── Engine ────────────────────────────────────────────────────────────────────
 
-$licenseKey = ''; // file_get_contents($root . 'test.lic');
+$licenseKey = '';
 $engine = L::engine()->setLicenseKey($licenseKey);
 
 // ── Build a document of layers ─────────────────────────────────────────────────
@@ -213,6 +213,9 @@ $doc = L::document(
 $pdf = $engine->render($doc);
 
 $outputFile = 'example-canvas-php.pdf';
-file_put_contents($root . "result/{$outputFile}", $pdf);
+if (!is_dir($output)) {
+    mkdir($output, 0777, true);
+}
+file_put_contents("$output/$outputFile", $pdf);
 
 echo "output: $outputFile (" . number_format(strlen($pdf)) . " bytes)\n";
