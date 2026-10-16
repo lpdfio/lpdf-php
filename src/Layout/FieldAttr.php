@@ -24,6 +24,11 @@ final readonly class FieldAttr
         public ?string $readonly = null,
         public ?string $maxLen = null,
         public ?string $actionUrl = null,
+        /**
+         * Width of the element. A length fixes it. fill, in a row, takes the width its line leaves
+         * after the other children, shared equally if several on the line use fill, and never moves
+         * to the next line; in a column it takes the full width.
+         */
         public ?string $width = null,
         public ?string $height = null,
         public ?string $background = null,

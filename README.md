@@ -19,7 +19,7 @@ use Lpdf\L;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Layout\ColumnAttr;
 use Lpdf\Layout\DividerAttr;
-use Lpdf\Layout\FlankAttr;
+use Lpdf\Layout\RowAttr;
 use Lpdf\Layout\TextAttr;
 use const Lpdf\NoAttr;
 
@@ -29,15 +29,15 @@ $doc = L::document(new DocumentAttr(size: 'letter', margin: '48pt'), [
     L::section(NoAttr, [
         L::layout(NoAttr, [
             L::column(new ColumnAttr(gap: '24pt'), [
-                L::split(NoAttr, [
+                L::row(new RowAttr(justify: 'between'), [
                     L::text(new TextAttr(fontSize: '8pt', color: '#888888'), ['ACME CORP']),
                     L::text(new TextAttr(fontSize: '22pt', bold: 'true'), ['Project Proposal']),
                 ]),
                 L::divider(new DividerAttr(thickness: 'xs')),
                 L::text(new TextAttr(fontSize: '13pt', bold: 'true'), ['Scope of Work']),
-                L::flank(new FlankAttr(gap: '12pt', align: 'start'), [
+                L::row(new RowAttr(gap: '12pt', align: 'start'), [
                     L::text(new TextAttr(color: '#888888', width: '24pt'), ['01']),
-                    L::text(NoAttr, ['Discovery & Research']),
+                    L::text(new TextAttr(width: 'fill'), ['Discovery & Research']),
                 ]),
             ]),
         ]),
