@@ -22,7 +22,7 @@ use Lpdf\Layout\Pin;
 use Lpdf\Layout\FieldAttr;
 use Lpdf\Layout\LinkAttr;
 use Lpdf\Layout\SpanAttr;
-use Lpdf\Layout\StackAttr;
+use Lpdf\Layout\ColumnAttr;
 use Lpdf\Layout\TextAttr;
 use PHPUnit\Framework\TestCase;
 
@@ -78,7 +78,7 @@ final class SchemaTest extends TestCase
         $built = L::document(new DocumentAttr(size: 'a4'), [
             L::section(null, [
                 L::layout(null, [
-                    L::stack(new StackAttr(gap: '12pt'), [
+                    L::column(new ColumnAttr(gap: '12pt'), [
                         L::text(new TextAttr(align: 'right', bold: 'true'), ['Title']),
                         L::text(null, ['Body ', L::span(new SpanAttr(bold: 'true'), ['bold']), ' text']),
                         L::link(new LinkAttr(href: 'https://lpdf.io'), [L::text(null, ['link'])]),

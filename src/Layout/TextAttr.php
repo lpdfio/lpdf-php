@@ -25,6 +25,11 @@ final readonly class TextAttr
         public ?string $bold = null,
         public ?string $color = null,
         public ?string $align = null,
+        /**
+         * Width of the element. A length fixes it. fill, in a row, takes the width its line leaves
+         * after the other children, shared equally if several on the line use fill, and never moves
+         * to the next line; in a column it takes the full width.
+         */
         public ?string $width = null,
         /**
          * The fewest lines of the text that may stand alone at the top of the next page when it

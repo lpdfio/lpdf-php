@@ -140,7 +140,7 @@ final class SnapshotTest extends TestCase
 
     public function testDataSourceExpandsArray(): void
     {
-        $xml  = self::minDoc('<stack data-source="items" gap="xs"><text data-value="label">Item</text></stack>');
+        $xml  = self::minDoc('<column data-source="items" gap="xs"><text data-value="label">Item</text></column>');
         $data = ['items' => [['label' => 'Alpha'], ['label' => 'Beta'], ['label' => 'Gamma']]];
         $bytes = L::engine()->setLicenseKey('test-key')->render($xml, new RenderOptions(data: $data));
         self::assertStringStartsWith('%PDF-', $bytes);

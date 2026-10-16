@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Lpdf\Layout;
 
 /**
- * One row where the children keep their own width except one, which fills the rest. By default the
- * last child fills; set end to true and the first fills. Never splits across pages.
+ * Places children top to bottom, each at the full width, with gap between them. Can split across
+ * pages between children.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
  */
-final readonly class FlankAttr
+final readonly class ColumnAttr
 {
     public function __construct(
         public ?string $font = null,
@@ -43,12 +43,12 @@ final readonly class FlankAttr
         public ?string $paginate = null,
         public ?string $debug = null,
         public ?string $align = null,
+        public ?string $justify = null,
         /**
-         * false (the default): every child but the last keeps its own width at the left, and the
-         * last fills the rest. true: the first child fills, and the others keep their own width at
-         * the right.
+         * Width of the element. A length fixes it. fill, in a row, takes the width its line leaves
+         * after the other children, shared equally if several on the line use fill, and never moves
+         * to the next line; in a column it takes the full width.
          */
-        public ?string $end = null,
         public ?string $width = null,
     ) {}
 }

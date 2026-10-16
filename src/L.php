@@ -36,13 +36,12 @@ use Lpdf\Layout\BarcodeAttr;
 use Lpdf\Layout\BarcodeNode;
 use Lpdf\Layout\BookmarkAttr;
 use Lpdf\Layout\BookmarkNode;
-use Lpdf\Layout\ClusterAttr;
+use Lpdf\Layout\ColumnAttr;
 use Lpdf\Layout\ContainerNode;
 use Lpdf\Layout\DividerAttr;
 use Lpdf\Layout\DividerNode;
 use Lpdf\Layout\FieldAttr;
 use Lpdf\Layout\FieldNode;
-use Lpdf\Layout\FlankAttr;
 use Lpdf\Layout\FrameAttr;
 use Lpdf\Layout\GridAttr;
 use Lpdf\Layout\ImgAttr;
@@ -51,10 +50,9 @@ use Lpdf\Layout\LinkAttr;
 use Lpdf\Layout\Node;
 use Lpdf\Layout\RegionAttr;
 use Lpdf\Layout\RegionNode;
+use Lpdf\Layout\RowAttr;
 use Lpdf\Layout\SpanAttr;
 use Lpdf\Layout\SpanNode;
-use Lpdf\Layout\SplitAttr;
-use Lpdf\Layout\StackAttr;
 use Lpdf\Layout\TableAttr;
 use Lpdf\Layout\TdAttr;
 use Lpdf\Layout\TextAttr;
@@ -164,27 +162,15 @@ final class L
     // ── Layout containers ──────────────────────────────────────────────────────
 
     /** @param Node[] $nodes */
-    public static function stack(?StackAttr $attrs = null, array $nodes = []): ContainerNode
+    public static function column(?ColumnAttr $attrs = null, array $nodes = []): ContainerNode
     {
-        return new ContainerNode('stack', self::optionsToAttrs($attrs), $nodes);
+        return new ContainerNode('column', self::optionsToAttrs($attrs), $nodes);
     }
 
     /** @param Node[] $nodes */
-    public static function flank(?FlankAttr $attrs = null, array $nodes = []): ContainerNode
+    public static function row(?RowAttr $attrs = null, array $nodes = []): ContainerNode
     {
-        return new ContainerNode('flank', self::optionsToAttrs($attrs), $nodes);
-    }
-
-    /** @param Node[] $nodes */
-    public static function split(?SplitAttr $attrs = null, array $nodes = []): ContainerNode
-    {
-        return new ContainerNode('split', self::optionsToAttrs($attrs), $nodes);
-    }
-
-    /** @param Node[] $nodes */
-    public static function cluster(?ClusterAttr $attrs = null, array $nodes = []): ContainerNode
-    {
-        return new ContainerNode('cluster', self::optionsToAttrs($attrs), $nodes);
+        return new ContainerNode('row', self::optionsToAttrs($attrs), $nodes);
     }
 
     /** @param Node[] $nodes */

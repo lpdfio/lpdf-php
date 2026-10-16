@@ -19,7 +19,7 @@ final class SnapshotHelper
         for ($i = 1; $i <= 11; $i++) {
             $names["example$i"] = ["example$i"];
         }
-        foreach (['showcase-cluster', 'showcase-flank', 'showcase-frame', 'showcase-grid', 'showcase-split', 'showcase-stack', 'showcase-table', 'showcase-barcode', 'showcase-encryption', 'showcase-forms'] as $name) {
+        foreach (['showcase-row', 'showcase-row-fill', 'showcase-frame', 'showcase-grid', 'showcase-row-between', 'showcase-column', 'showcase-table', 'showcase-barcode', 'showcase-encryption', 'showcase-forms'] as $name) {
             $names[$name] = [$name];
         }
         foreach (['bench_xs', 'bench_s', 'bench_m', 'bench_l', 'bench_xl'] as $name) {
