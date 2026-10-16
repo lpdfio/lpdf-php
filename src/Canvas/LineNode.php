@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Canvas;
 
 /**
- * A `line` on the canvas.
+ * A `line` in a layer.
  *
  * @internal Use L::line() to construct.
  */

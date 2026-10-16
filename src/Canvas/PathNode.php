@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Canvas;
 
 /**
- * A `path` on the canvas.
+ * A `path` in a layer.
  *
  * @internal Use L::path() to construct.
  */

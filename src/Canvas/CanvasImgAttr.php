@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Canvas;
 
 /**
- * Attributes of the `img` element on the canvas.
+ * Attributes of the `img` element in a layer.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Canvas;
 
 /**
- * A `rect` on the canvas.
+ * A `rect` in a layer.
  *
  * @internal Use L::rect() to construct.
  */
