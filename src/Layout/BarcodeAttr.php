@@ -16,6 +16,11 @@ final readonly class BarcodeAttr
         public string $type,
         public string $data,
         public ?string $size = null,
+        /**
+         * Width of the element. A length fixes it. fill, in a row, takes the width its line leaves
+         * after the other children, shared equally if several on the line use fill, and never moves
+         * to the next line; in a column it takes the full width.
+         */
         public ?string $width = null,
         public ?string $height = null,
         public ?string $ec = null,

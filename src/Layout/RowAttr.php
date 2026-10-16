@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Lpdf\Layout;
 
 /**
- * Children side by side, continuing on the next line when they run out of width. Splits across
- * pages between lines.
+ * Children side by side, continuing on the next line when they run out of width. A child with width
+ * set to fill takes what its line leaves; justify set to between puts a line's first child at the
+ * left edge, its last at the right and the others evenly between. Splits across pages between
+ * lines.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
@@ -44,6 +46,11 @@ final readonly class RowAttr
         public ?string $debug = null,
         public ?string $align = null,
         public ?string $justify = null,
+        /**
+         * Width of the element. A length fixes it. fill, in a row, takes the width its line leaves
+         * after the other children, shared equally if several on the line use fill, and never moves
+         * to the next line; in a column it takes the full width.
+         */
         public ?string $width = null,
     ) {}
 }

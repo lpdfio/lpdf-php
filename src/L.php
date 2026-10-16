@@ -42,7 +42,6 @@ use Lpdf\Layout\DividerAttr;
 use Lpdf\Layout\DividerNode;
 use Lpdf\Layout\FieldAttr;
 use Lpdf\Layout\FieldNode;
-use Lpdf\Layout\FlankAttr;
 use Lpdf\Layout\FrameAttr;
 use Lpdf\Layout\GridAttr;
 use Lpdf\Layout\ImgAttr;
@@ -54,7 +53,6 @@ use Lpdf\Layout\RegionNode;
 use Lpdf\Layout\RowAttr;
 use Lpdf\Layout\SpanAttr;
 use Lpdf\Layout\SpanNode;
-use Lpdf\Layout\SplitAttr;
 use Lpdf\Layout\TableAttr;
 use Lpdf\Layout\TdAttr;
 use Lpdf\Layout\TextAttr;
@@ -167,18 +165,6 @@ final class L
     public static function column(?ColumnAttr $attrs = null, array $nodes = []): ContainerNode
     {
         return new ContainerNode('column', self::optionsToAttrs($attrs), $nodes);
-    }
-
-    /** @param Node[] $nodes */
-    public static function flank(?FlankAttr $attrs = null, array $nodes = []): ContainerNode
-    {
-        return new ContainerNode('flank', self::optionsToAttrs($attrs), $nodes);
-    }
-
-    /** @param Node[] $nodes */
-    public static function split(?SplitAttr $attrs = null, array $nodes = []): ContainerNode
-    {
-        return new ContainerNode('split', self::optionsToAttrs($attrs), $nodes);
     }
 
     /** @param Node[] $nodes */
