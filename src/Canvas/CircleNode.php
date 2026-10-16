@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Canvas;
 
 /**
- * A `circle` on the canvas.
+ * A `circle` in a layer.
  *
  * @internal Use L::circle() to construct.
  */

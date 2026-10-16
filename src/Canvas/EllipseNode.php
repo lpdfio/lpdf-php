@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Canvas;
 
 /**
- * A `ellipse` on the canvas.
+ * A `ellipse` in a layer.
  *
  * @internal Use L::ellipse() to construct.
  */

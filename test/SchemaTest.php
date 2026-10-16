@@ -84,14 +84,12 @@ final class SchemaTest extends TestCase
                         L::link(new LinkAttr(href: 'https://lpdf.io'), [L::text(null, ['link'])]),
                     ]),
                 ]),
-                L::canvas(null, [
-                    L::layer(new LayerAttr(page: 'each'), [
-                        L::rect(new RectAttr(x: '40pt', y: '40pt', w: '100pt', h: '60pt', fill: '#ff0000', radius: '6pt')),
-                        L::textAt(
-                            new CanvasTextAttr(x: '40pt', y: '120pt', fontSize: '10pt'),
-                            ['Canvas ', L::span(new SpanAttr(color: '#0000ff'), ['text'])],
-                        ),
-                    ]),
+                L::layer(new LayerAttr(page: 'each'), [
+                    L::rect(new RectAttr(x: '40pt', y: '40pt', w: '100pt', h: '60pt', fill: '#ff0000', radius: '6pt')),
+                    L::textAt(
+                        new CanvasTextAttr(x: '40pt', y: '120pt', fontSize: '10pt'),
+                        ['Layer ', L::span(new SpanAttr(color: '#0000ff'), ['text'])],
+                    ),
                 ]),
             ]),
         ]);
@@ -189,6 +187,16 @@ final class SchemaTest extends TestCase
         $engine = L::engine()->setLicenseKey('test-key')->loadImage('logo', self::pixel());
 
         self::assertSame($this->normalised($engine->render($built)), $this->normalised($engine->render(L::toXml($built))));
+    }
+
+    public function testASectionWithTwoLayoutsIsRejected(): void
+    {
+        $built = L::document(null, [
+            L::section(null, [L::layout(null, [L::text(null, ['a'])]), L::layout(null, [L::text(null, ['b'])])]),
+        ]);
+
+        $this->expectExceptionMessageMatches('/at most one <layout>/');
+        L::engine()->setLicenseKey('test-key')->render($built);
     }
 
     public function testAnImageUsedButNotDeclaredInTheAssetsIsAnErrorThatNamesIt(): void

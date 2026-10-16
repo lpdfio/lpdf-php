@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Lpdf\Canvas;
 
 /**
- * Groups canvas shapes and sets what applies to all of them: which pages they appear on, opacity,
+ * Draws shapes at exact positions on the page, independent of the flowing layout: watermarks,
+ * stamps, page furniture. Coordinates start at the top left corner of the whole page, not the
+ * margin, and y grows downward. A layer before the section's layout paints under it, and one after
+ * paints over it. It sets what applies to all of its shapes: which pages they appear on, opacity,
  * transform and clip. Layers cannot be nested.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.

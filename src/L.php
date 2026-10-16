@@ -29,7 +29,6 @@ use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentTokens;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\Kit\SectionAttr;
-use Lpdf\Kit\SectionCanvas;
 use Lpdf\Kit\SectionLayout;
 use Lpdf\Kit\SectionNode;
 use Lpdf\Layout\BarcodeAttr;
@@ -129,7 +128,12 @@ final class L
         return new PdfDocument($flatAttrs, $sections);
     }
 
-    /** Build a section (page) node. */
+    /**
+     * Build a section (page) node. Its nodes are a bookmark, then layers, then at most one layout, then
+     * layers: the layers before the layout paint under it, and the layers after it paint over it.
+     *
+     * @param array<BookmarkNode|LayerNode|SectionLayout> $nodes
+     */
     public static function section(?SectionAttr $attrs = null, array $nodes = []): SectionNode
     {
         return new SectionNode(self::optionsToAttrs($attrs), $nodes);
@@ -139,12 +143,6 @@ final class L
     public static function layout(mixed $attrs, array $nodes = []): SectionLayout
     {
         return new SectionLayout($nodes);
-    }
-
-    /** Wrap canvas layer nodes into a canvas block for use inside {@see section()}. */
-    public static function canvas(mixed $attrs, array $layers = []): SectionCanvas
-    {
-        return new SectionCanvas($layers);
     }
 
     /** Create a {@see DocumentAssets} instance (convenience factory). */
@@ -296,10 +294,10 @@ final class L
         return new BookmarkNode(self::optionsToAttrs($attrs));
     }
 
-    // ── Canvas ─────────────────────────────────────────────────────────────────
+    // ── Layers ─────────────────────────────────────────────────────────────────
 
     /**
-     * Build a canvas layer node.
+     * Build a layer node, which goes directly in a {@see section()}.
      *
      * @param CanvasNode[] $nodes
      */
@@ -308,38 +306,38 @@ final class L
         return new LayerNode(self::optionsToAttrs($attrs), $nodes);
     }
 
-    /** Build a rect on the canvas. */
+    /** Build a rect in a layer. */
     public static function rect(RectAttr $attrs): RectNode
     {
         return new RectNode(self::optionsToAttrs($attrs));
     }
 
-    /** Build a line on the canvas. */
+    /** Build a line in a layer. */
     public static function line(LineAttr $attrs): LineNode
     {
         return new LineNode(self::optionsToAttrs($attrs));
     }
 
-    /** Build an ellipse on the canvas. */
+    /** Build an ellipse in a layer. */
     public static function ellipse(EllipseAttr $attrs): EllipseNode
     {
         return new EllipseNode(self::optionsToAttrs($attrs));
     }
 
-    /** Build a circle on the canvas. */
+    /** Build a circle in a layer. */
     public static function circle(CircleAttr $attrs): CircleNode
     {
         return new CircleNode(self::optionsToAttrs($attrs));
     }
 
-    /** Build a path on the canvas from an SVG path string in `d`. */
+    /** Build a path in a layer from an SVG path string in `d`. */
     public static function path(PathAttr $attrs): PathNode
     {
         return new PathNode(self::optionsToAttrs($attrs));
     }
 
     /**
-     * Build text on the canvas.
+     * Build text in a layer.
      *
      * @param array<string|SpanNode> $nodes
      */
@@ -348,7 +346,7 @@ final class L
         return new CanvasTextNode(self::optionsToAttrs($attrs), $nodes);
     }
 
-    /** Build an image on the canvas. */
+    /** Build an image in a layer. */
     public static function imgAt(CanvasImgAttr $attrs): ImageNode
     {
         return new ImageNode(self::optionsToAttrs($attrs));

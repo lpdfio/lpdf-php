@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Canvas;
 
 /**
- * An `img` on the canvas.
+ * An `img` in a layer.
  *
  * @internal Use L::imgAt() to construct.
  */

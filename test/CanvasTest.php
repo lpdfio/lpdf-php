@@ -68,43 +68,36 @@ final class CanvasTest extends TestCase
         self::assertSame('20pt', $json['attrs']['margin']);
     }
 
-    public function testSectionWithCanvasLayersSerializesKindNodes(): void
+    public function testALayerGoesDirectlyInTheSection(): void
     {
         $layer   = L::layer(null, [L::rect(new RectAttr(w: '100pt', h: '100pt'))]);
-        $section = L::section(null, [L::canvas(null, [$layer])]);
+        $section = L::section(null, [$layer]);
         $json    = $this->json($section);
 
         self::assertSame('section', $json['type']);
         self::assertCount(1, $json['nodes']);
-        self::assertSame('canvas', $json['nodes'][0]['type']);
+        self::assertSame('layer', $json['nodes'][0]['type']);
         self::assertCount(1, $json['nodes'][0]['nodes']);
     }
 
-    public function testSectionWithBothLayoutAndCanvas(): void
+    public function testSectionKeepsItsLayersBeforeAndAfterItsLayoutInOrder(): void
     {
-        $layer   = L::layer(null, [L::rect(new RectAttr(w: '100pt', h: '100pt'))]);
         $section = L::section(null, [
+            L::layer(new LayerAttr(page: 'first'), [L::rect(new RectAttr(w: '100pt', h: '100pt'))]),
             L::layout(null, [L::text(null, ['Hello'])]),
-            L::canvas(null, [$layer]),
+            L::layer(new LayerAttr(page: 'last'), [L::rect(new RectAttr(w: '50pt', h: '50pt'))]),
         ]);
         $json = $this->json($section);
 
-        // Layout first, canvas on top (overlay)
-        self::assertSame('layout', $json['nodes'][0]['type']);
-        self::assertSame('canvas', $json['nodes'][1]['type']);
+        // The first layer paints under the layout, the last one over it.
+        self::assertSame(['layer', 'layout', 'layer'], array_column($json['nodes'], 'type'));
+        self::assertSame('first', $json['nodes'][0]['attrs']['page']);
+        self::assertSame('last', $json['nodes'][2]['attrs']['page']);
     }
 
-    public function testSectionWithCanvasUnderlayOrder(): void
+    public function testThereIsNoCanvas(): void
     {
-        $layer   = L::layer(null, [L::rect(new RectAttr(w: '100pt', h: '100pt'))]);
-        $section = L::section(null, [
-            L::canvas(null, [$layer]),
-            L::layout(null, [L::text(null, ['Hello'])]),
-        ]);
-        $json = $this->json($section);
-
-        self::assertSame('canvas', $json['nodes'][0]['type']);
-        self::assertSame('layout', $json['nodes'][1]['type']);
+        self::assertFalse(method_exists(L::class, 'canvas'));
     }
 
     public function testSectionWithTitleSerializesAttr(): void
@@ -277,14 +270,12 @@ final class CanvasTest extends TestCase
             null,
             [
                 L::section(new SectionAttr(size: 'a4'), [
-                    L::canvas(null, [
-                        L::layer(null, [
-                            L::rect(new RectAttr(x: '40pt', y: '40pt', w: '200pt', h: '100pt', fill: '#4a90e2')),
-                            L::textAt(
-                                new CanvasTextAttr(x: '40pt', y: '160pt', font: 'Helvetica', fontSize: '16pt', color: '#000000'),
-                                ['Hello Canvas!'],
-                            ),
-                        ]),
+                    L::layer(null, [
+                        L::rect(new RectAttr(x: '40pt', y: '40pt', w: '200pt', h: '100pt', fill: '#4a90e2')),
+                        L::textAt(
+                            new CanvasTextAttr(x: '40pt', y: '160pt', font: 'Helvetica', fontSize: '16pt', color: '#000000'),
+                            ['Hello Layer!'],
+                        ),
                     ]),
                 ]),
             ],
@@ -297,24 +288,22 @@ final class CanvasTest extends TestCase
             null,
             [
                 L::section(new SectionAttr(size: 'a4'), [
-                    L::canvas(null, [
-                        L::layer(null, [
-                            L::rect(new RectAttr(
-                                x: '40pt', y: '40pt', w: '200pt', h: '100pt',
-                                fill: '#4a90e2', stroke: '#1a5276', strokeWidth: '2pt', radius: '8pt',
-                            )),
-                            L::line(new LineAttr(x1: '40pt', y1: '170pt', x2: '555pt', y2: '170pt')),
-                            L::ellipse(new EllipseAttr(cx: '140pt', cy: '250pt', rx: '80pt', ry: '50pt', fill: '#f39c12')),
-                            L::circle(new CircleAttr(cx: '400pt', cy: '250pt', r: '60pt', fill: '#27ae60')),
-                            L::path(new PathAttr(d: 'M 40 360 L 200 310 L 360 360 Z', fill: '#8e44ad')),
-                            L::textAt(
-                                new CanvasTextAttr(x: '40pt', y: '420pt', font: 'Helvetica', fontSize: '18pt', color: '#1a1a1a'),
-                                ['Canvas text'],
-                            ),
-                        ]),
-                        L::layer(new LayerAttr(opacity: '0.5'), [
-                            L::rect(new RectAttr(x: '40pt', y: '460pt', w: '515pt', h: '60pt', fill: '#e74c3c')),
-                        ]),
+                    L::layer(null, [
+                        L::rect(new RectAttr(
+                            x: '40pt', y: '40pt', w: '200pt', h: '100pt',
+                            fill: '#4a90e2', stroke: '#1a5276', strokeWidth: '2pt', radius: '8pt',
+                        )),
+                        L::line(new LineAttr(x1: '40pt', y1: '170pt', x2: '555pt', y2: '170pt')),
+                        L::ellipse(new EllipseAttr(cx: '140pt', cy: '250pt', rx: '80pt', ry: '50pt', fill: '#f39c12')),
+                        L::circle(new CircleAttr(cx: '400pt', cy: '250pt', r: '60pt', fill: '#27ae60')),
+                        L::path(new PathAttr(d: 'M 40 360 L 200 310 L 360 360 Z', fill: '#8e44ad')),
+                        L::textAt(
+                            new CanvasTextAttr(x: '40pt', y: '420pt', font: 'Helvetica', fontSize: '18pt', color: '#1a1a1a'),
+                            ['Canvas text'],
+                        ),
+                    ]),
+                    L::layer(new LayerAttr(opacity: '0.5'), [
+                        L::rect(new RectAttr(x: '40pt', y: '460pt', w: '515pt', h: '60pt', fill: '#e74c3c')),
                     ]),
                 ]),
             ],

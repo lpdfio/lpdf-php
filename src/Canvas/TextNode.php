@@ -7,7 +7,7 @@ namespace Lpdf\Canvas;
 use Lpdf\Layout\SpanNode;
 
 /**
- * Text on the canvas. Its content is strings and `span` nodes, as in a layout `text`.
+ * Text in a layer. Its content is strings and `span` nodes, as in a layout `text`.
  *
  * @internal Use L::textAt() to construct.
  */
