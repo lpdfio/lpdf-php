@@ -2,26 +2,23 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
 
 /**
  * encrypt-permissions-only.php — render showcase-encryption.xml with RC4-128 encryption,
  * no open password, print and copy disabled.
  *
- * Run (after 'make build-adapter-php'):
- *   docker run --rm \
- *     -v "$(pwd)/src/adapters/php/example:/app/src/adapters/php/example" \
- *     -v "$(pwd)/example:/app/example" \
- *     -v "$(pwd)/test/fixtures:/app/test/fixtures" \
- *     -w /app lpdf-php php src/adapters/php/example/encrypt-permissions-only.php
+ * Run from lpdf's root (after 'make build-sdk-php'):
+ *   make example-php
  *
- * Output: example/result/encrypt-permissions-only-php.pdf
+ * Output: tmp/sdk-examples/encrypt-permissions-only-php.pdf in lpdf's root.
  */
 
 use Lpdf\L;
 
-$root    = __DIR__ . '/../../../../example/';
-$xmlFile = __DIR__ . '/../../../../test/fixtures/showcase-encryption.xml';
+$lpdf    = dirname(__DIR__, 3);
+$xmlFile = "$lpdf/test/fixtures/showcase-encryption.xml";
+$output  = "$lpdf/tmp/sdk-examples";
 $outputFile = 'encrypt-permissions-only-php.pdf';
 
 $xml = file_get_contents($xmlFile);
@@ -34,5 +31,8 @@ $engine->setEncryption('', 's3cr3t', ['print' => false, 'copy' => false]);
 
 $pdf = $engine->render($xml);
 
-file_put_contents($root . "result/{$outputFile}", $pdf);
+if (!is_dir($output)) {
+    mkdir($output, 0777, true);
+}
+file_put_contents("$output/$outputFile", $pdf);
 echo "output: $outputFile (" . number_format(strlen($pdf)) . " bytes)\n";
