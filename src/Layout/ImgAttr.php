@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace Lpdf\Layout;
 
 /**
- * Attributes of the `img` element.
+ * An image. It is never stretched. With only a width or a height, the other follows the image's
+ * proportions. With both, they are a maximum: the image takes the largest size that fits in them,
+ * and its box becomes that size, which the parent's align places. To put images of different shapes
+ * in slots of one size, wrap each in a frame of that size. With neither, the image has its natural
+ * size.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
