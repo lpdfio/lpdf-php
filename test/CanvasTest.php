@@ -27,19 +27,19 @@ final class CanvasTest extends TestCase
 {
     // -- Integration: engine produces a valid PDF ------------------------------------------------
 
-    public function testCanvasOutputIsPdf(): void
+    public function testLayersOutputIsPdf(): void
     {
         $doc   = $this->minimalDoc();
         $bytes = L::engine()->setLicenseKey('test-key')->render($doc);
         self::assertStringStartsWith('%PDF-', $bytes);
     }
 
-    public function testCanvasSnapshotMatchesOrIsCreated(): void
+    public function testLayersSnapshotMatchesOrIsCreated(): void
     {
         $doc   = $this->comprehensiveDoc();
         $bytes = L::engine()->setLicenseKey('test-key')->render($doc);
         self::assertStringStartsWith('%PDF-', $bytes);
-        SnapshotHelper::compareOrUpdate('canvas_comprehensive', $bytes);
+        SnapshotHelper::compareOrUpdate('layers_comprehensive', $bytes);
     }
 
     // -- Document / section serialisation --------------------------------------------------------
@@ -130,7 +130,7 @@ final class CanvasTest extends TestCase
         self::assertCount(1, $json['nodes']);
     }
 
-    // -- Canvas primitive serialisation ----------------------------------------------------------
+    // -- Layer content serialisation -------------------------------------------------------------
 
     public function testRectWritesItsAttributesAsGiven(): void
     {
@@ -349,7 +349,7 @@ final class CanvasTest extends TestCase
                         L::path(new PathAttr(d: 'M 40 360 L 200 310 L 360 360 Z', fill: '#8e44ad')),
                         L::textAt(
                             new TextAtAttr(x: '40pt', y: '420pt', font: 'Helvetica', fontSize: '18pt', color: '#1a1a1a'),
-                            ['Canvas text'],
+                            ['Layer text'],
                         ),
                     ]),
                     L::layer(new LayerAttr(opacity: '0.5'), [
