@@ -32,6 +32,5 @@ final readonly class EllipseAttr
         public ?string $stroke = null,
         public ?string $strokeWidth = null,
         public ?string $strokeDash = null,
-        public ?string $opacity = null,
     ) {}
 }

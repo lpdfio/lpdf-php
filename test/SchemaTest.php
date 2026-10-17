@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Lpdf\Tests;
 
 use Lpdf\L;
-use Lpdf\Canvas\CanvasTextAttr;
+use Lpdf\Canvas\TextAtAttr;
 use Lpdf\Canvas\LayerAttr;
 use Lpdf\Canvas\RectAttr;
 use Lpdf\Kit\BuiltinFont;
@@ -87,7 +87,7 @@ final class SchemaTest extends TestCase
                 L::layer(new LayerAttr(page: 'each'), [
                     L::rect(new RectAttr(x: '40pt', y: '40pt', width: '100pt', height: '60pt', fill: '#ff0000', radius: '6pt')),
                     L::textAt(
-                        new CanvasTextAttr(x: '40pt', y: '120pt', fontSize: '10pt'),
+                        new TextAtAttr(x: '40pt', y: '120pt', fontSize: '10pt'),
                         ['Layer ', L::span(new SpanAttr(color: '#0000ff'), ['text'])],
                     ),
                 ]),
