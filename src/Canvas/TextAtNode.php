@@ -7,11 +7,11 @@ namespace Lpdf\Canvas;
 use Lpdf\Layout\SpanNode;
 
 /**
- * Text in a layer. Its content is strings and `span` nodes, as in a layout `text`.
+ * A `text-at` in a layer. Its content is strings and `span` nodes, as in a layout `text`.
  *
  * @internal Use L::textAt() to construct.
  */
-final readonly class TextNode extends Node
+final readonly class TextAtNode extends Node
 {
     /**
      * @param array<string,string>   $attrs
@@ -24,6 +24,6 @@ final readonly class TextNode extends Node
 
     public function jsonSerialize(): mixed
     {
-        return ['type' => 'text', 'attrs' => (object) $this->attrs, 'nodes' => $this->nodes];
+        return ['type' => 'text-at', 'attrs' => (object) $this->attrs, 'nodes' => $this->nodes];
     }
 }

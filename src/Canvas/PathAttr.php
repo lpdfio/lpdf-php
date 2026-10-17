@@ -20,6 +20,5 @@ final readonly class PathAttr
         public ?string $strokeWidth = null,
         public ?string $strokeDash = null,
         public ?string $lineCap = null,
-        public ?string $opacity = null,
     ) {}
 }

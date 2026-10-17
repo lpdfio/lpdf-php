@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
-use Lpdf\Canvas\CanvasTextAttr;
+use Lpdf\Canvas\TextAtAttr;
 use Lpdf\Canvas\CircleAttr;
 use Lpdf\Canvas\EllipseAttr;
 use Lpdf\Canvas\LayerAttr;
@@ -33,7 +33,7 @@ $engine = L::engine()->setLicenseKey($licenseKey);
 // attributes the schema gives the layer elements. The page is 595 × 842 pt (A4 portrait).
 
 // The label above each group of shapes.
-$label = static fn (string $y) => new CanvasTextAttr(x: '28pt', y: $y, font: 'Helvetica-Bold', fontSize: '11pt', color: '#555555');
+$label = static fn (string $y) => new TextAtAttr(x: '28pt', y: $y, font: 'Helvetica-Bold', fontSize: '11pt', color: '#555555');
 
 $section1 = L::section(new SectionAttr(size: 'a4'), [
     L::layer(NoAttr, [
@@ -42,7 +42,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
         L::rect(new RectAttr(x: '0pt', y: '0pt', width: '595pt', height: '60pt', fill: '#1a3a5c')),
 
         L::textAt(
-            new CanvasTextAttr(x: '28pt', y: '18pt', font: 'Helvetica-Bold', fontSize: '22pt', color: '#ffffff'),
+            new TextAtAttr(x: '28pt', y: '18pt', font: 'Helvetica-Bold', fontSize: '22pt', color: '#ffffff'),
             ['lpdf Layer Primitives'],
         ),
 
@@ -126,13 +126,13 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
 
         // Left-aligned (default)
         L::textAt(
-            new CanvasTextAttr(x: '28pt', y: '454pt', font: 'Helvetica', fontSize: '12pt', color: '#222222'),
+            new TextAtAttr(x: '28pt', y: '454pt', font: 'Helvetica', fontSize: '12pt', color: '#222222'),
             ['Left-aligned text (Helvetica 12)'],
         ),
 
         // Centered
         L::textAt(
-            new CanvasTextAttr(
+            new TextAtAttr(
                 x: '28pt', y: '474pt', font: 'Helvetica', fontSize: '12pt', color: '#2980b9',
                 align: 'center', width: '539pt',
             ),
@@ -141,7 +141,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
 
         // Right-aligned
         L::textAt(
-            new CanvasTextAttr(
+            new TextAtAttr(
                 x: '28pt', y: '494pt', font: 'Helvetica', fontSize: '12pt', color: '#8e44ad',
                 align: 'right', width: '539pt',
             ),
@@ -150,7 +150,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
 
         // Rich-text runs: a span sets the font or colour of part of the text
         L::textAt(
-            new CanvasTextAttr(x: '28pt', y: '518pt', font: 'Helvetica', fontSize: '12pt', color: '#333333'),
+            new TextAtAttr(x: '28pt', y: '518pt', font: 'Helvetica', fontSize: '12pt', color: '#333333'),
             [
                 'Mixed runs: normal ',
                 L::span(new SpanAttr(font: 'Helvetica-Bold', color: '#e74c3c'), ['bold style']),
@@ -165,20 +165,20 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
         // Background for the layer demo
         L::rect(new RectAttr(x: '28pt', y: '562pt', width: '539pt', height: '80pt', fill: '#eaf2ff', stroke: '#aed6f1', strokeWidth: '1pt')),
         L::textAt(
-            new CanvasTextAttr(x: '38pt', y: '572pt', font: 'Helvetica', fontSize: '10pt', color: '#999999'),
+            new TextAtAttr(x: '38pt', y: '572pt', font: 'Helvetica', fontSize: '10pt', color: '#999999'),
             ['Background text (behind semi-transparent layer)'],
         ),
 
         // Label for the transform demo (drawn in the base layer)
         L::textAt(
-            new CanvasTextAttr(x: '260pt', y: '660pt', font: 'Helvetica-Bold', fontSize: '11pt', color: '#555555'),
+            new TextAtAttr(x: '260pt', y: '660pt', font: 'Helvetica-Bold', fontSize: '11pt', color: '#555555'),
             ['Layer with transform (rotate 15°):'],
         ),
 
         // ── Footer rule ──────────────────────────────────────────────────────
         L::line(new LineAttr(x1: '28pt', y1: '808pt', x2: '567pt', y2: '808pt', stroke: '#cccccc', strokeWidth: '0.5pt')),
         L::textAt(
-            new CanvasTextAttr(x: '28pt', y: '818pt', font: 'Helvetica', fontSize: '9pt', color: '#aaaaaa'),
+            new TextAtAttr(x: '28pt', y: '818pt', font: 'Helvetica', fontSize: '9pt', color: '#aaaaaa'),
             ['generated with lpdf.io'],
         ),
 
@@ -188,7 +188,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
     L::layer(new LayerAttr(opacity: '0.4'), [
         L::rect(new RectAttr(x: '28pt', y: '562pt', width: '539pt', height: '80pt', fill: '#e74c3c')),
         L::textAt(
-            new CanvasTextAttr(x: '38pt', y: '590pt', font: 'Helvetica-Bold', fontSize: '14pt', color: '#ffffff'),
+            new TextAtAttr(x: '38pt', y: '590pt', font: 'Helvetica-Bold', fontSize: '14pt', color: '#ffffff'),
             ['Layer at 40% opacity'],
         ),
     ]),
@@ -197,7 +197,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
     L::layer(new LayerAttr(transform: (string) Transform::rotate(15, 380.0, 720.0)), [
         L::rect(new RectAttr(x: '0pt', y: '0pt', width: '120pt', height: '40pt', fill: '#d7bde2', stroke: '#8e44ad', strokeWidth: '1pt', radius: '6pt')),
         L::textAt(
-            new CanvasTextAttr(x: '8pt', y: '12pt', font: 'Helvetica', fontSize: '11pt', color: '#4a235a'),
+            new TextAtAttr(x: '8pt', y: '12pt', font: 'Helvetica', fontSize: '11pt', color: '#4a235a'),
             ['Rotated layer'],
         ),
     ]),

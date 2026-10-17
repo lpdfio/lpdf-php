@@ -4,14 +4,15 @@ declare(strict_types=1);
 namespace Lpdf\Tests;
 
 use Lpdf\L;
-use Lpdf\Canvas\CanvasImgAttr;
-use Lpdf\Canvas\CanvasTextAttr;
+use Lpdf\Canvas\BarcodeAtAttr;
 use Lpdf\Canvas\CircleAttr;
 use Lpdf\Canvas\EllipseAttr;
 use Lpdf\Canvas\LayerAttr;
 use Lpdf\Canvas\LineAttr;
+use Lpdf\Canvas\ImgAtAttr;
 use Lpdf\Canvas\PathAttr;
 use Lpdf\Canvas\RectAttr;
+use Lpdf\Canvas\TextAtAttr;
 use Lpdf\Canvas\Transform;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\LayoutAttr;
@@ -147,18 +148,17 @@ final class CanvasTest extends TestCase
     public function testStrokeAttributesUseTheSchemaNames(): void
     {
         $json = $this->json(L::rect(new RectAttr(
-            width: '10pt', height: '10pt', stroke: '#000', strokeWidth: '2pt', strokeDash: '4 2', opacity: '0.5', anchor: 'center',
+            width: '10pt', height: '10pt', stroke: '#000', strokeWidth: '2pt', strokeDash: '4 2', anchor: 'center',
         )));
 
         self::assertSame('2pt', $json['attrs']['stroke-width']);
         self::assertSame('4 2', $json['attrs']['stroke-dash']);
-        self::assertSame('0.5', $json['attrs']['opacity']);
         self::assertSame('center', $json['attrs']['anchor']);
     }
 
     public function testLayerShapesAreSizedByWidthAndHeightAndPlacedByXAndY(): void
     {
-        foreach ([RectAttr::class, CanvasImgAttr::class, CanvasTextAttr::class] as $class) {
+        foreach ([RectAttr::class, ImgAtAttr::class, TextAtAttr::class] as $class) {
             self::assertFalse(property_exists($class, 'w'), $class);
             self::assertTrue(property_exists($class, 'width'), $class);
         }
@@ -177,6 +177,23 @@ final class CanvasTest extends TestCase
         self::assertFalse(property_exists(BarcodeAttr::class, 'size'));
         self::assertTrue(property_exists(BarcodeAttr::class, 'width'));
         self::assertTrue(property_exists(BarcodeAttr::class, 'height'));
+    }
+
+    public function testBarcodeAtSerializesWithItsSizeAndPosition(): void
+    {
+        $json = $this->json(L::barcodeAt(new BarcodeAtAttr(type: 'qr', data: 'x', x: '10pt', y: '20pt', width: '60pt')));
+
+        self::assertSame('barcode-at', $json['type']);
+        self::assertSame('60pt', $json['attrs']['width']);
+    }
+
+    public function testTextAtWritesItsLineLimitsUnderTheSchemaNames(): void
+    {
+        $json = $this->json(L::textAt(new TextAtAttr(x: '0pt', y: '0pt', width: '80pt', maxLines: '2', ellipsis: 'true', lineHeight: '1.5'), ['Hi']));
+
+        self::assertSame('2', $json['attrs']['max-lines']);
+        self::assertSame('true', $json['attrs']['ellipsis']);
+        self::assertSame('1.5', $json['attrs']['line-height']);
     }
 
     public function testLineSerializesCorrectly(): void
@@ -216,9 +233,9 @@ final class CanvasTest extends TestCase
 
     public function testImgSerializesCorrectly(): void
     {
-        $json = $this->json(L::imgAt(new CanvasImgAttr(name: 'logo', width: '200pt', height: '150pt', x: '10pt', y: '20pt')));
+        $json = $this->json(L::imgAt(new ImgAtAttr(name: 'logo', width: '200pt', height: '150pt', x: '10pt', y: '20pt')));
 
-        self::assertSame('img', $json['type']);
+        self::assertSame('img-at', $json['type']);
         self::assertSame('logo', $json['attrs']['name']);
         self::assertSame('200pt', $json['attrs']['width']);
     }
@@ -226,11 +243,11 @@ final class CanvasTest extends TestCase
     public function testTextTakesItsAttributesFirstAndItsContentSecond(): void
     {
         $json = $this->json(L::textAt(
-            new CanvasTextAttr(x: '20pt', y: '40pt', font: 'Helvetica', fontSize: '14pt', color: '#333333'),
+            new TextAtAttr(x: '20pt', y: '40pt', font: 'Helvetica', fontSize: '14pt', color: '#333333'),
             ['Hello'],
         ));
 
-        self::assertSame('text', $json['type']);
+        self::assertSame('text-at', $json['type']);
         self::assertSame(['Hello'], $json['nodes']);
         self::assertSame('Helvetica', $json['attrs']['font']);
         self::assertSame('14pt', $json['attrs']['font-size']);
@@ -239,7 +256,7 @@ final class CanvasTest extends TestCase
     public function testTextContentCanMixStringsAndSpans(): void
     {
         $json = $this->json(L::textAt(
-            new CanvasTextAttr(x: '0pt', y: '0pt'),
+            new TextAtAttr(x: '0pt', y: '0pt'),
             ['base ', L::span(new SpanAttr(font: 'Helvetica-Bold', color: '#ff0000'), ['bold'])],
         ));
 
@@ -306,7 +323,7 @@ final class CanvasTest extends TestCase
                     L::layer(null, [
                         L::rect(new RectAttr(x: '40pt', y: '40pt', width: '200pt', height: '100pt', fill: '#4a90e2')),
                         L::textAt(
-                            new CanvasTextAttr(x: '40pt', y: '160pt', font: 'Helvetica', fontSize: '16pt', color: '#000000'),
+                            new TextAtAttr(x: '40pt', y: '160pt', font: 'Helvetica', fontSize: '16pt', color: '#000000'),
                             ['Hello Layer!'],
                         ),
                     ]),
@@ -331,7 +348,7 @@ final class CanvasTest extends TestCase
                         L::circle(new CircleAttr(x: '340pt', y: '190pt', r: '60pt', fill: '#27ae60')),
                         L::path(new PathAttr(d: 'M 40 360 L 200 310 L 360 360 Z', fill: '#8e44ad')),
                         L::textAt(
-                            new CanvasTextAttr(x: '40pt', y: '420pt', font: 'Helvetica', fontSize: '18pt', color: '#1a1a1a'),
+                            new TextAtAttr(x: '40pt', y: '420pt', font: 'Helvetica', fontSize: '18pt', color: '#1a1a1a'),
                             ['Canvas text'],
                         ),
                     ]),

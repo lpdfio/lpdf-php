@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Lpdf;
 
-use Lpdf\Canvas\CanvasImgAttr;
-use Lpdf\Canvas\CanvasTextAttr;
+use Lpdf\Canvas\BarcodeAtAttr;
+use Lpdf\Canvas\BarcodeAtNode;
 use Lpdf\Canvas\CircleAttr;
 use Lpdf\Canvas\CircleNode;
 use Lpdf\Canvas\EllipseAttr;
 use Lpdf\Canvas\EllipseNode;
-use Lpdf\Canvas\ImageNode;
+use Lpdf\Canvas\ImgAtAttr;
+use Lpdf\Canvas\ImgAtNode;
 use Lpdf\Canvas\LayerAttr;
 use Lpdf\Canvas\LayerNode;
 use Lpdf\Canvas\LineAttr;
@@ -20,7 +21,8 @@ use Lpdf\Canvas\PathAttr;
 use Lpdf\Canvas\PathNode;
 use Lpdf\Canvas\RectAttr;
 use Lpdf\Canvas\RectNode;
-use Lpdf\Canvas\TextNode as CanvasTextNode;
+use Lpdf\Canvas\TextAtAttr;
+use Lpdf\Canvas\TextAtNode;
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\EngineOptions;
 use Lpdf\Engine\WasmRunner;
@@ -338,18 +340,24 @@ final class L
     }
 
     /**
-     * Build text in a layer.
+     * Build a `text-at`, the text of the layout put at a fixed place.
      *
      * @param array<string|SpanNode> $nodes
      */
-    public static function textAt(CanvasTextAttr $attrs, array $nodes = []): CanvasTextNode
+    public static function textAt(TextAtAttr $attrs, array $nodes = []): TextAtNode
     {
-        return new CanvasTextNode(self::optionsToAttrs($attrs), $nodes);
+        return new TextAtNode(self::optionsToAttrs($attrs), $nodes);
     }
 
-    /** Build an image in a layer. */
-    public static function imgAt(CanvasImgAttr $attrs): ImageNode
+    /** Build an `img-at`, an image at a fixed place. It needs `width` or `height`. */
+    public static function imgAt(ImgAtAttr $attrs): ImgAtNode
     {
-        return new ImageNode(self::optionsToAttrs($attrs));
+        return new ImgAtNode(self::optionsToAttrs($attrs));
+    }
+
+    /** Build a `barcode-at`, a barcode at a fixed place. */
+    public static function barcodeAt(BarcodeAtAttr $attrs): BarcodeAtNode
+    {
+        return new BarcodeAtNode(self::optionsToAttrs($attrs));
     }
 }

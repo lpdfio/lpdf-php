@@ -5,23 +5,21 @@ declare(strict_types=1);
 namespace Lpdf\Canvas;
 
 /**
- * Text at an exact position on the page: either x and y, or an anchor with optional offsets.
+ * An image at a fixed place on the page. It needs width or height, and the other follows the
+ * image's proportions. x and y place its box: the top-left corner, or with anchor, an offset from
+ * that point of the page, where the box's matching point goes.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
  */
-final readonly class CanvasTextAttr
+final readonly class ImgAtAttr
 {
     public function __construct(
+        public string $name,
         public ?string $x = null,
         public ?string $y = null,
         public ?string $anchor = null,
-        public ?string $font = null,
-        public ?string $fontSize = null,
-        public ?string $color = null,
-        public ?string $align = null,
         public ?string $width = null,
-        public ?string $lineHeight = null,
-        public ?string $opacity = null,
+        public ?string $height = null,
     ) {}
 }
