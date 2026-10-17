@@ -39,7 +39,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
     L::layer(NoAttr, [
 
         // ── Heading bar ──────────────────────────────────────────────────────
-        L::rect(new RectAttr(x: '0pt', y: '0pt', w: '595pt', h: '60pt', fill: '#1a3a5c')),
+        L::rect(new RectAttr(x: '0pt', y: '0pt', width: '595pt', height: '60pt', fill: '#1a3a5c')),
 
         L::textAt(
             new CanvasTextAttr(x: '28pt', y: '18pt', font: 'Helvetica-Bold', fontSize: '22pt', color: '#ffffff'),
@@ -50,22 +50,22 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
         L::textAt($label('80pt'), ['rect']),
 
         // Plain fill
-        L::rect(new RectAttr(x: '28pt', y: '96pt', w: '120pt', h: '60pt', fill: '#4a90e2')),
+        L::rect(new RectAttr(x: '28pt', y: '96pt', width: '120pt', height: '60pt', fill: '#4a90e2')),
 
         // Fill + stroke
         L::rect(new RectAttr(
-            x: '164pt', y: '96pt', w: '120pt', h: '60pt',
+            x: '164pt', y: '96pt', width: '120pt', height: '60pt',
             fill: '#e8f4fd', stroke: '#2980b9', strokeWidth: '2pt',
         )),
 
         // Rounded corners
         L::rect(new RectAttr(
-            x: '300pt', y: '96pt', w: '120pt', h: '60pt',
+            x: '300pt', y: '96pt', width: '120pt', height: '60pt',
             fill: '#d5f5e3', stroke: '#27ae60', strokeWidth: '1pt', radius: '12pt',
         )),
 
         // Stroke only
-        L::rect(new RectAttr(x: '436pt', y: '96pt', w: '120pt', h: '60pt', stroke: '#e74c3c', strokeWidth: '3pt')),
+        L::rect(new RectAttr(x: '436pt', y: '96pt', width: '120pt', height: '60pt', stroke: '#e74c3c', strokeWidth: '3pt')),
 
         // ── Section: line ────────────────────────────────────────────────────
         L::textAt($label('176pt'), ['line']),
@@ -93,19 +93,19 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
 
         // Ellipse filled
         L::ellipse(new EllipseAttr(
-            cx: '100pt', cy: '305pt', rx: '72pt', ry: '40pt',
+            x: '28pt', y: '265pt', rx: '72pt', ry: '40pt',
             fill: '#f39c12', stroke: '#d68910', strokeWidth: '2pt',
         )),
 
         // Circle filled
-        L::circle(new CircleAttr(cx: '260pt', cy: '305pt', r: '40pt', fill: '#27ae60')),
+        L::circle(new CircleAttr(x: '220pt', y: '265pt', r: '40pt', fill: '#27ae60')),
 
         // Circle stroke only
-        L::circle(new CircleAttr(cx: '380pt', cy: '305pt', r: '40pt', stroke: '#c0392b', strokeWidth: '3pt')),
+        L::circle(new CircleAttr(x: '340pt', y: '265pt', r: '40pt', stroke: '#c0392b', strokeWidth: '3pt')),
 
         // Ellipse no fill, dashed stroke
         L::ellipse(new EllipseAttr(
-            cx: '490pt', cy: '305pt', rx: '65pt', ry: '35pt',
+            x: '425pt', y: '270pt', rx: '65pt', ry: '35pt',
             stroke: '#2c3e50', strokeWidth: '1pt', strokeDash: '4 2',
         )),
 
@@ -134,7 +134,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
         L::textAt(
             new CanvasTextAttr(
                 x: '28pt', y: '474pt', font: 'Helvetica', fontSize: '12pt', color: '#2980b9',
-                align: 'center', w: '539pt',
+                align: 'center', width: '539pt',
             ),
             ['Centered over 539 pt'],
         ),
@@ -143,7 +143,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
         L::textAt(
             new CanvasTextAttr(
                 x: '28pt', y: '494pt', font: 'Helvetica', fontSize: '12pt', color: '#8e44ad',
-                align: 'right', w: '539pt',
+                align: 'right', width: '539pt',
             ),
             ['Right-aligned over 539 pt'],
         ),
@@ -163,7 +163,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
         L::textAt($label('546pt'), ['layer']),
 
         // Background for the layer demo
-        L::rect(new RectAttr(x: '28pt', y: '562pt', w: '539pt', h: '80pt', fill: '#eaf2ff', stroke: '#aed6f1', strokeWidth: '1pt')),
+        L::rect(new RectAttr(x: '28pt', y: '562pt', width: '539pt', height: '80pt', fill: '#eaf2ff', stroke: '#aed6f1', strokeWidth: '1pt')),
         L::textAt(
             new CanvasTextAttr(x: '38pt', y: '572pt', font: 'Helvetica', fontSize: '10pt', color: '#999999'),
             ['Background text (behind semi-transparent layer)'],
@@ -186,7 +186,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
 
     // Semi-transparent red overlay layer
     L::layer(new LayerAttr(opacity: '0.4'), [
-        L::rect(new RectAttr(x: '28pt', y: '562pt', w: '539pt', h: '80pt', fill: '#e74c3c')),
+        L::rect(new RectAttr(x: '28pt', y: '562pt', width: '539pt', height: '80pt', fill: '#e74c3c')),
         L::textAt(
             new CanvasTextAttr(x: '38pt', y: '590pt', font: 'Helvetica-Bold', fontSize: '14pt', color: '#ffffff'),
             ['Layer at 40% opacity'],
@@ -195,7 +195,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
 
     // Layer with transform (rotate around a point)
     L::layer(new LayerAttr(transform: (string) Transform::rotate(15, 380.0, 720.0)), [
-        L::rect(new RectAttr(x: '0pt', y: '0pt', w: '120pt', h: '40pt', fill: '#d7bde2', stroke: '#8e44ad', strokeWidth: '1pt', radius: '6pt')),
+        L::rect(new RectAttr(x: '0pt', y: '0pt', width: '120pt', height: '40pt', fill: '#d7bde2', stroke: '#8e44ad', strokeWidth: '1pt', radius: '6pt')),
         L::textAt(
             new CanvasTextAttr(x: '8pt', y: '12pt', font: 'Helvetica', fontSize: '11pt', color: '#4a235a'),
             ['Rotated layer'],
