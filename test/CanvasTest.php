@@ -17,6 +17,7 @@ use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\LayoutAttr;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\Kit\SectionAttr;
+use Lpdf\Layout\BarcodeAttr;
 use Lpdf\Layout\RegionAttr;
 use Lpdf\Layout\SpanAttr;
 use PHPUnit\Framework\TestCase;
@@ -79,7 +80,7 @@ final class CanvasTest extends TestCase
 
     public function testALayerGoesDirectlyInTheSection(): void
     {
-        $layer   = L::layer(null, [L::rect(new RectAttr(w: '100pt', h: '100pt'))]);
+        $layer   = L::layer(null, [L::rect(new RectAttr(width: '100pt', height: '100pt'))]);
         $section = L::section(null, [$layer]);
         $json    = $this->json($section);
 
@@ -92,9 +93,9 @@ final class CanvasTest extends TestCase
     public function testSectionKeepsItsLayersBeforeAndAfterItsLayoutInOrder(): void
     {
         $section = L::section(null, [
-            L::layer(new LayerAttr(page: 'first'), [L::rect(new RectAttr(w: '100pt', h: '100pt'))]),
+            L::layer(new LayerAttr(page: 'first'), [L::rect(new RectAttr(width: '100pt', height: '100pt'))]),
             L::layout(null, [L::text(null, ['Hello'])]),
-            L::layer(new LayerAttr(page: 'last'), [L::rect(new RectAttr(w: '50pt', h: '50pt'))]),
+            L::layer(new LayerAttr(page: 'last'), [L::rect(new RectAttr(width: '50pt', height: '50pt'))]),
         ]);
         $json = $this->json($section);
 
@@ -133,12 +134,12 @@ final class CanvasTest extends TestCase
     public function testRectWritesItsAttributesAsGiven(): void
     {
         $json = $this->json(L::rect(new RectAttr(
-            w: '100pt', h: '50pt', x: '10pt', y: '20pt', fill: '#ff0000', radius: '5pt',
+            width: '100pt', height: '50pt', x: '10pt', y: '20pt', fill: '#ff0000', radius: '5pt',
         )));
 
         self::assertSame('rect', $json['type']);
         self::assertEquals(
-            ['w' => '100pt', 'h' => '50pt', 'x' => '10pt', 'y' => '20pt', 'fill' => '#ff0000', 'radius' => '5pt'],
+            ['width' => '100pt', 'height' => '50pt', 'x' => '10pt', 'y' => '20pt', 'fill' => '#ff0000', 'radius' => '5pt'],
             $json['attrs'],
         );
     }
@@ -146,13 +147,36 @@ final class CanvasTest extends TestCase
     public function testStrokeAttributesUseTheSchemaNames(): void
     {
         $json = $this->json(L::rect(new RectAttr(
-            w: '10pt', h: '10pt', stroke: '#000', strokeWidth: '2pt', strokeDash: '4 2', opacity: '0.5', anchor: 'center',
+            width: '10pt', height: '10pt', stroke: '#000', strokeWidth: '2pt', strokeDash: '4 2', opacity: '0.5', anchor: 'center',
         )));
 
         self::assertSame('2pt', $json['attrs']['stroke-width']);
         self::assertSame('4 2', $json['attrs']['stroke-dash']);
         self::assertSame('0.5', $json['attrs']['opacity']);
         self::assertSame('center', $json['attrs']['anchor']);
+    }
+
+    public function testLayerShapesAreSizedByWidthAndHeightAndPlacedByXAndY(): void
+    {
+        foreach ([RectAttr::class, CanvasImgAttr::class, CanvasTextAttr::class] as $class) {
+            self::assertFalse(property_exists($class, 'w'), $class);
+            self::assertTrue(property_exists($class, 'width'), $class);
+        }
+        self::assertFalse(property_exists(RectAttr::class, 'h'));
+        self::assertTrue(property_exists(RectAttr::class, 'height'));
+        foreach ([CircleAttr::class, EllipseAttr::class] as $class) {
+            self::assertFalse(property_exists($class, 'cx'), $class);
+            self::assertFalse(property_exists($class, 'cy'), $class);
+            self::assertTrue(property_exists($class, 'x'), $class);
+            self::assertTrue(property_exists($class, 'y'), $class);
+        }
+    }
+
+    public function testABarcodeIsSizedByWidthAndHeightNotBySize(): void
+    {
+        self::assertFalse(property_exists(BarcodeAttr::class, 'size'));
+        self::assertTrue(property_exists(BarcodeAttr::class, 'width'));
+        self::assertTrue(property_exists(BarcodeAttr::class, 'height'));
     }
 
     public function testLineSerializesCorrectly(): void
@@ -166,7 +190,7 @@ final class CanvasTest extends TestCase
 
     public function testEllipseSerializesCorrectly(): void
     {
-        $json = $this->json(L::ellipse(new EllipseAttr(rx: '40pt', ry: '20pt', cx: '50pt', cy: '50pt', fill: '#00ff00')));
+        $json = $this->json(L::ellipse(new EllipseAttr(rx: '40pt', ry: '20pt', x: '10pt', y: '30pt', fill: '#00ff00')));
 
         self::assertSame('ellipse', $json['type']);
         self::assertSame('40pt', $json['attrs']['rx']);
@@ -175,7 +199,7 @@ final class CanvasTest extends TestCase
 
     public function testCircleSerializesCorrectly(): void
     {
-        $json = $this->json(L::circle(new CircleAttr(r: '30pt', cx: '100pt', cy: '100pt')));
+        $json = $this->json(L::circle(new CircleAttr(r: '30pt', x: '70pt', y: '70pt')));
 
         self::assertSame('circle', $json['type']);
         self::assertSame('30pt', $json['attrs']['r']);
@@ -192,11 +216,11 @@ final class CanvasTest extends TestCase
 
     public function testImgSerializesCorrectly(): void
     {
-        $json = $this->json(L::imgAt(new CanvasImgAttr(name: 'logo', w: '200pt', h: '150pt', x: '10pt', y: '20pt')));
+        $json = $this->json(L::imgAt(new CanvasImgAttr(name: 'logo', width: '200pt', height: '150pt', x: '10pt', y: '20pt')));
 
         self::assertSame('img', $json['type']);
         self::assertSame('logo', $json['attrs']['name']);
-        self::assertSame('200pt', $json['attrs']['w']);
+        self::assertSame('200pt', $json['attrs']['width']);
     }
 
     public function testTextTakesItsAttributesFirstAndItsContentSecond(): void
@@ -228,7 +252,7 @@ final class CanvasTest extends TestCase
 
     public function testLayerSerializesWithOpacity(): void
     {
-        $json = $this->json(L::layer(new LayerAttr(opacity: '0.5'), [L::rect(new RectAttr(w: '100pt', h: '100pt'))]));
+        $json = $this->json(L::layer(new LayerAttr(opacity: '0.5'), [L::rect(new RectAttr(width: '100pt', height: '100pt'))]));
 
         self::assertSame('layer', $json['type']);
         self::assertSame('0.5', $json['attrs']['opacity']);
@@ -259,7 +283,7 @@ final class CanvasTest extends TestCase
 
     public function testUnsetAttributesAreOmitted(): void
     {
-        $json = $this->json(L::rect(new RectAttr(w: '50pt', h: '50pt')));
+        $json = $this->json(L::rect(new RectAttr(width: '50pt', height: '50pt')));
 
         self::assertArrayNotHasKey('fill', $json['attrs']);
         self::assertArrayNotHasKey('stroke', $json['attrs']);
@@ -280,7 +304,7 @@ final class CanvasTest extends TestCase
             [
                 L::section(new SectionAttr(size: 'a4'), [
                     L::layer(null, [
-                        L::rect(new RectAttr(x: '40pt', y: '40pt', w: '200pt', h: '100pt', fill: '#4a90e2')),
+                        L::rect(new RectAttr(x: '40pt', y: '40pt', width: '200pt', height: '100pt', fill: '#4a90e2')),
                         L::textAt(
                             new CanvasTextAttr(x: '40pt', y: '160pt', font: 'Helvetica', fontSize: '16pt', color: '#000000'),
                             ['Hello Layer!'],
@@ -299,12 +323,12 @@ final class CanvasTest extends TestCase
                 L::section(new SectionAttr(size: 'a4'), [
                     L::layer(null, [
                         L::rect(new RectAttr(
-                            x: '40pt', y: '40pt', w: '200pt', h: '100pt',
+                            x: '40pt', y: '40pt', width: '200pt', height: '100pt',
                             fill: '#4a90e2', stroke: '#1a5276', strokeWidth: '2pt', radius: '8pt',
                         )),
                         L::line(new LineAttr(x1: '40pt', y1: '170pt', x2: '555pt', y2: '170pt')),
-                        L::ellipse(new EllipseAttr(cx: '140pt', cy: '250pt', rx: '80pt', ry: '50pt', fill: '#f39c12')),
-                        L::circle(new CircleAttr(cx: '400pt', cy: '250pt', r: '60pt', fill: '#27ae60')),
+                        L::ellipse(new EllipseAttr(x: '60pt', y: '200pt', rx: '80pt', ry: '50pt', fill: '#f39c12')),
+                        L::circle(new CircleAttr(x: '340pt', y: '190pt', r: '60pt', fill: '#27ae60')),
                         L::path(new PathAttr(d: 'M 40 360 L 200 310 L 360 360 Z', fill: '#8e44ad')),
                         L::textAt(
                             new CanvasTextAttr(x: '40pt', y: '420pt', font: 'Helvetica', fontSize: '18pt', color: '#1a1a1a'),
@@ -312,7 +336,7 @@ final class CanvasTest extends TestCase
                         ),
                     ]),
                     L::layer(new LayerAttr(opacity: '0.5'), [
-                        L::rect(new RectAttr(x: '40pt', y: '460pt', w: '515pt', h: '60pt', fill: '#e74c3c')),
+                        L::rect(new RectAttr(x: '40pt', y: '460pt', width: '515pt', height: '60pt', fill: '#e74c3c')),
                     ]),
                 ]),
             ],

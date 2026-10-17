@@ -13,8 +13,8 @@ namespace Lpdf\Canvas;
 final readonly class RectAttr
 {
     public function __construct(
-        public string $w,
-        public string $h,
+        public string $width,
+        public string $height,
         public ?string $x = null,
         public ?string $y = null,
         public ?string $anchor = null,

@@ -20,7 +20,7 @@ final readonly class CanvasTextAttr
         public ?string $fontSize = null,
         public ?string $color = null,
         public ?string $align = null,
-        public ?string $w = null,
+        public ?string $width = null,
         public ?string $lineHeight = null,
         public ?string $opacity = null,
     ) {}

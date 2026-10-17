@@ -14,8 +14,8 @@ final readonly class CanvasImgAttr
 {
     public function __construct(
         public string $name,
-        public string $w,
-        public string $h,
+        public string $width,
+        public string $height,
         public ?string $x = null,
         public ?string $y = null,
         public ?string $anchor = null,
