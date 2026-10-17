@@ -27,6 +27,7 @@ use Lpdf\Engine\WasmRunner;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentTokens;
+use Lpdf\Kit\LayoutAttr;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\Kit\SectionAttr;
 use Lpdf\Kit\SectionLayout;
@@ -139,10 +140,10 @@ final class L
         return new SectionNode(self::optionsToAttrs($attrs), $nodes);
     }
 
-    /** Wrap layout nodes into a layout block for use inside {@see section()}. */
-    public static function layout(mixed $attrs, array $nodes = []): SectionLayout
+    /** Wrap layout nodes into a layout block for use inside {@see section()}, which keeps them inside its margin. */
+    public static function layout(?LayoutAttr $attrs, array $nodes = []): SectionLayout
     {
-        return new SectionLayout($nodes);
+        return new SectionLayout(self::optionsToAttrs($attrs), $nodes);
     }
 
     /** Create a {@see DocumentAssets} instance (convenience factory). */

@@ -17,6 +17,7 @@ composer require lpdfio/lpdf
 ```php
 use Lpdf\L;
 use Lpdf\Kit\DocumentAttr;
+use Lpdf\Kit\LayoutAttr;
 use Lpdf\Layout\ColumnAttr;
 use Lpdf\Layout\DividerAttr;
 use Lpdf\Layout\RowAttr;
@@ -25,9 +26,9 @@ use const Lpdf\NoAttr;
 
 $engine = L::engine();
 
-$doc = L::document(new DocumentAttr(size: 'letter', margin: '48pt'), [
+$doc = L::document(new DocumentAttr(size: 'letter'), [
     L::section(NoAttr, [
-        L::layout(NoAttr, [
+        L::layout(new LayoutAttr(margin: '48pt'), [
             L::column(new ColumnAttr(gap: '24pt'), [
                 L::row(new RowAttr(justify: 'between'), [
                     L::text(new TextAttr(fontSize: '8pt', color: '#888888'), ['ACME CORP']),
