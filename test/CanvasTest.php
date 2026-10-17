@@ -14,6 +14,7 @@ use Lpdf\Canvas\PathAttr;
 use Lpdf\Canvas\RectAttr;
 use Lpdf\Canvas\Transform;
 use Lpdf\Kit\DocumentAttr;
+use Lpdf\Kit\LayoutAttr;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\Kit\SectionAttr;
 use Lpdf\Layout\RegionAttr;
@@ -61,11 +62,19 @@ final class CanvasTest extends TestCase
 
     public function testSectionSerializesToSection(): void
     {
-        $json = $this->json(L::section(new SectionAttr(size: 'a4', margin: '20pt'), []));
+        $json = $this->json(L::section(new SectionAttr(size: 'a4', background: '#ffffff'), []));
 
         self::assertSame('section', $json['type']);
         self::assertSame('a4', $json['attrs']['size']);
-        self::assertSame('20pt', $json['attrs']['margin']);
+        self::assertSame('#ffffff', $json['attrs']['background']);
+    }
+
+    public function testLayoutSerializesItsMargin(): void
+    {
+        $json = $this->json(L::layout(new LayoutAttr(margin: '20pt 30pt'), []));
+
+        self::assertSame('layout', $json['type']);
+        self::assertSame('20pt 30pt', $json['attrs']['margin']);
     }
 
     public function testALayerGoesDirectlyInTheSection(): void

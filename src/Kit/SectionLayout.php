@@ -13,11 +13,17 @@ use Lpdf\Layout\Node;
  */
 final readonly class SectionLayout implements \JsonSerializable
 {
-    /** @param Node[] $nodes */
-    public function __construct(private array $nodes) {}
+    /**
+     * @param array<string,string> $attrs
+     * @param Node[]               $nodes
+     */
+    public function __construct(
+        private array $attrs,
+        private array $nodes,
+    ) {}
 
     public function jsonSerialize(): mixed
     {
-        return ['type' => 'layout', 'nodes' => $this->nodes];
+        return ['type' => 'layout', 'attrs' => (object) $this->attrs, 'nodes' => $this->nodes];
     }
 }
