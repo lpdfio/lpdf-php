@@ -48,6 +48,16 @@ final readonly class RowAttr
          */
         public ?string $opacity = null,
         /**
+         * A hard-edged shadow: a copy of the box, moved right and down by the first two lengths
+         * (negative is left and up) and filled with the color, drawn under the box with the same
+         * radius. An opacity from 0 to 1 after the color fades the shadow alone: "2pt 3pt #000000
+         * 0.2". There is no blur. The shadow takes no room in the layout, so it can run into the
+         * margin or a neighbor, and the siblings after the box are drawn over it. A box with no
+         * background shows the shadow only outside it. The box's own opacity fades the box and its
+         * shadow together.
+         */
+        public ?string $shadow = null,
+        /**
          * Where the box falls in the page flow. no: never split the box, and move it whole to the
          * next page when it does not fit. break-before: start it on a new page. break-after: start
          * the next sibling on a new page. keep-next: keep it on one page with the sibling that
