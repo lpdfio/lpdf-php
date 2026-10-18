@@ -33,6 +33,11 @@ final readonly class TextAtAttr
         public ?string $color = null,
         public ?string $align = null,
         /**
+         * The distance between lines, as a factor of the font size: a number above 0, such as 1.5,
+         * or a name from the line-height row of the tokens. Default 1.2, which is the token m.
+         */
+        public ?string $lineHeight = null,
+        /**
          * The most lines drawn. Only whole lines are drawn, and the rest of the text is dropped. A
          * text in the layout has no cap by default and wraps at the width it has; the lines it
          * drops take no room, and a text that splits across pages keeps the cap across them. A
@@ -53,7 +58,5 @@ final readonly class TextAtAttr
          * ellipsis with ellipsis, and max-lines above 1 wraps the text within it.
          */
         public ?string $width = null,
-        /** The distance between lines, as a factor of the font size. Default 1.2. */
-        public ?string $lineHeight = null,
     ) {}
 }
