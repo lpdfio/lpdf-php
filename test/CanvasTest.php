@@ -15,12 +15,14 @@ use Lpdf\Canvas\RectAttr;
 use Lpdf\Canvas\TextAtAttr;
 use Lpdf\Canvas\Transform;
 use Lpdf\Kit\DocumentAttr;
+use Lpdf\Kit\DocumentTokens;
 use Lpdf\Kit\LayoutAttr;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\Kit\SectionAttr;
 use Lpdf\Layout\BarcodeAttr;
 use Lpdf\Layout\RegionAttr;
 use Lpdf\Layout\SpanAttr;
+use Lpdf\Layout\TextAttr;
 use PHPUnit\Framework\TestCase;
 
 final class CanvasTest extends TestCase
@@ -194,6 +196,15 @@ final class CanvasTest extends TestCase
         self::assertSame('2', $json['attrs']['max-lines']);
         self::assertSame('true', $json['attrs']['ellipsis']);
         self::assertSame('1.5', $json['attrs']['line-height']);
+    }
+
+    public function testALineHeightRowAndATextLineHeightAreWrittenUnderTheirSchemaNames(): void
+    {
+        $document = $this->json(L::document(new DocumentAttr(tokens: new DocumentTokens(lineHeight: ['m' => '1.2', 'xxl' => '2']))));
+        self::assertSame(['m' => '1.2', 'xxl' => '2'], $document['attrs']['tokens']['line-height']);
+
+        self::assertSame('l', $this->json(L::text(new TextAttr(lineHeight: 'l'), ['A token']))['attrs']['line-height']);
+        self::assertSame('1.5', $this->json(L::text(new TextAttr(lineHeight: '1.5'), ['A factor']))['attrs']['line-height']);
     }
 
     public function testLineSerializesCorrectly(): void
