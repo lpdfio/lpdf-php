@@ -26,6 +26,20 @@ final readonly class TextAttr
         public ?string $color = null,
         public ?string $align = null,
         /**
+         * The most lines drawn. Only whole lines are drawn, and the rest of the text is dropped. A
+         * text in the layout has no cap by default and wraps at the width it has; the lines it
+         * drops take no room, and a text that splits across pages keeps the cap across them. A
+         * text-at is one line by default, and above 1 needs a width to wrap within.
+         */
+        public ?string $maxLines = null,
+        /**
+         * End the last line drawn in an ellipsis when max-lines drops text, shortened to fit the
+         * width. Off by default: the text stops at the end of a line. A text-at also ends a line in
+         * one when it is cut off at its width. A text in the layout without max-lines is never cut,
+         * so there it has no effect.
+         */
+        public ?string $ellipsis = null,
+        /**
          * Width of the element. A length fixes it. fill, in a row, takes the width its line leaves
          * after the other children, shared equally if several on the line use fill, and never moves
          * to the next line; in a column it takes the full width.
