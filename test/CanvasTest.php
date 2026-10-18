@@ -20,6 +20,7 @@ use Lpdf\Kit\LayoutAttr;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\Kit\SectionAttr;
 use Lpdf\Layout\BarcodeAttr;
+use Lpdf\Layout\ColumnAttr;
 use Lpdf\Layout\RegionAttr;
 use Lpdf\Layout\SpanAttr;
 use Lpdf\Layout\TextAttr;
@@ -205,6 +206,15 @@ final class CanvasTest extends TestCase
 
         self::assertSame('l', $this->json(L::text(new TextAttr(lineHeight: 'l'), ['A token']))['attrs']['line-height']);
         self::assertSame('1.5', $this->json(L::text(new TextAttr(lineHeight: '1.5'), ['A factor']))['attrs']['line-height']);
+    }
+
+    public function testALayerGivesItsTextAFontASizeAndAColorAndABoxHasAColorAndAnOpacity(): void
+    {
+        $layer = $this->json(L::layer(new LayerAttr(font: 'Courier', fontSize: 's', color: 'danger')));
+        self::assertSame(['font' => 'Courier', 'font-size' => 's', 'color' => 'danger'], $layer['attrs']);
+
+        $column = $this->json(L::column(new ColumnAttr(color: 'text-muted', opacity: '0.5')));
+        self::assertSame(['color' => 'text-muted', 'opacity' => '0.5'], $column['attrs']);
     }
 
     public function testLineSerializesCorrectly(): void
