@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Lpdf\Kit;
 
-/** Design-token overrides applied to the whole document. */
+/**
+ * Design-token overrides applied to the whole document. `gradients` maps the name of each gradient to its
+ * attributes: `type` (`linear` or `radial`), `from` and `to`, or `stops` as a list of `offset` and `color`, and
+ * `angle` in degrees. A background or a fill uses one as `gradient:name`.
+ */
 final readonly class DocumentTokens implements \JsonSerializable
 {
     /**
@@ -16,6 +20,7 @@ final readonly class DocumentTokens implements \JsonSerializable
      * @param array<string,string>|null $width
      * @param array<string,string>|null $textSize
      * @param array<string,string>|null $lineHeight
+     * @param array<string,array{type: string, from?: string, to?: string, angle?: int|float|string, stops?: list<array{offset: string, color: string}>}>|null $gradients
      */
     public function __construct(
         public ?array $colors = null,
@@ -26,6 +31,7 @@ final readonly class DocumentTokens implements \JsonSerializable
         public ?array $width  = null,
         public ?array $textSize = null,
         public ?array $lineHeight = null,
+        public ?array $gradients = null,
     ) {}
 
     public function jsonSerialize(): mixed
@@ -40,6 +46,7 @@ final readonly class DocumentTokens implements \JsonSerializable
                 'width'  => $this->width,
                 'text-size' => $this->textSize,
                 'line-height' => $this->lineHeight,
+                'gradients' => $this->gradients,
             ],
             static fn($v) => $v !== null,
         );

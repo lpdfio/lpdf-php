@@ -208,6 +208,17 @@ final class CanvasTest extends TestCase
         self::assertSame('1.5', $this->json(L::text(new TextAttr(lineHeight: '1.5'), ['A factor']))['attrs']['line-height']);
     }
 
+    public function testGradientsAreATokenRowOfNamedGradients(): void
+    {
+        $gradients = [
+            'fade' => ['type' => 'linear', 'from' => 'primary', 'to' => '#0f3e8a', 'angle' => '90'],
+            'sunset' => ['type' => 'radial', 'stops' => [['offset' => '0%', 'color' => '#f97316'], ['offset' => '100%', 'color' => '#8b5cf6']]],
+        ];
+        $document = $this->json(L::document(new DocumentAttr(tokens: new DocumentTokens(gradients: $gradients))));
+
+        self::assertSame($gradients, $document['attrs']['tokens']['gradients']);
+    }
+
     public function testALayerGivesItsTextAFontASizeAndAColorAndABoxHasAColorAndAnOpacity(): void
     {
         $layer = $this->json(L::layer(new LayerAttr(font: 'Courier', fontSize: 's', color: 'danger')));

@@ -10,6 +10,7 @@ use Lpdf\Canvas\RectAttr;
 use Lpdf\Kit\BuiltinFont;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentAttr;
+use Lpdf\Kit\DocumentTokens;
 use Lpdf\Kit\FontAttr;
 use Lpdf\Kit\ImageAttr;
 use Lpdf\Kit\Orientation;
@@ -95,6 +96,23 @@ final class SchemaTest extends TestCase
         ]);
 
         self::assertSame($this->render($built), $this->render(L::toXml($built)));
+    }
+
+    public function testAGradientOfTheTokensFillsABoxAndRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        $build = static fn (string $background) => L::document(
+            new DocumentAttr(tokens: new DocumentTokens(gradients: [
+                'fade' => ['type' => 'linear', 'from' => '#ff0000', 'to' => '#0000ff', 'angle' => 90],
+            ])),
+            [L::section(null, [L::layout(null, [L::column(new ColumnAttr(background: $background, height: '60pt'))])])],
+        );
+
+        $gradient = $build('gradient:fade');
+        $pdf = $this->render($gradient);
+
+        self::assertSame($pdf, $this->render(L::toXml($gradient)));
+        self::assertNotSame($pdf, $this->render($build('#336699')));
+        self::assertStringContainsString('/ShadingType 2', $pdf);
     }
 
     public function testBoldTextIsTheBoldFaceOfTheFont(): void
