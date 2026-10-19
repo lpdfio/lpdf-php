@@ -39,6 +39,15 @@ final class SchemaTest extends TestCase
         self::assertEquals(['align' => 'right', 'bold' => 'true'], $json['attrs']);
     }
 
+    public function testATextThatCapturesAndOneThatShowsACaptureUseTheSchemaNames(): void
+    {
+        $source = $this->json(L::text(new TextAttr(capture: 'chapter'), ['x']));
+        $sink = $this->json(L::text(new TextAttr(captureRef: 'chapter', captureMode: 'first', captureFallback: 'None'), []));
+
+        self::assertEquals(['capture' => 'chapter'], $source['attrs']);
+        self::assertEquals(['capture-ref' => 'chapter', 'capture-mode' => 'first', 'capture-fallback' => 'None'], $sink['attrs']);
+    }
+
     public function testLinkAndSpanCarryHref(): void
     {
         $link = $this->json(L::link(new LinkAttr(href: 'https://lpdf.io')));
