@@ -23,5 +23,12 @@ final readonly class RectAttr
         public ?string $stroke = null,
         public ?string $strokeWidth = null,
         public ?string $strokeDash = null,
+        /**
+         * A hard-edged shadow: a copy of the shape, moved right and down by the first two lengths
+         * (negative is left and up) and filled with the color, drawn under the shape. An opacity
+         * from 0 to 1 after the color fades the shadow alone: "2pt 3pt #000000 0.2". There is no
+         * blur. A shape with no fill shows the shadow only outside it.
+         */
+        public ?string $shadow = null,
     ) {}
 }

@@ -217,6 +217,16 @@ final class CanvasTest extends TestCase
         self::assertSame(['color' => 'text-muted', 'opacity' => '0.5'], $column['attrs']);
     }
 
+    public function testABoxAndALayerShapeHaveAShadow(): void
+    {
+        $column = $this->json(L::column(new ColumnAttr(shadow: '2pt 3pt #000000 0.2')));
+        self::assertSame(['shadow' => '2pt 3pt #000000 0.2'], $column['attrs']);
+
+        self::assertSame('2pt 3pt #000000', $this->json(L::rect(new RectAttr(width: '50pt', height: '30pt', shadow: '2pt 3pt #000000')))['attrs']['shadow']);
+        self::assertSame('-2pt -3pt text', $this->json(L::circle(new CircleAttr(r: '5pt', shadow: '-2pt -3pt text')))['attrs']['shadow']);
+        self::assertSame('2pt 3pt #000000 0.5', $this->json(L::ellipse(new EllipseAttr(rx: '5pt', ry: '3pt', shadow: '2pt 3pt #000000 0.5')))['attrs']['shadow']);
+    }
+
     public function testLineSerializesCorrectly(): void
     {
         $json = $this->json(L::line(new LineAttr(x1: '0pt', y1: '0pt', x2: '100pt', y2: '100pt', lineCap: 'round')));
