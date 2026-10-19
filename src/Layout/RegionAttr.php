@@ -6,8 +6,9 @@ namespace Lpdf\Layout;
 
 /**
  * Pins content to the top or bottom edge of pages, outside the normal flow, for headers and
- * footers. It reserves that space on every page it appears on. Only allowed directly inside layout,
- * and one per pin on a page.
+ * footers. It reserves that space on every page it appears on. Only allowed directly inside layout.
+ * Where it is written among the flow does not matter: pin chooses the edge, and regions on one edge
+ * stack in the order written.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
