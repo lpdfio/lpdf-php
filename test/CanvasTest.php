@@ -208,6 +208,14 @@ final class CanvasTest extends TestCase
         self::assertSame('1.5', $this->json(L::text(new TextAttr(lineHeight: '1.5'), ['A factor']))['attrs']['line-height']);
     }
 
+    public function testAliasesAreATokenRowOfNamesForSlots(): void
+    {
+        $aliases = ['caption' => 'xs', 'sub-title' => 'l'];
+        $document = $this->json(L::document(new DocumentAttr(tokens: new DocumentTokens(aliases: $aliases))));
+
+        self::assertSame($aliases, $document['attrs']['tokens']['aliases']);
+    }
+
     public function testGradientsAreATokenRowOfNamedGradients(): void
     {
         $gradients = [
