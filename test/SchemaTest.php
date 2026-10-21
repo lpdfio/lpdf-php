@@ -133,6 +133,35 @@ final class SchemaTest extends TestCase
         L::engine()->setLicenseKey('test-key')->render($built);
     }
 
+    public function testAHeightIsTheSlotItNamesAndRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        $build = static fn (string $height, ?array $row = null) => L::document(
+            $row === null ? null : new DocumentAttr(tokens: new DocumentTokens(height: $row)),
+            [L::section(null, [L::layout(null, [L::column(new ColumnAttr(background: '#cccccc', height: $height))])])],
+        );
+
+        $slot = $build('m');
+        $pdf = $this->render($slot);
+
+        self::assertSame($pdf, $this->render(L::toXml($slot)));
+        self::assertSame($pdf, $this->render($build('32pt')));
+        self::assertNotSame($pdf, $this->render($build('xl')));
+
+        $row = ['xs' => '10pt', 's' => '20pt', 'm' => '50pt', 'l' => '60pt', 'xl' => '70pt', 'xxl' => '80pt'];
+        self::assertSame($this->render($build('50pt')), $this->render($build('m', $row)));
+    }
+
+    public function testAHeightThatIsNotASlotALengthFillOrFullIsRejected(): void
+    {
+        $built = L::document(
+            null,
+            [L::section(null, [L::layout(null, [L::column(new ColumnAttr(height: 'medum'))])])],
+        );
+
+        $this->expectExceptionMessageMatches("/invalid height value: 'medum' — expected full, fill, a slot from xs to xxl or a pt value/");
+        L::engine()->setLicenseKey('test-key')->render($built);
+    }
+
     public function testAGradientOfTheTokensFillsABoxAndRendersTheSameFromTheBuilderAndItsXml(): void
     {
         $build = static fn (string $background) => L::document(
