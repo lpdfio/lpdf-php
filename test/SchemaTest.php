@@ -107,6 +107,32 @@ final class SchemaTest extends TestCase
         self::assertSame($this->render($built), $this->render(L::toXml($built)));
     }
 
+    public function testAnAliasIsTheSlotItNamesAndRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        $build = static fn (string $size) => L::document(
+            new DocumentAttr(tokens: new DocumentTokens(aliases: ['caption' => 'xs', 'heading' => 'xl'])),
+            [L::section(null, [L::layout(null, [L::text(new TextAttr(fontSize: $size), ['Sized'])])])],
+        );
+
+        $caption = $build('caption');
+        $pdf = $this->render($caption);
+
+        self::assertSame($pdf, $this->render(L::toXml($caption)));
+        self::assertSame($pdf, $this->render($build('xs')));
+        self::assertNotSame($pdf, $this->render($build('heading')));
+    }
+
+    public function testANameThatIsNeitherASlotNorAnAliasIsRejected(): void
+    {
+        $built = L::document(
+            new DocumentAttr(tokens: new DocumentTokens(aliases: ['caption' => 'xs'])),
+            [L::section(null, [L::layout(null, [L::text(new TextAttr(fontSize: 'medum'), ['Sized'])])])],
+        );
+
+        $this->expectExceptionMessageMatches("/invalid text size: 'medum': expected a slot from xs to xxl, an alias \\(caption\\)/");
+        L::engine()->setLicenseKey('test-key')->render($built);
+    }
+
     public function testAGradientOfTheTokensFillsABoxAndRendersTheSameFromTheBuilderAndItsXml(): void
     {
         $build = static fn (string $background) => L::document(
