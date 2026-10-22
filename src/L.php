@@ -57,6 +57,7 @@ use Lpdf\Layout\ShapeAttr;
 use Lpdf\Layout\ShapeNode;
 use Lpdf\Layout\SpanAttr;
 use Lpdf\Layout\SpanNode;
+use Lpdf\Layout\FnNode;
 use Lpdf\Layout\TableAttr;
 use Lpdf\Layout\TdAttr;
 use Lpdf\Layout\TextAttr;
@@ -225,14 +226,14 @@ final class L
     /**
      * Build a text paragraph node.
      *
-     * @param array<string|SpanNode> $nodes
+     * @param array<string|SpanNode|FnNode> $nodes
      */
     public static function text(?TextAttr $attrs = null, array $nodes = []): TextNode
     {
         foreach ($nodes as $i => $child) {
-            if (!is_string($child) && !$child instanceof SpanNode) {
+            if (!is_string($child) && !$child instanceof SpanNode && !$child instanceof FnNode) {
                 throw new \InvalidArgumentException(
-                    "text() child at index $i must be a string or SpanNode, got " . get_debug_type($child),
+                    "text() child at index $i must be a string, SpanNode or FnNode, got " . get_debug_type($child),
                 );
             }
         }
@@ -254,6 +255,25 @@ final class L
             }
         }
         return new SpanNode(self::optionsToAttrs($attrs), $nodes);
+    }
+
+    /**
+     * Build a footnote, for the nodes of a text. The engine numbers it and puts a small raised number at its
+     * place in the text; its words go at the bottom of the page where that number lands. It has no
+     * attributes: pass `NoAttr`. Its words are strings and spans.
+     *
+     * @param array<string|SpanNode> $nodes
+     */
+    public static function fn(null $attrs = null, array $nodes = []): FnNode
+    {
+        foreach ($nodes as $i => $child) {
+            if (!is_string($child) && !$child instanceof SpanNode) {
+                throw new \InvalidArgumentException(
+                    "fn() child at index $i must be a string or SpanNode, got " . get_debug_type($child),
+                );
+            }
+        }
+        return new FnNode([], $nodes);
     }
 
     /** Build a divider (horizontal rule) node. */
