@@ -9,7 +9,7 @@ namespace Lpdf\Kit;
  * attributes: `type` (`linear` or `radial`), `from` and `to`, or `stops` as a list of `offset` and `color`, and
  * `angle` in degrees. A background or a fill uses one as `gradient:name`. `aliases` maps a name to the slot of the
  * scale it stands for: `['caption' => 'xs']` lets `fontSize: 'caption'` mean the text size `xs`, and `gap: 'caption'`
- * the space `xs`.
+ * the space `xs`. `height` is the row of heights that `height: 'm'` names, from `xs` to `xxl`.
  */
 final readonly class DocumentTokens implements \JsonSerializable
 {
@@ -24,6 +24,7 @@ final readonly class DocumentTokens implements \JsonSerializable
      * @param array<string,string>|null $lineHeight
      * @param array<string,array{type: string, from?: string, to?: string, angle?: int|float|string, stops?: list<array{offset: string, color: string}>}>|null $gradients
      * @param array<string,string>|null $aliases
+     * @param array<string,string>|null $height
      */
     public function __construct(
         public ?array $colors = null,
@@ -36,6 +37,7 @@ final readonly class DocumentTokens implements \JsonSerializable
         public ?array $lineHeight = null,
         public ?array $gradients = null,
         public ?array $aliases = null,
+        public ?array $height = null,
     ) {}
 
     public function jsonSerialize(): mixed
@@ -52,6 +54,7 @@ final readonly class DocumentTokens implements \JsonSerializable
                 'line-height' => $this->lineHeight,
                 'gradients' => $this->gradients,
                 'aliases' => $this->aliases,
+                'height' => $this->height,
             ],
             static fn($v) => $v !== null,
         );

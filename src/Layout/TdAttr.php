@@ -29,9 +29,10 @@ final readonly class TdAttr
          */
         public ?string $padding = null,
         /**
-         * Height of the box. Leave it out to size to the content. A length fixes it; fill takes
-         * what is left after its siblings (shared equally if several use fill); full takes all the
-         * height available. Any of these stops the box splitting across pages.
+         * Height of the box. Leave it out to size to the content. A length, or a name from the
+         * height row of the tokens, fixes it; fill takes what is left after its siblings (shared
+         * equally if several use fill); full takes all the height available. Any of these stops the
+         * box splitting across pages.
          */
         public ?string $height = null,
         public ?string $background = null,

@@ -19,13 +19,14 @@ final readonly class BarcodeAttr
         public string $type,
         public string $data,
         /**
-         * Height of the whole barcode, with the digits of hrt inside it: they take the bottom 12pt
-         * and the bars the rest. A barcode is never stretched. With only a height, the width
-         * follows the barcode's proportions. With both width and height, they are a maximum: the
-         * barcode takes the largest size that fits in them, and its box becomes that size. A QR
-         * code is square, so it takes the smaller of the two. Without a size, a code128 is as wide
-         * as its bars at 1pt per module and its bars are 40pt high, and an ean13 is the standard
-         * symbol, 0.33mm per module and bars 22.85mm high. The digits of hrt add 12pt to either.
+         * Height of the whole barcode, a length or a name from the height row of the tokens, with
+         * the digits of hrt inside it: they take the bottom 12pt and the bars the rest. A barcode
+         * is never stretched. With only a height, the width follows the barcode's proportions. With
+         * both width and height, they are a maximum: the barcode takes the largest size that fits
+         * in them, and its box becomes that size. A QR code is square, so it takes the smaller of
+         * the two. Without a size, a code128 is as wide as its bars at 1pt per module and its bars
+         * are 40pt high, and an ean13 is the standard symbol, 0.33mm per module and bars 22.85mm
+         * high. The digits of hrt add 12pt to either.
          */
         public ?string $height = null,
         public ?string $ec = null,

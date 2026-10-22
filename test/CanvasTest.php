@@ -216,6 +216,14 @@ final class CanvasTest extends TestCase
         self::assertSame($aliases, $document['attrs']['tokens']['aliases']);
     }
 
+    public function testHeightIsATokenRowUnderItsSchemaName(): void
+    {
+        $row = ['xs' => '10pt', 'm' => '30pt', 'xxl' => '60pt'];
+        $document = $this->json(L::document(new DocumentAttr(tokens: new DocumentTokens(height: $row))));
+
+        self::assertSame($row, $document['attrs']['tokens']['height']);
+    }
+
     public function testGradientsAreATokenRowOfNamedGradients(): void
     {
         $gradients = [
