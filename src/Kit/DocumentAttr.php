@@ -15,5 +15,6 @@ final readonly class DocumentAttr
         public ?DocumentAssets $assets      = null,
         public ?DocumentTokens $tokens      = null,
         public ?DocumentMeta   $meta        = null,
+        public ?string         $footnoteCounter = null,
     ) {}
 }

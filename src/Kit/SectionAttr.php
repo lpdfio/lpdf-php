@@ -14,5 +14,6 @@ final readonly class SectionAttr
         public ?string      $debug       = null,
         public ?string      $type        = null,
         public ?string      $tocIndentStep = null,
+        public ?string      $footnoteCounter = null,
     ) {}
 }

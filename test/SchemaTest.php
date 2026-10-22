@@ -12,6 +12,7 @@ use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentTokens;
 use Lpdf\Kit\FontAttr;
+use Lpdf\Kit\FootnoteCounter;
 use Lpdf\Kit\ImageAttr;
 use Lpdf\Kit\Orientation;
 use Lpdf\Kit\SectionAttr;
@@ -25,6 +26,7 @@ use Lpdf\Layout\LinkAttr;
 use Lpdf\Layout\RowAttr;
 use Lpdf\Layout\ShapeAttr;
 use Lpdf\Layout\SpanAttr;
+use Lpdf\Layout\TableAttr;
 use Lpdf\Layout\ColumnAttr;
 use Lpdf\Layout\TextAttr;
 use PHPUnit\Framework\TestCase;
@@ -198,6 +200,45 @@ final class SchemaTest extends TestCase
             self::assertNotSame($without, $this->render($document));
             self::assertSame($this->render($document), $this->render(L::toXml($document)));
         }
+    }
+
+    public function testAFootnoteIsAnFnChildOfATextAndTheCounterIsAnAttributeOfTheDocumentAndASection(): void
+    {
+        $text = L::text(null, ['Total', L::fn(null, ['See ', L::span(new SpanAttr(bold: 'true'), ['this']), '.']), ' here']);
+        $document = L::document(
+            new DocumentAttr(footnoteCounter: FootnoteCounter::Document),
+            [L::section(new SectionAttr(footnoteCounter: FootnoteCounter::Page), [L::layout(null, [$text])])],
+        );
+
+        $xml = L::toXml($document);
+        self::assertMatchesRegularExpression('/<document [^>]*footnote-counter="document"/', $xml);
+        self::assertMatchesRegularExpression('/<section [^>]*footnote-counter="page"/', $xml);
+        self::assertStringContainsString('<text>Total<fn>See <span bold="true">this</span>.</fn> here</text>', $xml);
+        self::assertSame(['type' => 'fn', 'attrs' => [], 'nodes' => ['a']], $this->json(L::fn(null, ['a'])));
+    }
+
+    public function testAFootnoteIsDrawnAndRendersTheSameFromTheBuilderAndItsXmlAndOneInATableIsRejected(): void
+    {
+        $build = static fn (...$nodes) => L::document(
+            null,
+            [L::section(null, [L::layout(null, [L::text(null, ['Total', ...$nodes, ' here'])])])],
+        );
+        $without = $this->render($build());
+        $noted = $build(L::fn(null, ['The note.']));
+        self::assertNotSame($without, $this->render($noted));
+        self::assertSame($this->render($noted), $this->render(L::toXml($noted)));
+
+        $counted = static fn (string $counter) => L::document(new DocumentAttr(footnoteCounter: $counter), [
+            L::section(null, [L::layout(null, [L::text(null, ['One', L::fn(null, ['A.'])])])]),
+            L::section(null, [L::layout(null, [L::text(null, ['Two', L::fn(null, ['B.'])])])]),
+        ]);
+        self::assertNotSame($this->render($counted(FootnoteCounter::Document)), $this->render($counted(FootnoteCounter::Section)));
+
+        $table = L::document(null, [L::section(null, [L::layout(null, [
+            L::table(new TableAttr(cols: '1fr'), [L::tr(null, [L::td(null, [L::text(null, ['x', L::fn(null, ['y'])])])])]),
+        ])])]);
+        $this->expectExceptionMessageMatches('/<fn> is not supported in a table/');
+        L::engine()->setLicenseKey('test-key')->render($table);
     }
 
     public function testACircleWithoutRIsRejectedAndSaysSo(): void

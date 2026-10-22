@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Lpdf\Layout;
 
 /**
- * A block of wrapping text. Use span children to style parts of it. Splits across pages between
- * lines.
+ * A block of wrapping text. Use span children to style parts of it, and fn children for footnotes.
+ * Splits across pages between lines.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
