@@ -22,6 +22,8 @@ use Lpdf\Layout\ImgAttr;
 use Lpdf\Layout\Pin;
 use Lpdf\Layout\FieldAttr;
 use Lpdf\Layout\LinkAttr;
+use Lpdf\Layout\RowAttr;
+use Lpdf\Layout\ShapeAttr;
 use Lpdf\Layout\SpanAttr;
 use Lpdf\Layout\ColumnAttr;
 use Lpdf\Layout\TextAttr;
@@ -159,6 +161,50 @@ final class SchemaTest extends TestCase
         );
 
         $this->expectExceptionMessageMatches("/invalid height value: 'medum' — expected full, fill, a slot from xs to xxl or a pt value/");
+        L::engine()->setLicenseKey('test-key')->render($built);
+    }
+
+    public function testAShapeHasTheAttributesOfItsTypeUnderTheSchemaNames(): void
+    {
+        $node = L::shape(new ShapeAttr(
+            type: 'rect', width: '14pt', height: 'm', radius: '2pt', fill: 'primary',
+            stroke: '#000000', strokeWidth: '1pt', strokeDash: '3 2', opacity: '0.5',
+        ));
+
+        self::assertSame([
+            'type' => 'shape',
+            'attrs' => [
+                'type' => 'rect', 'width' => '14pt', 'height' => 'm', 'radius' => '2pt', 'fill' => 'primary',
+                'stroke' => '#000000', 'stroke-width' => '1pt', 'stroke-dash' => '3 2', 'opacity' => '0.5',
+            ],
+        ], json_decode(json_encode($node), true));
+        self::assertSame('5pt', json_decode(json_encode(L::shape(new ShapeAttr(type: 'circle', r: '5pt'))), true)['attrs']['r']);
+    }
+
+    public function testAShapeOfEachTypeIsDrawnAndRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        $build = static fn (...$shapes) => L::document(
+            null,
+            [L::section(null, [L::layout(null, [L::row(new RowAttr(align: 'center'), [...$shapes, L::text(null, ['After'])])])])],
+        );
+
+        $without = $this->render($build());
+        foreach ([
+            L::shape(new ShapeAttr(type: 'rect', width: '60pt', height: '12pt', fill: '#00aa00')),
+            L::shape(new ShapeAttr(type: 'circle', r: '8pt', fill: '#00aa00')),
+            L::shape(new ShapeAttr(type: 'ellipse', width: '40pt', height: '20pt', fill: '#00aa00')),
+        ] as $shape) {
+            $document = $build($shape);
+            self::assertNotSame($without, $this->render($document));
+            self::assertSame($this->render($document), $this->render(L::toXml($document)));
+        }
+    }
+
+    public function testACircleWithoutRIsRejectedAndSaysSo(): void
+    {
+        $built = L::document(null, [L::section(null, [L::layout(null, [L::shape(new ShapeAttr(type: 'circle'))])])]);
+
+        $this->expectExceptionMessageMatches("/a circle needs 'r'/");
         L::engine()->setLicenseKey('test-key')->render($built);
     }
 
