@@ -53,6 +53,8 @@ use Lpdf\Layout\Node;
 use Lpdf\Layout\RegionAttr;
 use Lpdf\Layout\RegionNode;
 use Lpdf\Layout\RowAttr;
+use Lpdf\Layout\ShapeAttr;
+use Lpdf\Layout\ShapeNode;
 use Lpdf\Layout\SpanAttr;
 use Lpdf\Layout\SpanNode;
 use Lpdf\Layout\TableAttr;
@@ -264,6 +266,12 @@ final class L
     public static function img(ImgAttr $attrs): ImgNode
     {
         return new ImgNode(self::optionsToAttrs($attrs));
+    }
+
+    /** Build a shape node: a rect, circle or ellipse that takes its box in the layout, as an image does. */
+    public static function shape(ShapeAttr $attrs): ShapeNode
+    {
+        return new ShapeNode(self::optionsToAttrs($attrs));
     }
 
     /** Build a barcode node. */
