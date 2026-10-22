@@ -65,6 +65,14 @@ final readonly class TdAttr
          */
         public ?string $paginate = null,
         public ?string $debug = null,
+        /**
+         * How many of the table's columns the cell spans. It is as wide as those columns and the
+         * gaps between them, and the cells after it in the row start at the column after its last.
+         * A row whose cells span more columns than the table's cols names is an error; a row with
+         * fewer leaves its last columns empty. It changes widths only: row heights and page breaks
+         * work as before. Default 1.
+         */
+        public ?string $colspan = null,
         public ?string $align = null,
         public ?string $valign = null,
     ) {}

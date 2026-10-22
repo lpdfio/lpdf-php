@@ -27,6 +27,7 @@ use Lpdf\Layout\RowAttr;
 use Lpdf\Layout\ShapeAttr;
 use Lpdf\Layout\SpanAttr;
 use Lpdf\Layout\TableAttr;
+use Lpdf\Layout\TdAttr;
 use Lpdf\Layout\ColumnAttr;
 use Lpdf\Layout\FrameAttr;
 use Lpdf\Layout\TrAttr;
@@ -221,6 +222,24 @@ final class SchemaTest extends TestCase
         self::assertSame(['keep' => 'with-next'], json_decode(json_encode(L::tr(new TrAttr(keep: 'with-next'))), true)['attrs']);
         self::assertNotSame($this->render($build(null)), $this->render($kept));
         self::assertSame($this->render($kept), $this->render(L::toXml($kept)));
+    }
+
+    public function testATableCellThatSpansColumnsMovesTheCellsAfterItAndRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        $build = static fn (?TdAttr $first) => L::document(null, [L::section(null, [L::layout(null, [
+            L::table(new TableAttr(cols: '1fr 1fr 1fr'), [
+                L::tr(null, [L::td($first, [L::text(null, ['A'])]), L::td(null, [L::text(null, ['B'])])]),
+            ]),
+        ])])]);
+
+        $spanning = $build(new TdAttr(colspan: '2'));
+
+        self::assertSame(['colspan' => '2'], json_decode(json_encode(L::td(new TdAttr(colspan: '2'))), true)['attrs']);
+        self::assertNotSame($this->render($build(null)), $this->render($spanning));
+        self::assertSame($this->render($spanning), $this->render(L::toXml($spanning)));
+
+        $this->expectExceptionMessageMatches('/span 4 columns, but the table has 3/');
+        $this->render($build(new TdAttr(colspan: '3')));
     }
 
     public function testAFootnoteIsAnFnChildOfATextAndTheCounterIsAnAttributeOfTheDocumentAndASection(): void
