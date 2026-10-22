@@ -28,6 +28,8 @@ use Lpdf\Layout\ShapeAttr;
 use Lpdf\Layout\SpanAttr;
 use Lpdf\Layout\TableAttr;
 use Lpdf\Layout\ColumnAttr;
+use Lpdf\Layout\FrameAttr;
+use Lpdf\Layout\TrAttr;
 use Lpdf\Layout\TextAttr;
 use PHPUnit\Framework\TestCase;
 
@@ -200,6 +202,25 @@ final class SchemaTest extends TestCase
             self::assertNotSame($without, $this->render($document));
             self::assertSame($this->render($document), $this->render(L::toXml($document)));
         }
+    }
+
+    public function testAKeptTableRowMovesOnWithTheRowAfterItAndRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        // The table starts 30pt above the foot of the page, so rows A and B fit and C does not.
+        $build = static fn (?TrAttr $keep) => L::document(null, [L::section(null, [L::layout(null, [
+            L::frame(new FrameAttr(height: '739pt')),
+            L::table(new TableAttr(cols: '1fr'), [
+                L::tr(null, [L::td(null, [L::text(null, ['A'])])]),
+                L::tr($keep, [L::td(null, [L::text(null, ['B'])])]),
+                L::tr(null, [L::td(null, [L::text(null, ['C'])])]),
+            ]),
+        ])])]);
+
+        $kept = $build(new TrAttr(keep: 'with-next'));
+
+        self::assertSame(['keep' => 'with-next'], json_decode(json_encode(L::tr(new TrAttr(keep: 'with-next'))), true)['attrs']);
+        self::assertNotSame($this->render($build(null)), $this->render($kept));
+        self::assertSame($this->render($kept), $this->render(L::toXml($kept)));
     }
 
     public function testAFootnoteIsAnFnChildOfATextAndTheCounterIsAnAttributeOfTheDocumentAndASection(): void
