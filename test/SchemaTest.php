@@ -242,6 +242,25 @@ final class SchemaTest extends TestCase
         $this->render($build(new TdAttr(colspan: '3')));
     }
 
+    public function testATableCellThatSpansRowsMovesTheCellsUnderItAndRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        $build = static fn (?TdAttr $first) => L::document(null, [L::section(null, [L::layout(null, [
+            L::table(new TableAttr(cols: '1fr 1fr'), [
+                L::tr(null, [L::td($first, [L::text(null, ['A'])]), L::td(null, [L::text(null, ['B'])])]),
+                L::tr(null, [L::td(null, [L::text(null, ['C'])])]),
+            ]),
+        ])])]);
+
+        $spanning = $build(new TdAttr(rowspan: '2'));
+
+        self::assertSame(['rowspan' => '2'], json_decode(json_encode(L::td(new TdAttr(rowspan: '2'))), true)['attrs']);
+        self::assertNotSame($this->render($build(null)), $this->render($spanning));
+        self::assertSame($this->render($spanning), $this->render(L::toXml($spanning)));
+
+        $this->expectExceptionMessageMatches('/a rowspan that runs 1 row past the last row of the table/');
+        $this->render($build(new TdAttr(rowspan: '3')));
+    }
+
     public function testAFootnoteIsAnFnChildOfATextAndTheCounterIsAnAttributeOfTheDocumentAndASection(): void
     {
         $text = L::text(null, ['Total', L::fn(null, ['See ', L::span(new SpanAttr(bold: 'true'), ['this']), '.']), ' here']);
