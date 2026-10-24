@@ -12,6 +12,9 @@ use Lpdf\Engine\WasmRunner;
 
 final class PdfEngine
 {
+    /** Bytes of entropy sent with an AES-256 request: one 256-bit key's worth. */
+    private const ENTROPY_BYTES = 32;
+
     /** @var array<string, string> Font name → raw TTF/OTF bytes */
     private array $fonts = [];
 
@@ -21,8 +24,8 @@ final class PdfEngine
     private string $licenseKey = '';
 
     /**
-     * Optional RC4-128 encryption config.
-     * @var array{user_password: string, owner_password: string, permissions: array<string, bool>}|null
+     * Optional encryption config.
+     * @var array{user_password: string, owner_password: string, permissions: array<string, bool>, algorithm: string}|null
      */
     private ?array $encrypt = null;
 
@@ -72,19 +75,30 @@ final class PdfEngine
     }
 
     /**
-     * Configure RC4-128 encryption for all subsequent render() calls.
-     * Pass null to clear previously set encryption.
+     * Configure encryption for all subsequent render() calls.
+     * Use clearEncryption() to remove it.
+     *
+     * Each AES-256 render gets a fresh random key, so two renders of one document differ in
+     * their bytes.
      *
      * @param array<string, bool> $permissions  Flags: print, modify, copy, annotate,
      *                                          fill_forms, accessibility, assemble, print_hq.
      *                                          Omitted flags default to true (allowed).
+     * @param string              $algorithm    'aes-256' (the default) or 'rc4-128', which PDF 2.0
+     *                                          deprecates: use it only for readers that cannot
+     *                                          open AES-256.
      */
-    public function setEncryption(string $userPassword, string $ownerPassword, array $permissions = []): static
-    {
+    public function setEncryption(
+        string $userPassword,
+        string $ownerPassword,
+        array $permissions = [],
+        string $algorithm = 'aes-256',
+    ): static {
         $this->encrypt = [
             'user_password'  => $userPassword,
             'owner_password' => $ownerPassword,
             'permissions'    => $permissions,
+            'algorithm'      => $algorithm,
         ];
         return $this;
     }
@@ -200,6 +214,11 @@ final class PdfEngine
 
         if ($this->encrypt !== null) {
             $payload['encrypt'] = $this->encrypt;
+            // AES-256 needs random bytes, which the engine does not make: they come from PHP's
+            // secure generator, 32 bytes for each render.
+            if ($this->encrypt['algorithm'] === 'aes-256') {
+                $payload['encrypt']['entropy'] = base64_encode(random_bytes(self::ENTROPY_BYTES));
+            }
         }
 
         if ($options?->data !== null && $method === 'render_pdf') {

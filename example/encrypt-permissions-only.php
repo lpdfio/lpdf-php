@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
 /**
- * encrypt-permissions-only.php — render showcase-encryption.xml with RC4-128 encryption,
+ * encrypt-permissions-only.php — render showcase-encryption.xml with AES-256 encryption,
  * no open password, print and copy disabled.
  *
  * Run from lpdf's root (after 'make build-sdk-php'):

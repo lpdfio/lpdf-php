@@ -9,6 +9,7 @@ use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\FontAttr;
 use Lpdf\Kit\ImageAttr;
+use Lpdf\Engine\EngineException;
 use Lpdf\Engine\RenderOptions;
 use PHPUnit\Framework\TestCase;
 
@@ -108,6 +109,54 @@ final class SnapshotTest extends TestCase
         self::assertStringStartsWith('%PDF-', $bytes);
         // Encrypted PDFs contain the /Encrypt dictionary entry
         self::assertStringContainsString('/Encrypt', $bytes);
+    }
+
+    public function testSetEncryptionEncryptsWithAes256ByDefault(): void
+    {
+        $xml    = file_get_contents(SnapshotHelper::fixtures() . '/example1.xml');
+        $engine = L::engine()->setLicenseKey('test-key');
+        $engine->setEncryption('open', 's3cr3t');
+        $bytes  = $engine->render($xml);
+        self::assertStringContainsString('/V 5', $bytes);
+        self::assertStringContainsString('/R 6', $bytes);
+        self::assertStringContainsString('/CFM /AESV3', $bytes);
+    }
+
+    public function testSetEncryptionWithRc4WritesTheRc4Dictionary(): void
+    {
+        $xml    = file_get_contents(SnapshotHelper::fixtures() . '/example1.xml');
+        $engine = L::engine()->setLicenseKey('test-key');
+        $engine->setEncryption('', 's3cr3t', [], 'rc4-128');
+        $bytes  = $engine->render($xml);
+        self::assertStringContainsString('/V 2', $bytes);
+        self::assertStringContainsString('/R 3', $bytes);
+        self::assertStringNotContainsString('AESV3', $bytes);
+    }
+
+    public function testEveryAes256RenderGetsAFreshKey(): void
+    {
+        $xml    = file_get_contents(SnapshotHelper::fixtures() . '/example1.xml');
+        $engine = L::engine()->setLicenseKey('test-key');
+        $engine->setEncryption('', 's3cr3t');
+        self::assertNotSame($engine->render($xml), $engine->render($xml));
+    }
+
+    public function testRc4RendersOfOneDocumentAreIdentical(): void
+    {
+        $xml    = file_get_contents(SnapshotHelper::fixtures() . '/example1.xml');
+        $engine = L::engine()->setLicenseKey('test-key');
+        $engine->setEncryption('', 's3cr3t', [], 'rc4-128');
+        self::assertSame($engine->render($xml), $engine->render($xml));
+    }
+
+    public function testSetEncryptionWithAnUnknownAlgorithmFailsTheRender(): void
+    {
+        $xml    = file_get_contents(SnapshotHelper::fixtures() . '/example1.xml');
+        $engine = L::engine()->setLicenseKey('test-key');
+        $engine->setEncryption('', 's3cr3t', [], 'aes-128');
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage('aes-128');
+        $engine->render($xml);
     }
 
     public function testLoadImageDoesNotThrowAndProducesValidPdf(): void
