@@ -8,7 +8,8 @@ namespace Lpdf\Layout;
  * One item of a list: a box that holds what a layout holds, such as a text, an image, a table or
  * another list, and sits beside the item's marker. The words go in a text. data-source repeats the
  * item once for each entry of the data, and the numbers of a number list follow what is made. The
- * item's own box (padding, background, border) surrounds the marker and the content.
+ * item's own box (padding, background, border) surrounds the marker and the content, and its gap
+ * goes between its children: the gap of the list, unless the item sets one.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
