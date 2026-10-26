@@ -22,6 +22,7 @@ use Lpdf\Layout\BookmarkAttr;
 use Lpdf\Layout\CodeAttr;
 use Lpdf\Layout\CodeSpanAttr;
 use Lpdf\Layout\FieldType;
+use Lpdf\Layout\ListAttr;
 use Lpdf\Layout\ImgAttr;
 use Lpdf\Layout\Pin;
 use Lpdf\Layout\FieldAttr;
@@ -306,6 +307,39 @@ final class SchemaTest extends TestCase
         $this->expectException(EngineException::class);
         $this->expectExceptionMessageMatches('/invalid tab-size/');
         $this->render(L::document(null, [L::section(null, [L::layout(null, [L::code(new CodeAttr(tabSize: '0'), ['x'])])])]));
+    }
+
+    public function testAListIsWrittenWithItsItemsAndRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        $document = L::document(null, [L::section(null, [L::layout(null, [
+            L::list(new ListAttr(type: 'number', format: 'lower-alpha', suffix: ')'), [
+                L::li(null, [L::text(null, ['One'])]),
+                L::li(null, [L::text(null, ['Two']), L::list(new ListAttr(bullet: 'dash'), [L::li(null, [L::text(null, ['Nested'])])])]),
+            ]),
+        ])])]);
+
+        $xml = L::toXml($document);
+        self::assertMatchesRegularExpression('~<list format="lower-alpha" suffix="\\)" type="number">\\s*<li>\\s*<text>One</text>\\s*</li>~', $xml);
+        self::assertMatchesRegularExpression('~<list bullet="dash">\\s*<li>\\s*<text>Nested</text>~', $xml);
+        self::assertSame('list', $this->json(L::list())['type']);
+        self::assertSame('li', $this->json(L::li())['type']);
+        self::assertSame($this->render($document), $this->render($xml));
+    }
+
+    public function testANumberListWritesItsNumbersAndABulletListRefusesWhatNumbersThem(): void
+    {
+        $items = static fn () => [L::li(null, [L::text(null, ['A'])]), L::li(null, [L::text(null, ['B'])])];
+        $build = static fn (?ListAttr $attrs) => L::document(null, [L::section(null, [L::layout(null, [L::list($attrs, $items())])])]);
+
+        $bullets = $this->render($build(null));
+        $numbers = $this->render($build(new ListAttr(type: 'number')));
+        $roman   = $this->render($build(new ListAttr(type: 'number', format: 'lower-roman', start: '3')));
+        self::assertNotSame($bullets, $numbers);
+        self::assertNotSame($numbers, $roman);
+
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessageMatches('/numbers the items of a list/');
+        $this->render($build(new ListAttr(format: 'lower-alpha')));
     }
 
     public function testAFootnoteIsDrawnAndRendersTheSameFromTheBuilderAndItsXmlAndOneInATableIsRejected(): void
