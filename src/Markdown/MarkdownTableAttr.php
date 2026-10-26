@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Lpdf\Markdown;
 
 /**
- * A table. The columns share the width equally.
+ * A table. Its columns are sized by their content: a column takes the width its cells need on one
+ * line, the room that is left is shared in proportion, and a name that does not fit breaks at the
+ * edge of its cell.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
