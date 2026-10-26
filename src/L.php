@@ -52,7 +52,9 @@ use Lpdf\Layout\FrameAttr;
 use Lpdf\Layout\GridAttr;
 use Lpdf\Layout\ImgAttr;
 use Lpdf\Layout\ImgNode;
+use Lpdf\Layout\LiAttr;
 use Lpdf\Layout\LinkAttr;
+use Lpdf\Layout\ListAttr;
 use Lpdf\Layout\Node;
 use Lpdf\Layout\RegionAttr;
 use Lpdf\Layout\RegionNode;
@@ -185,6 +187,28 @@ final class L
     public static function grid(?GridAttr $attrs = null, array $nodes = []): ContainerNode
     {
         return new ContainerNode('grid', self::optionsToAttrs($attrs), $nodes);
+    }
+
+    /**
+     * Build a list node: a list of items, which are li nodes. A bullet list marks each item with a shape; with
+     * type 'number' the engine numbers them, in the format given, and the numbers follow the items that
+     * data-source makes.
+     *
+     * @param Node[] $nodes
+     */
+    public static function list(?ListAttr $attrs = null, array $nodes = []): ContainerNode
+    {
+        return new ContainerNode('list', self::optionsToAttrs($attrs), $nodes);
+    }
+
+    /**
+     * Build an li, an item of a list. Its words go in a text; a list inside it is a list under the item.
+     *
+     * @param Node[] $nodes
+     */
+    public static function li(?LiAttr $attrs = null, array $nodes = []): ContainerNode
+    {
+        return new ContainerNode('li', self::optionsToAttrs($attrs), $nodes);
     }
 
     /** @param Node[] $nodes */
