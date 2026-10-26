@@ -3,11 +3,15 @@ declare(strict_types=1);
 
 namespace Lpdf\Tests;
 
+use const Lpdf\NoAttr;
+
 use Lpdf\L;
+use Lpdf\LMarkdown;
 use Lpdf\Canvas\TextAtAttr;
 use Lpdf\Canvas\LayerAttr;
 use Lpdf\Canvas\RectAttr;
 use Lpdf\Engine\EngineException;
+use Lpdf\Engine\RenderOptions;
 use Lpdf\Kit\BuiltinFont;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentAttr;
@@ -36,6 +40,10 @@ use Lpdf\Layout\ColumnAttr;
 use Lpdf\Layout\FrameAttr;
 use Lpdf\Layout\TrAttr;
 use Lpdf\Layout\TextAttr;
+use Lpdf\Markdown\MarkdownAttr;
+use Lpdf\Markdown\MarkdownH1Attr;
+use Lpdf\Markdown\MarkdownQuoteAttr;
+use Lpdf\Markdown\MarkdownStylesAttr;
 use PHPUnit\Framework\TestCase;
 
 /** The builders write the schema's names, and what they build renders like the XML it converts to. */
@@ -526,6 +534,97 @@ final class SchemaTest extends TestCase
     }
 
     // -- Helpers ---------------------------------------------------------------------------------
+
+    // -- Markdown --------------------------------------------------------------------------------
+
+    private const MARKDOWN_BODY = "# Release notes\n\nSome *emphasis*, **strong** text and `code`.\n\n- one\n- two\n\n> a quote\n";
+
+    private function markdownDocument(?MarkdownAttr $attrs = null, ?object $styles = null, string $text = self::MARKDOWN_BODY): object
+    {
+        return L::document(null, [L::section(null, [
+            L::markdown($attrs, [...($styles === null ? [] : [$styles]), LMarkdown::content(NoAttr, [$text])]),
+        ])]);
+    }
+
+    public function testAMarkdownItsStylesItsContentAndTheirRulesAreBuiltWithTheSchemaNames(): void
+    {
+        $markdown = $this->json(L::markdown(new MarkdownAttr(margin: '54pt', gap: 'm', bookmarks: '2')));
+        self::assertSame('markdown', $markdown['type']);
+        self::assertEquals(['margin' => '54pt', 'gap' => 'm', 'bookmarks' => '2'], $markdown['attrs']);
+
+        $styles = $this->json(LMarkdown::styles(new MarkdownStylesAttr(src: 'styles.xml'), [LMarkdown::h1(new MarkdownH1Attr(fontSize: 'xl', color: 'muted'))]));
+        self::assertSame('markdown-styles', $styles['type']);
+        self::assertEquals(['src' => 'styles.xml'], $styles['attrs']);
+        self::assertSame('h1', $styles['nodes'][0]['type']);
+        self::assertEquals(['font-size' => 'xl', 'color' => 'muted'], $styles['nodes'][0]['attrs']);
+        self::assertEquals(['bar-color' => 'primary'], $this->json(LMarkdown::quote(new MarkdownQuoteAttr(barColor: 'primary')))['attrs']);
+        self::assertSame('em', $this->json(LMarkdown::em())['type']);
+        self::assertSame(['# a'], $this->json(LMarkdown::content(NoAttr, ['# a']))['nodes']);
+    }
+
+    public function testAMarkdownIsWrittenAsXmlWithItsMarkdownAsItIsAndRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        $document = $this->markdownDocument(
+            new MarkdownAttr(gap: '8pt'),
+            LMarkdown::styles(NoAttr, [LMarkdown::h1(new MarkdownH1Attr(color: '#ff0000'))]),
+            "a < b & c ]]> d\n\n    code\n",
+        );
+
+        $xml = L::toXml($document);
+        self::assertStringContainsString('<markdown gap="8pt">', $xml);
+        self::assertMatchesRegularExpression('~<markdown-styles>\\s*<h1 color="\\#ff0000"\\s*/>\\s*</markdown-styles>~', $xml);
+        self::assertStringContainsString('<markdown-content><![CDATA[a < b & c ]]]]><![CDATA[> d', $xml);
+        self::assertSame($this->render($document), $this->render($xml));
+    }
+
+    public function testAMarkdownRendersTheTextItIsGivenAndARuleThatSetsAColorChangesThePage(): void
+    {
+        $plain = $this->render($this->markdownDocument());
+        self::assertStringStartsWith('%PDF-', $plain);
+        self::assertNotSame($plain, $this->render($this->markdownDocument(null, LMarkdown::styles(NoAttr, [LMarkdown::h1(new MarkdownH1Attr(color: '#ff0000'))]))));
+        self::assertNotSame($plain, $this->render($this->markdownDocument(null, null, '# Another title')));
+    }
+
+    public function testAFileOfRulesIsReadFromTheSrcOfItsStylesOrLoadedByName(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'lpdf-styles-');
+        file_put_contents($file, '<markdown-styles><h1 color="#ff0000"/></markdown-styles>');
+        try {
+            $inline  = $this->render($this->markdownDocument(null, LMarkdown::styles(NoAttr, [LMarkdown::h1(new MarkdownH1Attr(color: '#ff0000'))])));
+            $fromSrc = $this->markdownDocument(null, LMarkdown::styles(new MarkdownStylesAttr(src: $file)));
+            self::assertSame($inline, $this->render($fromSrc));
+            self::assertSame($inline, $this->render(L::toXml($fromSrc)));
+
+            $loaded = L::engine()->setLicenseKey('test-key')->loadMarkdownStyles('theme.xml', '<markdown-styles><h1 color="#ff0000"/></markdown-styles>');
+            $pdf = $loaded->render($this->markdownDocument(null, LMarkdown::styles(new MarkdownStylesAttr(src: 'theme.xml'))));
+            self::assertSame($inline, $this->normalised($pdf));
+        } finally {
+            unlink($file);
+        }
+    }
+
+    public function testAFileOfRulesThatIsNotThereAndRawHtmlAreErrorsThatNameTheSrcAndTheLine(): void
+    {
+        try {
+            $this->render($this->markdownDocument(null, LMarkdown::styles(new MarkdownStylesAttr(src: 'missing-styles.xml'))));
+            self::fail('a file of rules that is not there should be an error');
+        } catch (EngineException $e) {
+            self::assertStringContainsString('missing-styles.xml', $e->getMessage());
+        }
+
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessageMatches('/markdown line 3.*raw HTML/s');
+        $this->render($this->markdownDocument(null, null, "fine\n\n<div>no</div>\n"));
+    }
+
+    public function testTheMarkdownComesFromTheDataOfAnXmlDocumentOrTheTextWrittenInIt(): void
+    {
+        $xml = '<lpdf version="1"><document><section><markdown><markdown-content data-value="body"><![CDATA[# From the text]]></markdown-content></markdown></section></document></lpdf>';
+        $engine = L::engine()->setLicenseKey('test-key');
+        $fromData = $this->normalised($engine->render($xml, new RenderOptions(data: ['body' => '# From the data'])));
+        $fromText = $this->normalised($engine->render($xml));
+        self::assertNotSame($fromData, $fromText);
+    }
 
     private static function pixel(): string
     {

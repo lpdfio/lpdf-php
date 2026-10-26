@@ -70,6 +70,10 @@ use Lpdf\Layout\TextAttr;
 use Lpdf\Layout\TextNode;
 use Lpdf\Layout\TheadAttr;
 use Lpdf\Layout\TrAttr;
+use Lpdf\Markdown\MarkdownAttr;
+use Lpdf\Markdown\MarkdownContentNode;
+use Lpdf\Markdown\MarkdownNode;
+use Lpdf\Markdown\MarkdownStylesNode;
 use Lpdf\Shared\AttrsHelper;
 
 /**
@@ -144,7 +148,7 @@ final class L
      * Build a section (page) node. Its nodes are a bookmark, then layers, then at most one layout, then
      * layers: the layers before the layout paint under it, and the layers after it paint over it.
      *
-     * @param array<BookmarkNode|LayerNode|SectionLayout> $nodes
+     * @param array<BookmarkNode|LayerNode|SectionLayout|MarkdownNode> $nodes
      */
     public static function section(?SectionAttr $attrs = null, array $nodes = []): SectionNode
     {
@@ -155,6 +159,19 @@ final class L
     public static function layout(?LayoutAttr $attrs, array $nodes = []): SectionLayout
     {
         return new SectionLayout(self::optionsToAttrs($attrs), $nodes);
+    }
+
+    /**
+     * Build a markdown block, which takes the place of a layout in a {@see section()} and holds only Markdown: the
+     * {@see LMarkdown::styles()} that say how each part looks, which are optional, and one
+     * {@see LMarkdown::content()} with the text. What Markdown can't say, such as the page, a header, a footer or
+     * a cover, stays in the section around it: layers paint a header and a footer in the margin it leaves.
+     *
+     * @param array<MarkdownStylesNode|MarkdownContentNode> $nodes
+     */
+    public static function markdown(?MarkdownAttr $attrs = null, array $nodes = []): MarkdownNode
+    {
+        return new MarkdownNode(self::optionsToAttrs($attrs), $nodes);
     }
 
     /** Create a {@see DocumentAssets} instance (convenience factory). */
