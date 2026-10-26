@@ -7,6 +7,7 @@ use Lpdf\L;
 use Lpdf\Canvas\TextAtAttr;
 use Lpdf\Canvas\LayerAttr;
 use Lpdf\Canvas\RectAttr;
+use Lpdf\Engine\EngineException;
 use Lpdf\Kit\BuiltinFont;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentAttr;
@@ -18,6 +19,8 @@ use Lpdf\Kit\Orientation;
 use Lpdf\Kit\SectionAttr;
 use Lpdf\Kit\SectionType;
 use Lpdf\Layout\BookmarkAttr;
+use Lpdf\Layout\CodeAttr;
+use Lpdf\Layout\CodeSpanAttr;
 use Lpdf\Layout\FieldType;
 use Lpdf\Layout\ImgAttr;
 use Lpdf\Layout\Pin;
@@ -274,6 +277,35 @@ final class SchemaTest extends TestCase
         self::assertMatchesRegularExpression('/<section [^>]*footnote-counter="page"/', $xml);
         self::assertStringContainsString('<text>Total<fn>See <span bold="true">this</span>.</fn> here</text>', $xml);
         self::assertSame(['type' => 'fn', 'attrs' => [], 'nodes' => ['a']], $this->json(L::fn(null, ['a'])));
+    }
+
+    public function testACodeAndACodeSpanAreWrittenAsTheirElementsAndRenderTheSameFromTheBuilderAndItsXml(): void
+    {
+        $document = L::document(null, [L::section(null, [L::layout(null, [
+            L::code(new CodeAttr(tabSize: '2'), ["\nfn a() {\n\tb(", L::span(new SpanAttr(color: '#c0392b'), ['x']), ");\n}\n"]),
+            L::text(null, ['Run ', L::codeSpan(new CodeSpanAttr(background: '#ffff00'), ['cargo test']), ' now']),
+        ])])]);
+
+        $xml = L::toXml($document);
+        self::assertStringContainsString("<code tab-size=\"2\">\nfn a() {\n\tb(<span color=\"#c0392b\">x</span>);\n}\n</code>", $xml);
+        self::assertStringContainsString('Run <code-span background="#ffff00">cargo test</code-span> now', $xml);
+        self::assertSame('code', $this->json(L::code())['type']);
+        self::assertSame('code-span', $this->json(L::codeSpan())['type']);
+        self::assertSame($this->render($document), $this->render($xml));
+    }
+
+    public function testACodeKeepsItsSpacesAndOneLongerThanAPageGoesOnInTheNextAndABadTabSizeIsRejected(): void
+    {
+        $build = static fn (string ...$nodes) => L::document(null, [L::section(null, [L::layout(null, [L::code(null, $nodes)])])]);
+
+        self::assertNotSame($this->render($build('a    b')), $this->render($build('a b')));
+
+        $lines = implode("\n", array_map(static fn (int $i) => "line $i", range(1, 150)));
+        self::assertGreaterThanOrEqual(2, preg_match_all('~/Type\s*/Page[^s]~', $this->render($build($lines))), 'the code splits across pages');
+
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessageMatches('/invalid tab-size/');
+        $this->render(L::document(null, [L::section(null, [L::layout(null, [L::code(new CodeAttr(tabSize: '0'), ['x'])])])]));
     }
 
     public function testAFootnoteIsDrawnAndRendersTheSameFromTheBuilderAndItsXmlAndOneInATableIsRejected(): void

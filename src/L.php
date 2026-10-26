@@ -38,6 +38,10 @@ use Lpdf\Layout\BarcodeAttr;
 use Lpdf\Layout\BarcodeNode;
 use Lpdf\Layout\BookmarkAttr;
 use Lpdf\Layout\BookmarkNode;
+use Lpdf\Layout\CodeAttr;
+use Lpdf\Layout\CodeNode;
+use Lpdf\Layout\CodeSpanAttr;
+use Lpdf\Layout\CodeSpanNode;
 use Lpdf\Layout\ColumnAttr;
 use Lpdf\Layout\ContainerNode;
 use Lpdf\Layout\DividerAttr;
@@ -226,18 +230,37 @@ final class L
     /**
      * Build a text paragraph node.
      *
-     * @param array<string|SpanNode|FnNode> $nodes
+     * @param array<string|SpanNode|CodeSpanNode|FnNode> $nodes
      */
     public static function text(?TextAttr $attrs = null, array $nodes = []): TextNode
     {
         foreach ($nodes as $i => $child) {
-            if (!is_string($child) && !$child instanceof SpanNode && !$child instanceof FnNode) {
+            if (!is_string($child) && !$child instanceof SpanNode && !$child instanceof CodeSpanNode && !$child instanceof FnNode) {
                 throw new \InvalidArgumentException(
-                    "text() child at index $i must be a string, SpanNode or FnNode, got " . get_debug_type($child),
+                    "text() child at index $i must be a string, SpanNode, CodeSpanNode or FnNode, got " . get_debug_type($child),
                 );
             }
         }
         return new TextNode(self::optionsToAttrs($attrs), $nodes);
+    }
+
+    /**
+     * Build a code node: code in a box that fills the width and grows with its lines. The strings are kept as
+     * they are written: every space, and a new line wherever there is a "\n". A line longer than the box wraps.
+     * The spans color parts of the code.
+     *
+     * @param array<string|SpanNode> $nodes
+     */
+    public static function code(?CodeAttr $attrs = null, array $nodes = []): CodeNode
+    {
+        foreach ($nodes as $i => $child) {
+            if (!is_string($child) && !$child instanceof SpanNode) {
+                throw new \InvalidArgumentException(
+                    "code() child at index $i must be a string or SpanNode, got " . get_debug_type($child),
+                );
+            }
+        }
+        return new CodeNode(self::optionsToAttrs($attrs), $nodes);
     }
 
     /**
@@ -255,6 +278,23 @@ final class L
             }
         }
         return new SpanNode(self::optionsToAttrs($attrs), $nodes);
+    }
+
+    /**
+     * Build a code-span inline node: a run of code in a text, in the code font on a tint.
+     *
+     * @param string[] $nodes
+     */
+    public static function codeSpan(?CodeSpanAttr $attrs = null, array $nodes = []): CodeSpanNode
+    {
+        foreach ($nodes as $i => $child) {
+            if (!is_string($child)) {
+                throw new \InvalidArgumentException(
+                    "codeSpan() child at index $i must be a string, got " . get_debug_type($child),
+                );
+            }
+        }
+        return new CodeSpanNode(self::optionsToAttrs($attrs), $nodes);
     }
 
     /**
@@ -370,7 +410,7 @@ final class L
     /**
      * Build a `text-at`, the text of the layout put at a fixed place.
      *
-     * @param array<string|SpanNode> $nodes
+     * @param array<string|SpanNode|CodeSpanNode> $nodes
      */
     public static function textAt(TextAtAttr $attrs, array $nodes = []): TextAtNode
     {
