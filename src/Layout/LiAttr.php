@@ -71,5 +71,13 @@ final readonly class LiAttr
          */
         public ?string $paginate = null,
         public ?string $debug = null,
+        /**
+         * Makes the item's marker a checkbox in place of the bullet or the number: an outline in
+         * the line color, with a tick in the color of the item's words when this is true, and empty
+         * when it is false. The words start where those of a bullet do, and an item of a number
+         * list still takes its number. An item without it keeps its bullet or number. A task item
+         * of a Markdown, - [ ] or - [x], is one.
+         */
+        public ?string $checked = null,
     ) {}
 }
