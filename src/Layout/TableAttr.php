@@ -23,8 +23,23 @@ final readonly class TableAttr
          * use pt or % for the fixed columns. For example auto 90pt 60pt.
          */
         public string $cols,
+        /**
+         * A grid: a line around every cell, as thickness and color, for example 1pt #cccccc.
+         */
         public ?string $border = null,
+        /** The background of every other row below the header, or none. */
         public ?string $stripe = null,
+        /**
+         * The line under the header row, across the table, as thickness and color like border, or
+         * none: for example xs line.
+         */
+        public ?string $headBorder = null,
+        /**
+         * The line under each row, across the table, as thickness and color like border, or none:
+         * for example xs line-muted. Under the header row, head-border takes its place when it is
+         * set. A line stops where a cell spans on into the next row.
+         */
+        public ?string $rowBorder = null,
         public ?string $gap = null,
         public ?string $padding = null,
         public ?string $background = null,
