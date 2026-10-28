@@ -21,6 +21,9 @@ final class PdfEngine
     /** @var array<string, string> Image name → raw image bytes (PNG/JPEG/WebP/…) */
     private array $images = [];
 
+    /** @var array<string, string> `src` of a `<markdown-styles>` → the text of the file of rules it names */
+    private array $markdownStyles = [];
+
     private string $licenseKey = '';
 
     /**
@@ -141,6 +144,16 @@ final class PdfEngine
     }
 
     /**
+     * Register the text of a file of Markdown rules, the root of which is a `<markdown-styles>`, for the `src`
+     * that names it in `<markdown-styles src="…">`.
+     */
+    public function loadMarkdownStyles(string $src, string $text): static
+    {
+        $this->markdownStyles[$src] = $text;
+        return $this;
+    }
+
+    /**
      * Render an lpdf XML string or PdfDocument tree and return raw PDF bytes.
      *
      * @param  string|PdfDocument  $input    XML string or a PdfDocument.
@@ -191,6 +204,21 @@ final class PdfEngine
             }
         }
 
+        // The files of Markdown rules that a document names with a src: the ones loaded here, and the ones read
+        // from the path. A file that can't be read is left for the engine to report, naming the src.
+        $mergedStyles = $this->markdownStyles;
+        $styleSrcs = $method === 'render_pdf'
+            ? self::xmlMarkdownStylesSrcs($inputStr)
+            : self::jsonMarkdownStylesSrcs($inputStr);
+        foreach ($styleSrcs as $src) {
+            if (!array_key_exists($src, $mergedStyles) && is_readable($src)) {
+                $text = file_get_contents($src);
+                if ($text !== false) {
+                    $mergedStyles[$src] = $text;
+                }
+            }
+        }
+
         $payload = [
             'method' => $method,
             'key'    => $this->licenseKey,
@@ -206,6 +234,10 @@ final class PdfEngine
 
         if ($mergedImages !== []) {
             $payload['images'] = array_map('base64_encode', $mergedImages);
+        }
+
+        if ($mergedStyles !== []) {
+            $payload['markdown_styles'] = $mergedStyles;
         }
 
         if ($options?->createdOn !== null) {
@@ -266,6 +298,39 @@ final class PdfEngine
                 preg_match('/\bsrc="([^"]*)"/', $tag, $src)) {
                 $key = preg_match('/\bref="([^"]*)"/', $tag, $ref) ? $ref[1] : $nm[1];
                 $srcs[$key] = $src[1];
+            }
+        }
+        return $srcs;
+    }
+
+    /** @return string[] The `src` of each `<markdown-styles>` in XML. */
+    private static function xmlMarkdownStylesSrcs(string $xml): array
+    {
+        $srcs = [];
+        preg_match_all('/<markdown-styles\s[^>]*>/', $xml, $m);
+        foreach ($m[0] as $tag) {
+            if (preg_match('/\bsrc="([^"]*)"/', $tag, $src) && $src[1] !== '') {
+                $srcs[] = $src[1];
+            }
+        }
+        return $srcs;
+    }
+
+    /** @return string[] The `src` of each `markdown-styles` in the markdown of any section of a serialised tree. */
+    private static function jsonMarkdownStylesSrcs(string $json): array
+    {
+        $srcs = [];
+        $doc  = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        foreach ($doc['nodes'] ?? [] as $section) {
+            foreach ($section['nodes'] ?? [] as $child) {
+                if (($child['type'] ?? null) !== 'markdown') {
+                    continue;
+                }
+                foreach ($child['nodes'] ?? [] as $part) {
+                    if (($part['type'] ?? null) === 'markdown-styles' && isset($part['attrs']['src'])) {
+                        $srcs[] = $part['attrs']['src'];
+                    }
+                }
             }
         }
         return $srcs;
