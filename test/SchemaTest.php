@@ -603,18 +603,17 @@ final class SchemaTest extends TestCase
         }
     }
 
-    public function testAFileOfRulesThatIsNotThereAndRawHtmlAreErrorsThatNameTheSrcAndTheLine(): void
+    public function testAFileOfRulesThatIsNotThereIsAnErrorThatNamesTheSrc(): void
     {
-        try {
-            $this->render($this->markdownDocument(null, LMarkdown::styles(new MarkdownStylesAttr(src: 'missing-styles.xml'))));
-            self::fail('a file of rules that is not there should be an error');
-        } catch (EngineException $e) {
-            self::assertStringContainsString('missing-styles.xml', $e->getMessage());
-        }
-
         $this->expectException(EngineException::class);
-        $this->expectExceptionMessageMatches('/markdown line 3.*raw HTML/s');
-        $this->render($this->markdownDocument(null, null, "fine\n\n<div>no</div>\n"));
+        $this->expectExceptionMessageMatches('/missing-styles\.xml/');
+        $this->render($this->markdownDocument(null, LMarkdown::styles(new MarkdownStylesAttr(src: 'missing-styles.xml'))));
+    }
+
+    public function testRawHtmlIsLeftOutOfTheMarkdownAndTheWordsInItAreKept(): void
+    {
+        $withHtml = $this->render($this->markdownDocument(null, null, "fine\n\n<div>kept</div>\n"));
+        self::assertSame($this->render($this->markdownDocument(null, null, "fine\n\nkept\n")), $withHtml);
     }
 
     public function testTheMarkdownComesFromTheDataOfAnXmlDocumentOrTheTextWrittenInIt(): void
