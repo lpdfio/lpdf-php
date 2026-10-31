@@ -22,28 +22,28 @@ final readonly class TextAttr
          * oblique and italic faces their bold forms. A custom font has no bold face to pick, so
          * name one in font.
          */
-        public ?string $bold = null,
+        public ?bool $bold = null,
         public ?string $color = null,
         public ?string $align = null,
         /**
          * The distance between lines, as a factor of the font size: a number above 0, such as 1.5,
          * or a name from the line-height row of the tokens. Default 1.2, which is the token m.
          */
-        public ?string $lineHeight = null,
+        public string|float|null $lineHeight = null,
         /**
          * The most lines drawn. Only whole lines are drawn, and the rest of the text is dropped. A
          * text in the layout has no cap by default and wraps at the width it has; the lines it
          * drops take no room, and a text that splits across pages keeps the cap across them. A
          * text-at is one line by default, and above 1 needs a width to wrap within.
          */
-        public ?string $maxLines = null,
+        public ?int $maxLines = null,
         /**
          * End the last line drawn in an ellipsis when max-lines drops text, shortened to fit the
          * width. Off by default: the text stops at the end of a line. A text-at also ends a line in
          * one when it is cut off at its width. A text in the layout without max-lines is never cut,
          * so there it has no effect.
          */
-        public ?string $ellipsis = null,
+        public ?bool $ellipsis = null,
         /**
          * Width of the element. A length fixes it. fill, in a row, takes the width its line leaves
          * after the other children, shared equally if several on the line use fill, and never moves
@@ -55,14 +55,14 @@ final readonly class TextAttr
          * splits. Default 2. If fewer would be left, lines move from the first page to the next; 1
          * turns the protection off.
          */
-        public ?string $widows = null,
+        public ?int $widows = null,
         /**
          * The fewest lines of the text that may stand alone at the bottom of a page when it splits.
          * Default 2. If fewer would fit, the whole text moves to the next page; 1 turns the
          * protection off. When no split can keep both widows and orphans, even on an empty page,
          * the text splits where the lines fit.
          */
-        public ?string $orphans = null,
+        public ?int $orphans = null,
         /**
          * Records the words of this text under a name as the pages are filled, so a text with
          * capture-ref in a header or a footer can show them. Put it on a heading in the flow. The
@@ -91,6 +91,6 @@ final readonly class TextAttr
          */
         public ?string $captureFallback = null,
         public ?string $paginate = null,
-        public ?string $debug = null,
+        public ?bool $debug = null,
     ) {}
 }

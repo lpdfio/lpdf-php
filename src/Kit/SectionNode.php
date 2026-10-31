@@ -18,7 +18,7 @@ use Lpdf\Layout\BookmarkNode;
 final readonly class SectionNode implements \JsonSerializable
 {
     /**
-     * @param array<string,string>                          $attrs
+     * @param array<string,string|int|float|bool>                          $attrs
      * @param array<BookmarkNode|LayerNode|SectionLayout> $nodes  In paint order.
      */
     public function __construct(

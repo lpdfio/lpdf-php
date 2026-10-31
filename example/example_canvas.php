@@ -185,7 +185,7 @@ $section1 = L::section(new SectionAttr(size: 'a4'), [
     ]),
 
     // Semi-transparent red overlay layer
-    L::layer(new LayerAttr(opacity: '0.4'), [
+    L::layer(new LayerAttr(opacity: 0.4), [
         L::rect(new RectAttr(x: '28pt', y: '562pt', width: '539pt', height: '80pt', fill: '#e74c3c')),
         L::textAt(
             new TextAtAttr(x: '38pt', y: '590pt', font: 'Helvetica-Bold', fontSize: '14pt', color: '#ffffff'),

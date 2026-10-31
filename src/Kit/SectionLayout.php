@@ -14,7 +14,7 @@ use Lpdf\Layout\Node;
 final readonly class SectionLayout implements \JsonSerializable
 {
     /**
-     * @param array<string,string> $attrs
+     * @param array<string,string|int|float|bool> $attrs
      * @param Node[]               $nodes
      */
     public function __construct(

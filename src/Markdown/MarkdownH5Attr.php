@@ -15,10 +15,10 @@ final readonly class MarkdownH5Attr
     public function __construct(
         public ?string $font = null,
         public ?string $fontSize = null,
-        public ?string $bold = null,
+        public ?bool $bold = null,
         public ?string $color = null,
         public ?string $align = null,
-        public ?string $lineHeight = null,
+        public string|float|null $lineHeight = null,
         public ?string $padding = null,
         public ?string $background = null,
         public ?string $border = null,

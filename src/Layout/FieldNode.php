@@ -12,7 +12,7 @@ namespace Lpdf\Layout;
 final readonly class FieldNode extends Node
 {
     /**
-     * @param array<string,string> $attrs  Must include 'type' and 'name'.
+     * @param array<string,string|int|float|bool> $attrs  Must include 'type' and 'name'.
      */
     public function __construct(private array $attrs) {}
 

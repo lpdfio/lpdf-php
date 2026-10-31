@@ -52,7 +52,7 @@ final readonly class CodeAttr
          * faded further: 0.5 inside 0.5 is drawn at 0.25. A form field in the box is not faded.
          * Default 1.
          */
-        public ?string $opacity = null,
+        public ?float $opacity = null,
         /**
          * A hard-edged shadow: a copy of the box, moved right and down by the first two lengths
          * (negative is left and up) and filled with the color, drawn under the box with the same
@@ -74,7 +74,7 @@ final readonly class CodeAttr
          * at any depth.
          */
         public ?string $paginate = null,
-        public ?string $debug = null,
+        public ?bool $debug = null,
         /**
          * Width of the element. A length fixes it. fill, in a row, takes the width its line leaves
          * after the other children, shared equally if several on the line use fill, and never moves
@@ -85,23 +85,23 @@ final readonly class CodeAttr
          * How many columns a tab fills to: it moves the next character to the next multiple of this
          * many characters from the start of the line. Default 4.
          */
-        public ?string $tabSize = null,
+        public ?int $tabSize = null,
         /**
          * The distance between lines, as a factor of the font size: a number above 0, such as 1.5,
          * or a name from the line-height row of the tokens. Default 1.2, which is the token m.
          */
-        public ?string $lineHeight = null,
+        public string|float|null $lineHeight = null,
         /**
          * The fewest lines of the code that may stand alone at the top of the next page when it
          * splits. Default 2. If fewer would be left, lines move from the first page to the next; 1
          * turns the protection off.
          */
-        public ?string $widows = null,
+        public ?int $widows = null,
         /**
          * The fewest lines of the code that may stand alone at the bottom of a page when it splits.
          * Default 2. If fewer would fit, the whole code moves to the next page; 1 turns the
          * protection off.
          */
-        public ?string $orphans = null,
+        public ?int $orphans = null,
     ) {}
 }

@@ -17,7 +17,7 @@ final readonly class DocumentAttr
         public ?string         $orientation = null,
         public ?string         $background  = null,
         public ?string         $font        = null,
-        public ?string         $debug       = null,
+        public ?bool           $debug       = null,
         public ?DocumentAssets $assets      = null,
         public ?DocumentTokens $tokens      = null,
         public ?DocumentMeta   $meta        = null,

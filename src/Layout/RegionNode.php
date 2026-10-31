@@ -12,7 +12,7 @@ namespace Lpdf\Layout;
 final readonly class RegionNode extends Node
 {
     /**
-     * @param array<string,string> $attrs   Must include 'pin'.
+     * @param array<string,string|int|float|bool> $attrs   Must include 'pin'.
      * @param Node[]               $nodes
      */
     public function __construct(

@@ -32,10 +32,10 @@ $doc = L::document(new DocumentAttr(size: 'letter'), [
             L::column(new ColumnAttr(gap: '24pt'), [
                 L::row(new RowAttr(justify: 'between'), [
                     L::text(new TextAttr(fontSize: '8pt', color: '#888888'), ['ACME CORP']),
-                    L::text(new TextAttr(fontSize: '22pt', bold: 'true'), ['Project Proposal']),
+                    L::text(new TextAttr(fontSize: '22pt', bold: true), ['Project Proposal']),
                 ]),
                 L::divider(new DividerAttr(thickness: 'xs')),
-                L::text(new TextAttr(fontSize: '13pt', bold: 'true'), ['Scope of Work']),
+                L::text(new TextAttr(fontSize: '13pt', bold: true), ['Scope of Work']),
                 L::row(new RowAttr(gap: '12pt', align: 'start'), [
                     L::text(new TextAttr(color: '#888888', width: '24pt'), ['01']),
                     L::text(new TextAttr(width: 'fill'), ['Discovery & Research']),

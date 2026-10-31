@@ -22,7 +22,7 @@ final readonly class BookmarkAttr
          * Depth in the outline, 1 to 6. Defaults to 1. An entry nests under the closest entry
          * before it with a lower level.
          */
-        public ?string $level = null,
+        public ?int $level = null,
         /**
          * The name links use to jump here, as href="#id". Leave it out to make it from the label:
          * lowercase, with other characters than letters and digits turned into hyphens, and -2, -3

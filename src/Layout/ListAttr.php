@@ -48,7 +48,7 @@ final readonly class ListAttr
          * faded further: 0.5 inside 0.5 is drawn at 0.25. A form field in the box is not faded.
          * Default 1.
          */
-        public ?string $opacity = null,
+        public ?float $opacity = null,
         /**
          * A hard-edged shadow: a copy of the box, moved right and down by the first two lengths
          * (negative is left and up) and filled with the color, drawn under the box with the same
@@ -70,7 +70,7 @@ final readonly class ListAttr
          * at any depth.
          */
         public ?string $paginate = null,
-        public ?string $debug = null,
+        public ?bool $debug = null,
         /** bullet marks each item with a shape, number with a number. Default bullet. */
         public ?string $type = null,
         /**
@@ -84,7 +84,7 @@ final readonly class ListAttr
          * The number of a number list's first item, to continue a list that something cut in two.
          * Default 1.
          */
-        public ?string $start = null,
+        public ?int $start = null,
         /**
          * Text before each number of a number list: prefix="(" and suffix=")" write (a). Default
          * none.

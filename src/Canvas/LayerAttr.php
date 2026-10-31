@@ -23,7 +23,7 @@ final readonly class LayerAttr
          * How opaque everything in the layer is, from 0 to 1. To fade one element, put it in a
          * layer of its own.
          */
-        public ?string $opacity = null,
+        public ?float $opacity = null,
         public ?string $transform = null,
         /**
          * A rectangle that cuts off what the layer draws outside it: x y w h, in points from the

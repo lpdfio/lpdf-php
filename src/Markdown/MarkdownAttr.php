@@ -47,7 +47,7 @@ final readonly class MarkdownAttr
          * How many levels of headings become bookmarks, for the outline of the viewer and the table
          * of contents: n keeps the levels 1 to n, 0 none. Default 6.
          */
-        public ?string $bookmarks = null,
-        public ?string $debug = null,
+        public ?int $bookmarks = null,
+        public ?bool $debug = null,
     ) {}
 }

@@ -13,7 +13,7 @@ namespace Lpdf\Layout;
 final readonly class BookmarkNode extends Node
 {
     /**
-     * @param array<string,string> $attrs  Must include 'label'.
+     * @param array<string,string|int|float|bool> $attrs  Must include 'label'.
      */
     public function __construct(private array $attrs) {}
 

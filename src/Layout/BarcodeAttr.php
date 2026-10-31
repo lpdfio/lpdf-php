@@ -30,7 +30,7 @@ final readonly class BarcodeAttr
          */
         public ?string $height = null,
         public ?string $ec = null,
-        public ?string $hrt = null,
+        public ?bool $hrt = null,
         public ?string $color = null,
         public ?string $background = null,
         /**
@@ -40,6 +40,6 @@ final readonly class BarcodeAttr
          */
         public ?string $width = null,
         public ?string $paginate = null,
-        public ?string $debug = null,
+        public ?bool $debug = null,
     ) {}
 }

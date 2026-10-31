@@ -14,14 +14,14 @@ final readonly class SpanAttr
 {
     public function __construct(
         public ?string $font = null,
-        public ?string $bold = null,
+        public ?bool $bold = null,
         public ?string $color = null,
         /**
          * Makes the span a link: a URL, or #id to jump to the bookmark with that id. In an entry of
          * a table of contents, # alone jumps to that entry's bookmark.
          */
         public ?string $href = null,
-        public ?string $underline = null,
-        public ?string $strike = null,
+        public ?bool $underline = null,
+        public ?bool $strike = null,
     ) {}
 }

@@ -26,6 +26,6 @@ final readonly class LinkAttr
          */
         public ?string $width = null,
         public ?string $height = null,
-        public ?string $debug = null,
+        public ?bool $debug = null,
     ) {}
 }
