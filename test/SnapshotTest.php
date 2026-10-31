@@ -8,6 +8,7 @@ use Lpdf\L;
 use Lpdf\Kit\Cipher;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentOutput;
+use Lpdf\Layout\ColumnAttr;
 use Lpdf\Kit\Permission;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\FontAttr;
@@ -206,6 +207,52 @@ final class SnapshotTest extends TestCase
         $this->expectException(EngineException::class);
         $this->expectExceptionMessage($expected);
         L::engine()->setLicenseKey('test-key')->render($xml, $options);
+    }
+
+    /**
+     * A document with no text of its own that asks for PDF/A: the attribution line's name, in its embedded face, is
+     * its one text.
+     */
+    private static function pdfaXml(string $level = '2b', string $body = '<column background="#e8f0fc" height="40pt"/>'): string
+    {
+        return '<lpdf version="1"><document><output pdfa="' . $level . '"/>'
+            . '<section><layout>' . $body . '</layout></section></document></lpdf>';
+    }
+
+    public function testWritesPdfaWhenTheOutputAsksForItDatedByCreatedOn(): void
+    {
+        $bytes = L::engine()->setLicenseKey('test-key')
+            ->render(self::pdfaXml('2u'), new RenderOptions(createdOn: '2026-10-31T09:30:00Z'));
+        self::assertStringContainsString('<pdfaid:part>2</pdfaid:part>', $bytes);
+        self::assertStringContainsString('<pdfaid:conformance>U</pdfaid:conformance>', $bytes);
+        self::assertStringContainsString('/S /GTS_PDFA1', $bytes);
+        self::assertStringContainsString('/ModDate (D:20261031093000Z)', $bytes);
+    }
+
+    public function testTakesPdfaFromTheOutputOfAKitDocument(): void
+    {
+        $doc = L::document(
+            new DocumentAttr(output: new DocumentOutput(pdfa: '2b')),
+            [L::section(null, [L::layout(null, [L::column(new ColumnAttr(background: '#e8f0fc', height: '40pt'), [])])])],
+        );
+        self::assertSame(['pdfa' => '2b'], json_decode(json_encode($doc), true)['attrs']['output']);
+        $bytes = L::engine()->setLicenseKey('test-key')->render($doc, new RenderOptions(createdOn: '2026-10-31'));
+        self::assertStringContainsString('<pdfaid:conformance>B</pdfaid:conformance>', $bytes);
+    }
+
+    public function testRefusesPdfaWithoutCreatedOn(): void
+    {
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage('created_on');
+        L::engine()->setLicenseKey('test-key')->render(self::pdfaXml());
+    }
+
+    public function testRefusesPdfaTextInABuiltInFont(): void
+    {
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage('"Hello" is in Helvetica');
+        L::engine()->setLicenseKey('test-key')
+            ->render(self::pdfaXml('2b', '<text>Hello</text>'), new RenderOptions(createdOn: '2026-10-31'));
     }
 
     public function testEncryptsADocumentBuiltWithTheKitAsItsOutputAsks(): void

@@ -7,7 +7,7 @@ namespace Lpdf\Engine;
 final readonly class RenderOptions
 {
     public function __construct(
-        public ?string     $createdOn = null,  // ISO 8601 for PDF /CreationDate
+        public ?string     $createdOn = null,  // ISO 8601 for PDF /CreationDate; required with the output's pdfa
         public mixed       $data      = null,  // data object for data-* bindings (XML only)
         /**
          * The password a reader asks for before showing the PDF, for a document that asks for encryption in its
