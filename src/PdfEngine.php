@@ -21,6 +21,9 @@ final class PdfEngine
     /** @var array<string, string> Image name → raw image bytes (PNG/JPEG/WebP/…) */
     private array $images = [];
 
+    /** @var array<string, string> `ref` or name of a `<file>` of `<attachments>` → the bytes the PDF carries */
+    private array $files = [];
+
     /** @var array<string, string> `src` of a `<markdown-styles>` → the text of the file of rules it names */
     private array $markdownStyles = [];
 
@@ -100,6 +103,18 @@ final class PdfEngine
     }
 
     /**
+     * Register the bytes of a file the document carries, for the `<file>` of its `<attachments>` whose `ref`, or
+     * with no ref whose name, is `$name`. The PDF carries them as they are, e.g.:
+     *   XML:  <file name="invoice.xml" mime="text/xml" relationship="data"/>
+     *   PHP:  $engine->loadFile('invoice.xml', $invoiceXml);
+     */
+    public function loadFile(string $name, string $bytes): static
+    {
+        $this->files[$name] = $bytes;
+        return $this;
+    }
+
+    /**
      * Register the text of a file of Markdown rules, the root of which is a `<markdown-styles>`, for the `src`
      * that names it in `<markdown-styles src="…">`.
      */
@@ -160,6 +175,23 @@ final class PdfEngine
             }
         }
 
+        // The files the document carries: the ones loaded here, and the ones read from the src of a file that wasn't.
+        // A src that can't be read is an error that names the file, rather than the engine's "no bytes".
+        $mergedFiles = $this->files;
+        $fileSrcs = $method === 'render_pdf'
+            ? self::xmlTagSrcs($inputStr, 'file')
+            : self::jsonFileSrcs($inputStr);
+        foreach ($fileSrcs as $key => $path) {
+            if (array_key_exists($key, $mergedFiles)) {
+                continue;
+            }
+            $bytes = is_readable($path) ? file_get_contents($path) : false;
+            if ($bytes === false) {
+                throw new EngineException("file '{$key}' of <attachments>: cannot read its src '{$path}'");
+            }
+            $mergedFiles[$key] = $bytes;
+        }
+
         // The files of Markdown rules that a document names with a src: the ones loaded here, and the ones read
         // from the path. A file that can't be read is left for the engine to report, naming the src.
         $mergedStyles = $this->markdownStyles;
@@ -190,6 +222,10 @@ final class PdfEngine
 
         if ($mergedImages !== []) {
             $payload['images'] = array_map('base64_encode', $mergedImages);
+        }
+
+        if ($mergedFiles !== []) {
+            $payload['files'] = array_map('base64_encode', $mergedFiles);
         }
 
         if ($mergedStyles !== []) {
@@ -260,6 +296,34 @@ final class PdfEngine
                 preg_match('/\bsrc="([^"]*)"/', $tag, $src)) {
                 $key = preg_match('/\bref="([^"]*)"/', $tag, $ref) ? $ref[1] : $nm[1];
                 $srcs[$key] = $src[1];
+            }
+        }
+        return $srcs;
+    }
+
+    /** @return array<string,string> `ref ?? name` → file path of each `<$tag name="…" src="…">` in XML. */
+    private static function xmlTagSrcs(string $xml, string $tag): array
+    {
+        $srcs = [];
+        preg_match_all('/<' . $tag . '\s[^>]*>/', $xml, $m);
+        foreach ($m[0] as $element) {
+            if (preg_match('/\bname="([^"]*)"/', $element, $nm) &&
+                preg_match('/\bsrc="([^"]*)"/', $element, $src)) {
+                $key = preg_match('/\bref="([^"]*)"/', $element, $ref) ? $ref[1] : $nm[1];
+                $srcs[$key] = $src[1];
+            }
+        }
+        return $srcs;
+    }
+
+    /** @return array<string,string> `ref ?? name` → file path of the files a serialised tree carries in `attachments`. */
+    private static function jsonFileSrcs(string $json): array
+    {
+        $srcs = [];
+        $doc  = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        foreach ($doc['attrs']['attachments'] ?? [] as $file) {
+            if (isset($file['src'])) {
+                $srcs[$file['ref'] ?? $file['name']] = $file['src'];
             }
         }
         return $srcs;

@@ -129,7 +129,7 @@ final class L
     public static function document(?DocumentAttr $attrs = null, array $sections = []): PdfDocument
     {
         $a = $attrs ?? new DocumentAttr();
-        $flatAttrs = self::optionsToAttrs($a, skip: ['assets', 'tokens', 'meta', 'output']);
+        $flatAttrs = self::optionsToAttrs($a, skip: ['assets', 'tokens', 'meta', 'output', 'attachments']);
 
         if ($a->assets !== null) {
             $flatAttrs['assets'] = $a->assets;
@@ -142,6 +142,12 @@ final class L
         }
         if ($a->output !== null) {
             $flatAttrs['output'] = $a->output;
+        }
+        if ($a->attachments !== null) {
+            $flatAttrs['attachments'] = array_map(
+                static fn(object $file): array => self::optionsToAttrs($file),
+                array_values($a->attachments),
+            );
         }
 
         return new PdfDocument($flatAttrs, $sections);
