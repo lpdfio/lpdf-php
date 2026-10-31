@@ -147,10 +147,13 @@ final class PdfEngine
             timeout:    $this->options->timeout    ?? 30,
         );
 
+        // An XML document is parsed once, for the src of every file it names.
+        $xml = $method === 'render_pdf' ? self::parseXml($inputStr) : null;
+
         // Auto-load fonts declared via src= that haven't been explicitly provided.
         $mergedFonts = $this->fonts;
         $fontSrcs = $method === 'render_pdf'
-            ? self::xmlFontSrcs($inputStr)
+            ? self::xmlSrcs($xml, '//assets/font')
             : self::jsonAssetSrcs($inputStr, 'fonts');
         foreach ($fontSrcs as $key => $path) {
             if (!array_key_exists($key, $mergedFonts) && is_readable($path)) {
@@ -164,7 +167,7 @@ final class PdfEngine
         // Auto-load images declared via src= that haven't been explicitly provided.
         $mergedImages = $this->images;
         $imageSrcs = $method === 'render_pdf'
-            ? self::xmlImageSrcs($inputStr)
+            ? self::xmlSrcs($xml, '//assets/image')
             : self::jsonAssetSrcs($inputStr, 'images');
         foreach ($imageSrcs as $key => $path) {
             if (!array_key_exists($key, $mergedImages) && is_readable($path)) {
@@ -179,7 +182,7 @@ final class PdfEngine
         // A src that can't be read is an error that names the file, rather than the engine's "no bytes".
         $mergedFiles = $this->files;
         $fileSrcs = $method === 'render_pdf'
-            ? self::xmlFileSrcs($inputStr)
+            ? self::xmlSrcs($xml, '//attachments/file')
             : self::jsonFileSrcs($inputStr);
         foreach ($fileSrcs as $key => $path) {
             if (array_key_exists($key, $mergedFiles)) {
@@ -196,7 +199,7 @@ final class PdfEngine
         // from the path. A file that can't be read is left for the engine to report, naming the src.
         $mergedStyles = $this->markdownStyles;
         $styleSrcs = $method === 'render_pdf'
-            ? self::xmlMarkdownStylesSrcs($inputStr)
+            ? self::xmlMarkdownStylesSrcs($xml)
             : self::jsonMarkdownStylesSrcs($inputStr);
         foreach ($styleSrcs as $src) {
             if (!array_key_exists($src, $mergedStyles) && is_readable($src)) {
@@ -271,48 +274,16 @@ final class PdfEngine
 
     // ── Private helpers ────────────────────────────────────────────────────────
 
-    /** @return array<string,string> Font ref/name → file path from `<font name="…" src="…">` tags. */
-    private static function xmlFontSrcs(string $xml): array
-    {
-        $srcs = [];
-        preg_match_all('/<font\s[^>]*>/', $xml, $m);
-        foreach ($m[0] as $tag) {
-            if (preg_match('/\bname="([^"]*)"/', $tag, $nm) &&
-                preg_match('/\bsrc="([^"]*)"/', $tag, $src)) {
-                $key = preg_match('/\bref="([^"]*)"/', $tag, $ref) ? $ref[1] : $nm[1];
-                $srcs[$key] = $src[1];
-            }
-        }
-        return $srcs;
-    }
-
-    /** @return array<string,string> Image ref/name → file path from `<image name="…" src="…">` tags. */
-    private static function xmlImageSrcs(string $xml): array
-    {
-        $srcs = [];
-        preg_match_all('/<image\s[^>]*>/', $xml, $m);
-        foreach ($m[0] as $tag) {
-            if (preg_match('/\bname="([^"]*)"/', $tag, $nm) &&
-                preg_match('/\bsrc="([^"]*)"/', $tag, $src)) {
-                $key = preg_match('/\bref="([^"]*)"/', $tag, $ref) ? $ref[1] : $nm[1];
-                $srcs[$key] = $src[1];
-            }
-        }
-        return $srcs;
-    }
-
     /**
-     * The `ref ?? name` → file path of each `<file>` of a document's `<attachments>`, read with an XML parser as the
-     * engine reads them: entities decoded, and what is in a comment or CDATA left out. XML that doesn't parse carries
-     * no file here; the engine says what is wrong with it.
-     *
-     * @return array<string,string>
+     * An XML document read with an XML parser, as the engine reads it, for the `src` of the files it names: entities
+     * decoded, and what is in a comment or CDATA left out. XML that doesn't parse is null and names no file here; the
+     * engine says what is wrong with it.
      */
-    private static function xmlFileSrcs(string $xml): array
+    private static function parseXml(string $xml): ?\DOMXPath
     {
         // DOMDocument::loadXML refuses an empty string with a ValueError; the engine says what is wrong with it.
         if (trim($xml) === '') {
-            return [];
+            return null;
         }
         $document = new \DOMDocument();
         $previous = libxml_use_internal_errors(true);
@@ -320,17 +291,24 @@ final class PdfEngine
         $parsed = $document->loadXML($xml, LIBXML_NONET);
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
-        if ($parsed === false) {
-            return [];
-        }
+        return $parsed === false ? null : new \DOMXPath($document);
+    }
 
+    /**
+     * The `ref ?? name` → file path of each element that `$path` finds in a document: `//assets/font`,
+     * `//assets/image` or `//attachments/file`.
+     *
+     * @return array<string,string>
+     */
+    private static function xmlSrcs(?\DOMXPath $xml, string $path): array
+    {
         $srcs = [];
-        foreach ((new \DOMXPath($document))->query('//attachments/file') ?: [] as $file) {
-            if (!$file instanceof \DOMElement) {
+        foreach ($xml?->query($path) ?: [] as $element) {
+            if (!$element instanceof \DOMElement) {
                 continue;
             }
-            $key = $file->getAttribute('ref') !== '' ? $file->getAttribute('ref') : $file->getAttribute('name');
-            $src = $file->getAttribute('src');
+            $key = $element->getAttribute('ref') !== '' ? $element->getAttribute('ref') : $element->getAttribute('name');
+            $src = $element->getAttribute('src');
             if ($key !== '' && $src !== '') {
                 $srcs[$key] = $src;
             }
@@ -351,14 +329,13 @@ final class PdfEngine
         return $srcs;
     }
 
-    /** @return string[] The `src` of each `<markdown-styles>` in XML. */
-    private static function xmlMarkdownStylesSrcs(string $xml): array
+    /** @return string[] The `src` of the `<markdown-styles>` of each `<markdown>` of a document. */
+    private static function xmlMarkdownStylesSrcs(?\DOMXPath $xml): array
     {
         $srcs = [];
-        preg_match_all('/<markdown-styles\s[^>]*>/', $xml, $m);
-        foreach ($m[0] as $tag) {
-            if (preg_match('/\bsrc="([^"]*)"/', $tag, $src) && $src[1] !== '') {
-                $srcs[] = $src[1];
+        foreach ($xml?->query('//markdown/markdown-styles') ?: [] as $styles) {
+            if ($styles instanceof \DOMElement && $styles->getAttribute('src') !== '') {
+                $srcs[] = $styles->getAttribute('src');
             }
         }
         return $srcs;
