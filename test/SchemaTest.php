@@ -16,6 +16,8 @@ use Lpdf\Kit\BuiltinFont;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentTokens;
+use Lpdf\Kit\FileAttr;
+use Lpdf\Kit\FileRelationship;
 use Lpdf\Kit\FontAttr;
 use Lpdf\Kit\FootnoteCounter;
 use Lpdf\Kit\ImageAttr;
@@ -525,8 +527,49 @@ final class SchemaTest extends TestCase
         }
     }
 
+    public function testAFileTheDocumentCarriesIsEmbeddedFromLoadFileOrItsSrc(): void
+    {
+        $terms = tempnam(sys_get_temp_dir(), 'lpdf-terms');
+        file_put_contents($terms, 'Terms of sale');
+        try {
+            $built = L::document(new DocumentAttr(attachments: [
+                new FileAttr(name: 'invoice.xml', ref: 'invoice', mime: 'text/xml', relationship: FileRelationship::Data),
+                new FileAttr(name: 'terms.txt', src: $terms, description: 'The terms'),
+            ]), [L::section(null, [L::layout(null, [L::text(null, ['Invoice'])])])]);
+            $engine = L::engine()->setLicenseKey('test-key')->loadFile('invoice', '<invoice/>');
+
+            $pdf = $engine->render($built);
+            self::assertSame(2, substr_count($pdf, '/Type /EmbeddedFile'));
+            self::assertStringContainsString('/AFRelationship /Data', $pdf);
+            self::assertSame($this->normalised($pdf), $this->normalised($engine->render(L::toXml($built))));
+        } finally {
+            unlink($terms);
+        }
+    }
+
+    public function testAFileWhoseSrcCannotBeReadIsAnErrorThatNamesIt(): void
+    {
+        $built = L::document(new DocumentAttr(attachments: [new FileAttr(name: 'data.csv', src: '/no/such/data.csv')]), [
+            L::section(null, [L::layout(null, [L::text(null, ['x'])])]),
+        ]);
+
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessageMatches("~file 'data\\.csv'.*/no/such/data\\.csv~");
+        L::engine()->setLicenseKey('test-key')->render($built);
+    }
+
+    public function testAFileWithNoBytesIsAnErrorThatSaysHowToLoadIt(): void
+    {
+        $xml = '<lpdf version="1"><document><attachments><file name="a.xml"/></attachments>'
+            . '<section><layout><text>x</text></layout></section></document></lpdf>';
+
+        $this->expectExceptionMessageMatches("~loadFile\\('a\\.xml', bytes\\)~");
+        L::engine()->setLicenseKey('test-key')->render($xml);
+    }
+
     public function testTheConstantsAreTheSchemaValues(): void
     {
+        self::assertSame('data', FileRelationship::Data);
         self::assertSame('text', FieldType::Text);
         self::assertSame('top', Pin::Top);
         self::assertSame('landscape', Orientation::Landscape);
