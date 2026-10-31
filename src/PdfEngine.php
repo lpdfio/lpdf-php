@@ -179,7 +179,7 @@ final class PdfEngine
         // A src that can't be read is an error that names the file, rather than the engine's "no bytes".
         $mergedFiles = $this->files;
         $fileSrcs = $method === 'render_pdf'
-            ? self::xmlTagSrcs($inputStr, 'file')
+            ? self::xmlFileSrcs($inputStr)
             : self::jsonFileSrcs($inputStr);
         foreach ($fileSrcs as $key => $path) {
             if (array_key_exists($key, $mergedFiles)) {
@@ -301,16 +301,38 @@ final class PdfEngine
         return $srcs;
     }
 
-    /** @return array<string,string> `ref ?? name` → file path of each `<$tag name="…" src="…">` in XML. */
-    private static function xmlTagSrcs(string $xml, string $tag): array
+    /**
+     * The `ref ?? name` → file path of each `<file>` of a document's `<attachments>`, read with an XML parser as the
+     * engine reads them: entities decoded, and what is in a comment or CDATA left out. XML that doesn't parse carries
+     * no file here; the engine says what is wrong with it.
+     *
+     * @return array<string,string>
+     */
+    private static function xmlFileSrcs(string $xml): array
     {
+        // DOMDocument::loadXML refuses an empty string with a ValueError; the engine says what is wrong with it.
+        if (trim($xml) === '') {
+            return [];
+        }
+        $document = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+        // LIBXML_NONET: nothing the XML names is fetched from the network.
+        $parsed = $document->loadXML($xml, LIBXML_NONET);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        if ($parsed === false) {
+            return [];
+        }
+
         $srcs = [];
-        preg_match_all('/<' . $tag . '\s[^>]*>/', $xml, $m);
-        foreach ($m[0] as $element) {
-            if (preg_match('/\bname="([^"]*)"/', $element, $nm) &&
-                preg_match('/\bsrc="([^"]*)"/', $element, $src)) {
-                $key = preg_match('/\bref="([^"]*)"/', $element, $ref) ? $ref[1] : $nm[1];
-                $srcs[$key] = $src[1];
+        foreach ((new \DOMXPath($document))->query('//attachments/file') ?: [] as $file) {
+            if (!$file instanceof \DOMElement) {
+                continue;
+            }
+            $key = $file->getAttribute('ref') !== '' ? $file->getAttribute('ref') : $file->getAttribute('name');
+            $src = $file->getAttribute('src');
+            if ($key !== '' && $src !== '') {
+                $srcs[$key] = $src;
             }
         }
         return $srcs;

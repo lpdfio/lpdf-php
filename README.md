@@ -50,7 +50,7 @@ $pdf = $engine->render($doc);
 
 ## Requirements
 
-- PHP 8.3+
+- PHP 8.3+ with the DOM extension (`ext-dom`; on Debian and Ubuntu it is the `php-xml` package)
 - [`wasmtime`](https://wasmtime.dev) CLI must be available in `PATH` (used to run the bundled WASI binary).
 
 ## Docs

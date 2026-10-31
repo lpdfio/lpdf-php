@@ -541,10 +541,61 @@ final class SchemaTest extends TestCase
             $pdf = $engine->render($built);
             self::assertSame(2, substr_count($pdf, '/Type /EmbeddedFile'));
             self::assertStringContainsString('/AFRelationship /Data', $pdf);
+            self::assertStringContainsString('/Subtype /text#2Fxml', $pdf);
             self::assertSame($this->normalised($pdf), $this->normalised($engine->render(L::toXml($built))));
         } finally {
             unlink($terms);
         }
+    }
+
+    public function testTheSrcOfAFileIsReadAsTheEngineReadsItsXml(): void
+    {
+        $dir = sys_get_temp_dir() . '/lpdf-files-' . bin2hex(random_bytes(4));
+        mkdir($dir);
+        file_put_contents("$dir/R&D terms.txt", 'Terms');
+        file_put_contents("$dir/terms.txt", 'Terms');
+        try {
+            $built = L::document(new DocumentAttr(attachments: [
+                new FileAttr(name: 'Terms & Conditions.txt', src: "$dir/R&D terms.txt", description: 'Rows > 100'),
+            ]), [L::section(null, [L::layout(null, [L::text(null, ['x'])])])]);
+            $xml = str_replace(
+                '<attachments>',
+                '<attachments><!-- <file name="old.csv" src="/no/such/old.csv"/> -->',
+                L::toXml($built),
+            );
+            $engine = L::engine()->setLicenseKey('test-key');
+            self::assertSame(1, substr_count($engine->render($xml), '/Type /EmbeddedFile'));
+            self::assertSame($this->normalised($engine->render($built)), $this->normalised($engine->render($xml)));
+
+            $quoted = "<lpdf version='1'><document><attachments><file name='t.txt' src='$dir/terms.txt'/></attachments>"
+                . '<section><layout><text>x</text></layout></section></document></lpdf>';
+            self::assertStringContainsString('/Type /EmbeddedFile', $engine->render($quoted));
+        } finally {
+            array_map('unlink', glob("$dir/*") ?: []);
+            rmdir($dir);
+        }
+    }
+
+    public function testTheSrcOfAFileIsReadAfterALiteralGreaterThanAndNotFromCdata(): void
+    {
+        $rows = tempnam(sys_get_temp_dir(), 'lpdf-rows');
+        file_put_contents($rows, 'a,b');
+        try {
+            $xml = '<lpdf version="1"><document><attachments>'
+                . "<file name=\"rows.csv\" description=\"Rows > 100\" src=\"$rows\"/>"
+                . '</attachments><section><layout>'
+                . '<code><![CDATA[<attachments><file name="old.csv" src="/no/such/old.csv"/></attachments>]]></code>'
+                . '</layout></section></document></lpdf>';
+            self::assertSame(1, substr_count(L::engine()->setLicenseKey('test-key')->render($xml), '/Type /EmbeddedFile'));
+        } finally {
+            unlink($rows);
+        }
+    }
+
+    public function testAnEmptyDocumentIsAnEngineError(): void
+    {
+        $this->expectException(EngineException::class);
+        L::engine()->setLicenseKey('test-key')->render('');
     }
 
     public function testAFileWhoseSrcCannotBeReadIsAnErrorThatNamesIt(): void
