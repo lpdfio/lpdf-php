@@ -18,9 +18,10 @@ final readonly class DocumentOutput implements \JsonSerializable
          */
         public ?string $encrypt = null,
         /**
-         * What a reader may do without the owner password, separated by spaces (`Permission`): `print`, `modify`,
-         * `copy`, `annotate`, `fill-forms`, `accessibility`, `assemble`. Without it everything is allowed; `''`
-         * allows nothing. It needs `encrypt`.
+         * What a reader may do without the owner password, separated by spaces (`Permission`): `all`, or any of
+         * `print`, `modify`, `copy`, `annotate`, `fill-forms`, `accessibility`, `assemble`. A permission comes only
+         * from naming it: without `allow`, or with `''`, nothing is allowed, and `all` allows everything. It needs
+         * `encrypt`.
          */
         public ?string $allow = null,
         /**
