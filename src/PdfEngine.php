@@ -310,6 +310,10 @@ final class PdfEngine
      */
     private static function xmlFileSrcs(string $xml): array
     {
+        // DOMDocument::loadXML refuses an empty string with a ValueError; the engine says what is wrong with it.
+        if (trim($xml) === '') {
+            return [];
+        }
         $document = new \DOMDocument();
         $previous = libxml_use_internal_errors(true);
         // LIBXML_NONET: nothing the XML names is fetched from the network.

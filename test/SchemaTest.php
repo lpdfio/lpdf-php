@@ -576,6 +576,28 @@ final class SchemaTest extends TestCase
         }
     }
 
+    public function testTheSrcOfAFileIsReadAfterALiteralGreaterThanAndNotFromCdata(): void
+    {
+        $rows = tempnam(sys_get_temp_dir(), 'lpdf-rows');
+        file_put_contents($rows, 'a,b');
+        try {
+            $xml = '<lpdf version="1"><document><attachments>'
+                . "<file name=\"rows.csv\" description=\"Rows > 100\" src=\"$rows\"/>"
+                . '</attachments><section><layout>'
+                . '<code><![CDATA[<attachments><file name="old.csv" src="/no/such/old.csv"/></attachments>]]></code>'
+                . '</layout></section></document></lpdf>';
+            self::assertSame(1, substr_count(L::engine()->setLicenseKey('test-key')->render($xml), '/Type /EmbeddedFile'));
+        } finally {
+            unlink($rows);
+        }
+    }
+
+    public function testAnEmptyDocumentIsAnEngineError(): void
+    {
+        $this->expectException(EngineException::class);
+        L::engine()->setLicenseKey('test-key')->render('');
+    }
+
     public function testAFileWhoseSrcCannotBeReadIsAnErrorThatNamesIt(): void
     {
         $built = L::document(new DocumentAttr(attachments: [new FileAttr(name: 'data.csv', src: '/no/such/data.csv')]), [
