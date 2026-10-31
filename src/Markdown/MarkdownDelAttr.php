@@ -15,6 +15,6 @@ final readonly class MarkdownDelAttr
     public function __construct(
         public ?string $font = null,
         public ?string $color = null,
-        public ?string $strike = null,
+        public ?bool $strike = null,
     ) {}
 }

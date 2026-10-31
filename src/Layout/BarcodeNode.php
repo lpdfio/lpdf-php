@@ -11,7 +11,7 @@ namespace Lpdf\Layout;
  */
 final readonly class BarcodeNode extends Node
 {
-    /** @param array<string,string> $attrs */
+    /** @param array<string,string|int|float|bool> $attrs */
     public function __construct(private array $attrs) {}
 
     public function jsonSerialize(): mixed

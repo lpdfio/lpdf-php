@@ -16,6 +16,7 @@ use Lpdf\Kit\BuiltinFont;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentTokens;
+use Lpdf\Kit\Gradient;
 use Lpdf\Kit\FileAttr;
 use Lpdf\Kit\FileRelationship;
 use Lpdf\Kit\FontAttr;
@@ -39,6 +40,7 @@ use Lpdf\Layout\SpanAttr;
 use Lpdf\Layout\TableAttr;
 use Lpdf\Layout\TdAttr;
 use Lpdf\Layout\ColumnAttr;
+use Lpdf\Layout\GridAttr;
 use Lpdf\Layout\FrameAttr;
 use Lpdf\Layout\TrAttr;
 use Lpdf\Layout\TextAttr;
@@ -51,13 +53,55 @@ use PHPUnit\Framework\TestCase;
 /** The builders write the schema's names, and what they build renders like the XML it converts to. */
 final class SchemaTest extends TestCase
 {
+    // -- Attribute types -------------------------------------------------------------------------
+
+    /** This file declares strict_types, so PHP refuses a scalar of another type rather than converting it. */
+    public function testAValueOfTheWrongTypeIsRefusedWhenTheObjectIsMade(): void
+    {
+        foreach ([
+            static fn () => new TextAttr(bold: 'true'),
+            static fn () => new GridAttr(cols: '3'),
+            static fn () => new GridAttr(cols: 3.5),
+            static fn () => new ColumnAttr(opacity: '0.5'),
+            static fn () => new TextAttr(lineHeight: ['m']),
+        ] as $index => $make) {
+            try {
+                $make();
+                self::fail("value {$index} was taken");
+            } catch (\TypeError $error) {
+                self::assertStringContainsString('must be of type', $error->getMessage());
+            }
+        }
+    }
+
+    public function testAnAttributeTheElementDoesNotHaveIsRefusedWhenTheObjectIsMade(): void
+    {
+        $this->expectException(\Error::class);
+        $this->expectExceptionMessage('Unknown named parameter $colr');
+        new TextAttr(colr: 'red');
+    }
+
+    public function testATypedValueRendersAsItsTextDoesInXml(): void
+    {
+        $built = L::document(null, [L::section(null, [L::layout(null, [
+            L::grid(new GridAttr(cols: 2, opacity: 0.5), [
+                L::text(new TextAttr(bold: true, lineHeight: 1.5), ['a']),
+                L::text(new TextAttr(lineHeight: 'l'), ['b']),
+            ]),
+        ])])]);
+        $xml = '<lpdf version="1"><document><section><layout><grid cols="2" opacity="0.5">'
+            . '<text bold="true" line-height="1.5">a</text><text line-height="l">b</text></grid></layout></section></document></lpdf>';
+
+        self::assertSame($this->render($xml), $this->render($built));
+    }
+
     // -- Attribute names -------------------------------------------------------------------------
 
     public function testTextAlignAndBoldUseTheSchemaNames(): void
     {
-        $json = $this->json(L::text(new TextAttr(align: 'right', bold: 'true'), ['x']));
+        $json = $this->json(L::text(new TextAttr(align: 'right', bold: true), ['x']));
 
-        self::assertEquals(['align' => 'right', 'bold' => 'true'], $json['attrs']);
+        self::assertEquals(['align' => 'right', 'bold' => true], $json['attrs']);
     }
 
     public function testATextThatCapturesAndOneThatShowsACaptureUseTheSchemaNames(): void
@@ -80,10 +124,10 @@ final class SchemaTest extends TestCase
 
     public function testFieldCarriesItsTypeAndNameAsAttributes(): void
     {
-        $json = $this->json(L::field(new FieldAttr(type: 'text', name: 'email', maxLen: '40', actionUrl: 'https://lpdf.io')));
+        $json = $this->json(L::field(new FieldAttr(type: 'text', name: 'email', maxLen: 40, actionUrl: 'https://lpdf.io')));
 
         self::assertEquals(
-            ['type' => 'text', 'name' => 'email', 'max-len' => '40', 'action-url' => 'https://lpdf.io'],
+            ['type' => 'text', 'name' => 'email', 'max-len' => 40, 'action-url' => 'https://lpdf.io'],
             $json['attrs'],
         );
     }
@@ -96,10 +140,10 @@ final class SchemaTest extends TestCase
 
     public function testDocumentFontAndDebugAreWritten(): void
     {
-        $json = $this->json(L::document(new DocumentAttr(font: 'Times-Roman', debug: 'true')));
+        $json = $this->json(L::document(new DocumentAttr(font: 'Times-Roman', debug: true)));
 
         self::assertSame('Times-Roman', $json['attrs']['font']);
-        self::assertSame('true', $json['attrs']['debug']);
+        self::assertTrue($json['attrs']['debug']);
     }
 
     // -- Rendering -------------------------------------------------------------------------------
@@ -110,8 +154,8 @@ final class SchemaTest extends TestCase
             L::section(null, [
                 L::layout(null, [
                     L::column(new ColumnAttr(gap: '12pt'), [
-                        L::text(new TextAttr(align: 'right', bold: 'true'), ['Title']),
-                        L::text(null, ['Body ', L::span(new SpanAttr(bold: 'true'), ['bold']), ' text']),
+                        L::text(new TextAttr(align: 'right', bold: true), ['Title']),
+                        L::text(null, ['Body ', L::span(new SpanAttr(bold: true), ['bold']), ' text']),
                         L::link(new LinkAttr(href: 'https://lpdf.io'), [L::text(null, ['link'])]),
                     ]),
                 ]),
@@ -187,14 +231,14 @@ final class SchemaTest extends TestCase
     {
         $node = L::shape(new ShapeAttr(
             type: 'rect', width: '14pt', height: 'm', radius: '2pt', fill: 'primary',
-            stroke: '#000000', strokeWidth: '1pt', strokeDash: '3 2', opacity: '0.5',
+            stroke: '#000000', strokeWidth: '1pt', strokeDash: '3 2', opacity: 0.5,
         ));
 
         self::assertSame([
             'type' => 'shape',
             'attrs' => [
                 'type' => 'rect', 'width' => '14pt', 'height' => 'm', 'radius' => '2pt', 'fill' => 'primary',
-                'stroke' => '#000000', 'stroke-width' => '1pt', 'stroke-dash' => '3 2', 'opacity' => '0.5',
+                'stroke' => '#000000', 'stroke-width' => '1pt', 'stroke-dash' => '3 2', 'opacity' => 0.5,
             ],
         ], json_decode(json_encode($node), true));
         self::assertSame('5pt', json_decode(json_encode(L::shape(new ShapeAttr(type: 'circle', r: '5pt'))), true)['attrs']['r']);
@@ -246,14 +290,14 @@ final class SchemaTest extends TestCase
             ]),
         ])])]);
 
-        $spanning = $build(new TdAttr(colspan: '2'));
+        $spanning = $build(new TdAttr(colspan: 2));
 
-        self::assertSame(['colspan' => '2'], json_decode(json_encode(L::td(new TdAttr(colspan: '2'))), true)['attrs']);
+        self::assertSame(['colspan' => 2], json_decode(json_encode(L::td(new TdAttr(colspan: 2))), true)['attrs']);
         self::assertNotSame($this->render($build(null)), $this->render($spanning));
         self::assertSame($this->render($spanning), $this->render(L::toXml($spanning)));
 
         $this->expectExceptionMessageMatches('/span 4 columns, but the table has 3/');
-        $this->render($build(new TdAttr(colspan: '3')));
+        $this->render($build(new TdAttr(colspan: 3)));
     }
 
     public function testATableCellThatSpansRowsMovesTheCellsUnderItAndRendersTheSameFromTheBuilderAndItsXml(): void
@@ -265,19 +309,19 @@ final class SchemaTest extends TestCase
             ]),
         ])])]);
 
-        $spanning = $build(new TdAttr(rowspan: '2'));
+        $spanning = $build(new TdAttr(rowspan: 2));
 
-        self::assertSame(['rowspan' => '2'], json_decode(json_encode(L::td(new TdAttr(rowspan: '2'))), true)['attrs']);
+        self::assertSame(['rowspan' => 2], json_decode(json_encode(L::td(new TdAttr(rowspan: 2))), true)['attrs']);
         self::assertNotSame($this->render($build(null)), $this->render($spanning));
         self::assertSame($this->render($spanning), $this->render(L::toXml($spanning)));
 
         $this->expectExceptionMessageMatches('/a rowspan that runs 1 row past the last row of the table/');
-        $this->render($build(new TdAttr(rowspan: '3')));
+        $this->render($build(new TdAttr(rowspan: 3)));
     }
 
     public function testAFootnoteIsAnFnChildOfATextAndTheCounterIsAnAttributeOfTheDocumentAndASection(): void
     {
-        $text = L::text(null, ['Total', L::fn(null, ['See ', L::span(new SpanAttr(bold: 'true'), ['this']), '.']), ' here']);
+        $text = L::text(null, ['Total', L::fn(null, ['See ', L::span(new SpanAttr(bold: true), ['this']), '.']), ' here']);
         $document = L::document(
             new DocumentAttr(footnoteCounter: FootnoteCounter::Document),
             [L::section(new SectionAttr(footnoteCounter: FootnoteCounter::Page), [L::layout(null, [$text])])],
@@ -293,7 +337,7 @@ final class SchemaTest extends TestCase
     public function testACodeAndACodeSpanAreWrittenAsTheirElementsAndRenderTheSameFromTheBuilderAndItsXml(): void
     {
         $document = L::document(null, [L::section(null, [L::layout(null, [
-            L::code(new CodeAttr(tabSize: '2'), ["\nfn a() {\n\tb(", L::span(new SpanAttr(color: '#c0392b'), ['x']), ");\n}\n"]),
+            L::code(new CodeAttr(tabSize: 2), ["\nfn a() {\n\tb(", L::span(new SpanAttr(color: '#c0392b'), ['x']), ");\n}\n"]),
             L::text(null, ['Run ', L::codeSpan(new CodeSpanAttr(background: '#ffff00'), ['cargo test']), ' now']),
         ])])]);
 
@@ -315,8 +359,8 @@ final class SchemaTest extends TestCase
         self::assertGreaterThanOrEqual(2, preg_match_all('~/Type\s*/Page[^s]~', $this->render($build($lines))), 'the code splits across pages');
 
         $this->expectException(EngineException::class);
-        $this->expectExceptionMessageMatches('/invalid tab-size/');
-        $this->render(L::document(null, [L::section(null, [L::layout(null, [L::code(new CodeAttr(tabSize: '0'), ['x'])])])]));
+        $this->expectExceptionMessageMatches('/tab-size must be a whole number from 1 to 16, not 0/');
+        $this->render(L::document(null, [L::section(null, [L::layout(null, [L::code(new CodeAttr(tabSize: 0), ['x'])])])]));
     }
 
     public function testAListIsWrittenWithItsItemsAndRendersTheSameFromTheBuilderAndItsXml(): void
@@ -343,7 +387,7 @@ final class SchemaTest extends TestCase
 
         $bullets = $this->render($build(null));
         $numbers = $this->render($build(new ListAttr(type: 'number')));
-        $roman   = $this->render($build(new ListAttr(type: 'number', format: 'lower-roman', start: '3')));
+        $roman   = $this->render($build(new ListAttr(type: 'number', format: 'lower-roman', start: 3)));
         self::assertNotSame($bullets, $numbers);
         self::assertNotSame($numbers, $roman);
 
@@ -388,7 +432,7 @@ final class SchemaTest extends TestCase
     {
         $build = static fn (string $background) => L::document(
             new DocumentAttr(tokens: new DocumentTokens(gradients: [
-                'fade' => ['type' => 'linear', 'from' => '#ff0000', 'to' => '#0000ff', 'angle' => 90],
+                'fade' => new Gradient(type: 'linear', from: '#ff0000', to: '#0000ff', angle: 90),
             ])),
             [L::section(null, [L::layout(null, [L::column(new ColumnAttr(background: $background, height: '60pt'))])])],
         );
@@ -414,8 +458,8 @@ final class SchemaTest extends TestCase
 
     public function testABookmarkGoesInALayoutAndDirectlyInASection(): void
     {
-        $bookmark = $this->json(L::bookmark(new BookmarkAttr(label: 'Methods', level: '2', id: 'methods')));
-        self::assertEquals(['type' => 'bookmark', 'attrs' => ['label' => 'Methods', 'level' => '2', 'id' => 'methods']], $bookmark);
+        $bookmark = $this->json(L::bookmark(new BookmarkAttr(label: 'Methods', level: 2, id: 'methods')));
+        self::assertEquals(['type' => 'bookmark', 'attrs' => ['label' => 'Methods', 'level' => 2, 'id' => 'methods']], $bookmark);
 
         $section = $this->json(L::section(new SectionAttr(type: SectionType::Toc, tocIndentStep: '14pt'), [
             L::bookmark(new BookmarkAttr(label: 'Contents')),
@@ -642,9 +686,9 @@ final class SchemaTest extends TestCase
 
     public function testAMarkdownItsStylesItsContentAndTheirRulesAreBuiltWithTheSchemaNames(): void
     {
-        $markdown = $this->json(L::markdown(new MarkdownAttr(margin: '54pt', gap: 'm', bookmarks: '2')));
+        $markdown = $this->json(L::markdown(new MarkdownAttr(margin: '54pt', gap: 'm', bookmarks: 2)));
         self::assertSame('markdown', $markdown['type']);
-        self::assertEquals(['margin' => '54pt', 'gap' => 'm', 'bookmarks' => '2'], $markdown['attrs']);
+        self::assertEquals(['margin' => '54pt', 'gap' => 'm', 'bookmarks' => 2], $markdown['attrs']);
 
         $styles = $this->json(LMarkdown::styles(new MarkdownStylesAttr(src: 'styles.xml'), [LMarkdown::h1(new MarkdownH1Attr(fontSize: 'xl', color: 'muted'))]));
         self::assertSame('markdown-styles', $styles['type']);

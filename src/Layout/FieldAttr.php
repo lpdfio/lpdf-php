@@ -19,10 +19,10 @@ final readonly class FieldAttr
         public ?string $label = null,
         public ?string $options = null,
         public ?string $group = null,
-        public ?string $checked = null,
-        public ?string $required = null,
-        public ?string $readonly = null,
-        public ?string $maxLen = null,
+        public ?bool $checked = null,
+        public ?bool $required = null,
+        public ?bool $readonly = null,
+        public ?int $maxLen = null,
         public ?string $actionUrl = null,
         /**
          * Width of the element. A length fixes it. fill, in a row, takes the width its line leaves
@@ -33,6 +33,6 @@ final readonly class FieldAttr
         public ?string $height = null,
         public ?string $background = null,
         public ?string $border = null,
-        public ?string $debug = null,
+        public ?bool $debug = null,
     ) {}
 }

@@ -8,20 +8,15 @@ namespace Lpdf\Shared;
 trait AttrsHelper
 {
     /**
-     * Reflect over a readonly options object and convert its non-null
-     * string, bool, or BackedEnum properties to a kebab-case attribute map,
-     * skipping named properties.
+     * Reflect over a readonly options object and convert its non-null properties to a kebab-case
+     * attribute map, skipping named properties.
      *
-     * Supported value types and their serialisation:
-     *   - string      → emitted as-is
-     *   - bool        → emitted as 'true' or 'false'
-     *   - BackedEnum  → emitted as the backing value string
-     *
-     * Any other type (int, float, array, …) is silently skipped.  Options
-     * classes should use only the types above to avoid silent data loss.
+     * Each value keeps the type the class gives it, as the schema types the attribute: a string, a
+     * bool (`bold: true`), an int (`cols: 3`) or a float (`opacity: 0.5`). A BackedEnum is written as
+     * its backing value. The engine refuses a value of the wrong type when it renders.
      *
      * @param  string[] $skip Property names to exclude (handled separately).
-     * @return array<string,string>
+     * @return array<string,string|int|float|bool>
      */
     private static function optionsToAttrs(?object $options, array $skip = []): array
     {
@@ -38,9 +33,7 @@ trait AttrsHelper
             $value = $prop->getValue($options);
             if ($value instanceof \BackedEnum) {
                 $attrs[self::camelToKebab($name)] = $value->value;
-            } elseif (is_bool($value)) {
-                $attrs[self::camelToKebab($name)] = $value ? 'true' : 'false';
-            } elseif (is_string($value)) {
+            } elseif (is_string($value) || is_bool($value) || is_int($value) || is_float($value)) {
                 $attrs[self::camelToKebab($name)] = $value;
             }
         }

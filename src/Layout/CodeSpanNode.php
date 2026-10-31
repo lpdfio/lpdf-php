@@ -12,7 +12,7 @@ namespace Lpdf\Layout;
 final readonly class CodeSpanNode extends Node
 {
     /**
-     * @param array<string,string> $attrs
+     * @param array<string,string|int|float|bool> $attrs
      * @param string[]             $nodes
      */
     public function __construct(

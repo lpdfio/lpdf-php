@@ -12,7 +12,7 @@ namespace Lpdf\Markdown;
 final readonly class MarkdownStylesNode implements \JsonSerializable
 {
     /**
-     * @param array<string,string> $attrs
+     * @param array<string,string|int|float|bool> $attrs
      * @param MarkdownRuleNode[]   $nodes
      */
     public function __construct(

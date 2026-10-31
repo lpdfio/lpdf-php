@@ -45,7 +45,7 @@ final readonly class TdAttr
          * faded further: 0.5 inside 0.5 is drawn at 0.25. A form field in the box is not faded.
          * Default 1.
          */
-        public ?string $opacity = null,
+        public ?float $opacity = null,
         /**
          * A hard-edged shadow: a copy of the box, moved right and down by the first two lengths
          * (negative is left and up) and filled with the color, drawn under the box with the same
@@ -67,7 +67,7 @@ final readonly class TdAttr
          * at any depth.
          */
         public ?string $paginate = null,
-        public ?string $debug = null,
+        public ?bool $debug = null,
         /**
          * How many of the table's columns the cell spans. It is as wide as those columns and the
          * gaps between them, and the cells after it in the row start at the column after its last.
@@ -75,7 +75,7 @@ final readonly class TdAttr
          * fewer leaves its last columns empty. It changes widths only: row heights and page breaks
          * work as before. Default 1.
          */
-        public ?string $colspan = null,
+        public ?int $colspan = null,
         /**
          * How many rows the cell spans, its own included. It is as tall as those rows and the gaps
          * between them, and the rows under it leave its columns out: their cells start at the first
@@ -85,7 +85,7 @@ final readonly class TdAttr
          * rowspan. The rows a cell spans stay on one page: the group moves to the next page whole
          * when it does not fit, and one taller than a page is clipped at the page's end. Default 1.
          */
-        public ?string $rowspan = null,
+        public ?int $rowspan = null,
         public ?string $align = null,
         public ?string $valign = null,
     ) {}

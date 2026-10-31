@@ -16,6 +16,8 @@ use Lpdf\Canvas\TextAtAttr;
 use Lpdf\Canvas\Transform;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentTokens;
+use Lpdf\Kit\Gradient;
+use Lpdf\Kit\GradientStop;
 use Lpdf\Kit\LayoutAttr;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\Kit\SectionAttr;
@@ -59,10 +61,10 @@ final class CanvasTest extends TestCase
 
     public function testDocumentFontAndDebugAreWritten(): void
     {
-        $json = $this->json(L::document(new DocumentAttr(font: 'Times-Roman', debug: 'true')));
+        $json = $this->json(L::document(new DocumentAttr(font: 'Times-Roman', debug: true)));
 
         self::assertSame('Times-Roman', $json['attrs']['font']);
-        self::assertSame('true', $json['attrs']['debug']);
+        self::assertTrue($json['attrs']['debug']);
     }
 
     public function testSectionSerializesToSection(): void
@@ -192,20 +194,20 @@ final class CanvasTest extends TestCase
 
     public function testTextAtWritesItsLineLimitsUnderTheSchemaNames(): void
     {
-        $json = $this->json(L::textAt(new TextAtAttr(x: '0pt', y: '0pt', width: '80pt', maxLines: '2', ellipsis: 'true', lineHeight: '1.5'), ['Hi']));
+        $json = $this->json(L::textAt(new TextAtAttr(x: '0pt', y: '0pt', width: '80pt', maxLines: 2, ellipsis: true, lineHeight: 1.5), ['Hi']));
 
-        self::assertSame('2', $json['attrs']['max-lines']);
-        self::assertSame('true', $json['attrs']['ellipsis']);
-        self::assertSame('1.5', $json['attrs']['line-height']);
+        self::assertSame(2, $json['attrs']['max-lines']);
+        self::assertTrue($json['attrs']['ellipsis']);
+        self::assertSame(1.5, $json['attrs']['line-height']);
     }
 
     public function testALineHeightRowAndATextLineHeightAreWrittenUnderTheirSchemaNames(): void
     {
-        $document = $this->json(L::document(new DocumentAttr(tokens: new DocumentTokens(lineHeight: ['m' => '1.2', 'xxl' => '2']))));
-        self::assertSame(['m' => '1.2', 'xxl' => '2'], $document['attrs']['tokens']['line-height']);
+        $document = $this->json(L::document(new DocumentAttr(tokens: new DocumentTokens(lineHeight: ['m' => 1.2, 'xxl' => 2]))));
+        self::assertSame(['m' => 1.2, 'xxl' => 2], $document['attrs']['tokens']['line-height']);
 
         self::assertSame('l', $this->json(L::text(new TextAttr(lineHeight: 'l'), ['A token']))['attrs']['line-height']);
-        self::assertSame('1.5', $this->json(L::text(new TextAttr(lineHeight: '1.5'), ['A factor']))['attrs']['line-height']);
+        self::assertSame(1.5, $this->json(L::text(new TextAttr(lineHeight: 1.5), ['A factor']))['attrs']['line-height']);
     }
 
     public function testAliasesAreATokenRowOfNamesForSlots(): void
@@ -227,12 +229,18 @@ final class CanvasTest extends TestCase
     public function testGradientsAreATokenRowOfNamedGradients(): void
     {
         $gradients = [
-            'fade' => ['type' => 'linear', 'from' => 'primary', 'to' => '#0f3e8a', 'angle' => '90'],
-            'sunset' => ['type' => 'radial', 'stops' => [['offset' => '0%', 'color' => '#f97316'], ['offset' => '100%', 'color' => '#8b5cf6']]],
+            'fade' => new Gradient(type: 'linear', from: 'primary', to: '#0f3e8a', angle: 90),
+            'sunset' => new Gradient(type: 'radial', stops: [
+                new GradientStop(offset: '0%', color: '#f97316'),
+                new GradientStop(offset: '100%', color: '#8b5cf6'),
+            ]),
         ];
         $document = $this->json(L::document(new DocumentAttr(tokens: new DocumentTokens(gradients: $gradients))));
 
-        self::assertSame($gradients, $document['attrs']['tokens']['gradients']);
+        self::assertSame([
+            'fade' => ['type' => 'linear', 'from' => 'primary', 'to' => '#0f3e8a', 'angle' => 90],
+            'sunset' => ['type' => 'radial', 'stops' => [['offset' => '0%', 'color' => '#f97316'], ['offset' => '100%', 'color' => '#8b5cf6']]],
+        ], $document['attrs']['tokens']['gradients']);
     }
 
     public function testALayerGivesItsTextAFontASizeAndAColorAndABoxHasAColorAndAnOpacity(): void
@@ -240,8 +248,8 @@ final class CanvasTest extends TestCase
         $layer = $this->json(L::layer(new LayerAttr(font: 'Courier', fontSize: 's', color: 'danger')));
         self::assertSame(['font' => 'Courier', 'font-size' => 's', 'color' => 'danger'], $layer['attrs']);
 
-        $column = $this->json(L::column(new ColumnAttr(color: 'text-muted', opacity: '0.5')));
-        self::assertSame(['color' => 'text-muted', 'opacity' => '0.5'], $column['attrs']);
+        $column = $this->json(L::column(new ColumnAttr(color: 'text-muted', opacity: 0.5)));
+        self::assertSame(['color' => 'text-muted', 'opacity' => 0.5], $column['attrs']);
     }
 
     public function testABoxAndALayerShapeHaveAShadow(): void
@@ -327,10 +335,10 @@ final class CanvasTest extends TestCase
 
     public function testLayerSerializesWithOpacity(): void
     {
-        $json = $this->json(L::layer(new LayerAttr(opacity: '0.5'), [L::rect(new RectAttr(width: '100pt', height: '100pt'))]));
+        $json = $this->json(L::layer(new LayerAttr(opacity: 0.5), [L::rect(new RectAttr(width: '100pt', height: '100pt'))]));
 
         self::assertSame('layer', $json['type']);
-        self::assertSame('0.5', $json['attrs']['opacity']);
+        self::assertSame(0.5, $json['attrs']['opacity']);
         self::assertCount(1, $json['nodes']);
     }
 
@@ -410,7 +418,7 @@ final class CanvasTest extends TestCase
                             ['Layer text'],
                         ),
                     ]),
-                    L::layer(new LayerAttr(opacity: '0.5'), [
+                    L::layer(new LayerAttr(opacity: 0.5), [
                         L::rect(new RectAttr(x: '40pt', y: '460pt', width: '515pt', height: '60pt', fill: '#e74c3c')),
                     ]),
                 ]),

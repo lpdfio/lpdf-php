@@ -15,7 +15,7 @@ final readonly class MarkdownThAttr
     public function __construct(
         public ?string $font = null,
         public ?string $fontSize = null,
-        public ?string $bold = null,
+        public ?bool $bold = null,
         public ?string $color = null,
         public ?string $align = null,
         public ?string $padding = null,

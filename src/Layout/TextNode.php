@@ -12,7 +12,7 @@ namespace Lpdf\Layout;
 final readonly class TextNode extends Node
 {
     /**
-     * @param array<string,string>              $attrs
+     * @param array<string,string|int|float|bool>              $attrs
      * @param array<string|SpanNode|FnNode>     $nodes
      */
     public function __construct(

@@ -11,7 +11,7 @@ final readonly class SectionAttr
         public ?string $orientation = null,
         public ?string      $background  = null,
         public ?string      $title       = null,
-        public ?string      $debug       = null,
+        public ?bool        $debug       = null,
         public ?string      $type        = null,
         public ?string      $tocIndentStep = null,
         public ?string      $footnoteCounter = null,

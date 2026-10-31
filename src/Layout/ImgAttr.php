@@ -33,6 +33,6 @@ final readonly class ImgAttr
         public ?string $border = null,
         public ?string $radius = null,
         public ?string $paginate = null,
-        public ?string $debug = null,
+        public ?bool $debug = null,
     ) {}
 }

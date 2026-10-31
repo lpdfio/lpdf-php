@@ -45,7 +45,7 @@ final readonly class FrameAttr
          * faded further: 0.5 inside 0.5 is drawn at 0.25. A form field in the box is not faded.
          * Default 1.
          */
-        public ?string $opacity = null,
+        public ?float $opacity = null,
         /**
          * A hard-edged shadow: a copy of the box, moved right and down by the first two lengths
          * (negative is left and up) and filled with the color, drawn under the box with the same
@@ -67,7 +67,7 @@ final readonly class FrameAttr
          * at any depth.
          */
         public ?string $paginate = null,
-        public ?string $debug = null,
+        public ?bool $debug = null,
         /**
          * Width of the element. A length fixes it. fill, in a row, takes the width its line leaves
          * after the other children, shared equally if several on the line use fill, and never moves

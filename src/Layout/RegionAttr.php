@@ -27,6 +27,6 @@ final readonly class RegionAttr
          */
         public ?string $page = null,
         public ?string $w = null,
-        public ?string $debug = null,
+        public ?bool $debug = null,
     ) {}
 }

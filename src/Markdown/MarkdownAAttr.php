@@ -15,7 +15,7 @@ final readonly class MarkdownAAttr
     public function __construct(
         public ?string $font = null,
         public ?string $color = null,
-        public ?string $bold = null,
-        public ?string $underline = null,
+        public ?bool $bold = null,
+        public ?bool $underline = null,
     ) {}
 }

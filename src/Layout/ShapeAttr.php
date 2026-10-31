@@ -38,7 +38,7 @@ final readonly class ShapeAttr
         public ?string $strokeWidth = null,
         public ?string $strokeDash = null,
         /** How opaque the shape is, from 0 to 1. Default 1. */
-        public ?string $opacity = null,
-        public ?string $debug = null,
+        public ?float $opacity = null,
+        public ?bool $debug = null,
     ) {}
 }

@@ -22,6 +22,6 @@ final readonly class DividerAttr
          * to the next line; in a column it takes the full width.
          */
         public ?string $width = null,
-        public ?string $debug = null,
+        public ?bool $debug = null,
     ) {}
 }

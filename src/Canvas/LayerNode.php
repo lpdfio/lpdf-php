@@ -8,7 +8,7 @@ namespace Lpdf\Canvas;
 final readonly class LayerNode extends Node
 {
     /**
-     * @param array<string,string> $attrs
+     * @param array<string,string|int|float|bool> $attrs
      * @param Node[]               $nodes
      */
     public function __construct(

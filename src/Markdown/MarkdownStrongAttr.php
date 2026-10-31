@@ -16,6 +16,6 @@ final readonly class MarkdownStrongAttr
     public function __construct(
         public ?string $font = null,
         public ?string $color = null,
-        public ?string $bold = null,
+        public ?bool $bold = null,
     ) {}
 }
