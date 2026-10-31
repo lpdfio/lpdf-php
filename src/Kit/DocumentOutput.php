@@ -11,7 +11,10 @@ namespace Lpdf\Kit;
 final readonly class DocumentOutput implements \JsonSerializable
 {
     public function __construct(
-        /** The cipher the PDF is encrypted with, `aes-256` or `rc4-128` (`Cipher`). Without it the PDF is not encrypted. */
+        /**
+         * The cipher the PDF is encrypted with, `aes-256` or `rc4-128` (`Cipher`). Without it the PDF is not
+         * encrypted.
+         */
         public ?string $encrypt = null,
         /**
          * What a reader may do without the owner password, separated by spaces (`Permission`): `print`, `modify`,

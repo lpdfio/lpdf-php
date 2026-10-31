@@ -107,7 +107,8 @@ final class SnapshotTest extends TestCase
     /** A document whose output has `$attributes`: by default, one that asks for AES-256. */
     private static function encryptedXml(string $attributes = 'encrypt="aes-256"'): string
     {
-        return "<lpdf version=\"1\"><document><output $attributes/><section><layout><text>Hello</text></layout></section></document></lpdf>";
+        return '<lpdf version="1"><document><output ' . $attributes . '/>'
+            . '<section><layout><text>Hello</text></layout></section></document></lpdf>';
     }
 
     public function testEncryptsADocumentWhoseOutputAsksForItWithThePasswordsOfTheRender(): void
@@ -142,7 +143,10 @@ final class SnapshotTest extends TestCase
     {
         $engine  = L::engine()->setLicenseKey('test-key');
         $options = new RenderOptions(ownerPassword: 's3cr3t');
-        self::assertNotSame($engine->render(self::encryptedXml(), $options), $engine->render(self::encryptedXml(), $options));
+        self::assertNotSame(
+            $engine->render(self::encryptedXml(), $options),
+            $engine->render(self::encryptedXml(), $options),
+        );
     }
 
     public function testRc4RendersOfOneDocumentAreIdentical(): void
@@ -167,7 +171,8 @@ final class SnapshotTest extends TestCase
 
     public function testSkipEncryptionRendersADocumentThatAsksForEncryptionUnencrypted(): void
     {
-        $bytes = L::engine()->setLicenseKey('test-key')->render(self::encryptedXml(), new RenderOptions(skipEncryption: true));
+        $bytes = L::engine()->setLicenseKey('test-key')
+            ->render(self::encryptedXml(), new RenderOptions(skipEncryption: true));
         self::assertStringNotContainsString('/Encrypt', $bytes);
     }
 
@@ -177,9 +182,21 @@ final class SnapshotTest extends TestCase
         $plain = '<lpdf version="1"><document><section><layout><text>Hello</text></layout></section></document></lpdf>';
         return [
             'no owner password'           => [self::encryptedXml(), new RenderOptions(), 'no owner password'],
-            'passwords without encrypt'   => [$plain, new RenderOptions(ownerPassword: 's3cr3t'), 'does not ask for encryption'],
-            'passwords and skip'          => [self::encryptedXml(), new RenderOptions(ownerPassword: 's3cr3t', skipEncryption: true), 'not both'],
-            'an unknown cipher'           => [self::encryptedXml('encrypt="aes-128"'), new RenderOptions(ownerPassword: 's3cr3t'), 'aes-128'],
+            'passwords without encrypt'   => [
+                $plain,
+                new RenderOptions(ownerPassword: 's3cr3t'),
+                'does not ask for encryption',
+            ],
+            'passwords and skip'          => [
+                self::encryptedXml(),
+                new RenderOptions(ownerPassword: 's3cr3t', skipEncryption: true),
+                'not both',
+            ],
+            'an unknown cipher'           => [
+                self::encryptedXml('encrypt="aes-128"'),
+                new RenderOptions(ownerPassword: 's3cr3t'),
+                'aes-128',
+            ],
         ];
     }
 
@@ -194,10 +211,16 @@ final class SnapshotTest extends TestCase
     public function testEncryptsADocumentBuiltWithTheKitAsItsOutputAsks(): void
     {
         $doc = L::document(
-            new DocumentAttr(output: new DocumentOutput(encrypt: Cipher::Aes256, allow: Permission::Print . ' ' . Permission::FillForms)),
+            new DocumentAttr(output: new DocumentOutput(
+                encrypt: Cipher::Aes256,
+                allow: Permission::Print . ' ' . Permission::FillForms,
+            )),
             [L::section(null, [L::layout(null, [L::text(null, ['Hello PDF'])])])],
         );
-        self::assertSame(['encrypt' => 'aes-256', 'allow' => 'print fill-forms'], json_decode(json_encode($doc), true)['attrs']['output']);
+        self::assertSame(
+            ['encrypt' => 'aes-256', 'allow' => 'print fill-forms'],
+            json_decode(json_encode($doc), true)['attrs']['output'],
+        );
         $bytes = L::engine()->setLicenseKey('test-key')->render($doc, new RenderOptions(ownerPassword: 's3cr3t'));
         self::assertStringContainsString('/CFM /AESV3', $bytes);
     }
