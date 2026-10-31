@@ -23,6 +23,7 @@ use Lpdf\Kit\FontAttr;
 use Lpdf\Kit\FootnoteCounter;
 use Lpdf\Kit\ImageAttr;
 use Lpdf\Kit\Orientation;
+use Lpdf\Kit\Permission;
 use Lpdf\Kit\SectionAttr;
 use Lpdf\Kit\SectionType;
 use Lpdf\Layout\BookmarkAttr;
@@ -669,6 +670,7 @@ final class SchemaTest extends TestCase
         self::assertSame('top', Pin::Top);
         self::assertSame('landscape', Orientation::Landscape);
         self::assertSame('Times-Bold', BuiltinFont::TimesBold);
+        self::assertSame('all', Permission::All);
     }
 
     // -- Helpers ---------------------------------------------------------------------------------

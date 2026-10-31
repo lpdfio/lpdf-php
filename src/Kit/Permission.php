@@ -13,6 +13,7 @@ namespace Lpdf\Kit;
  */
 final class Permission
 {
+    public const string All = 'all';
     public const string Print = 'print';
     public const string Modify = 'modify';
     public const string Copy = 'copy';
