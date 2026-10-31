@@ -153,6 +153,18 @@ final class SnapshotTest extends TestCase
         self::assertSame($engine->render($xml, $options), $engine->render($xml, $options));
     }
 
+    public function testSendsTheUserPasswordToTheEngine(): void
+    {
+        // RC4-128 gives the same bytes for the same input, and the user password is in its /O and /U entries, so a
+        // render with one differs from a render without.
+        $engine = L::engine()->setLicenseKey('test-key');
+        $xml    = self::encryptedXml('encrypt="rc4-128"');
+        self::assertNotSame(
+            $engine->render($xml, new RenderOptions(ownerPassword: 's3cr3t')),
+            $engine->render($xml, new RenderOptions(userPassword: 'open', ownerPassword: 's3cr3t')),
+        );
+    }
+
     public function testSkipEncryptionRendersADocumentThatAsksForEncryptionUnencrypted(): void
     {
         $bytes = L::engine()->setLicenseKey('test-key')->render(self::encryptedXml(), new RenderOptions(skipEncryption: true));
