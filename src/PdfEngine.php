@@ -12,7 +12,7 @@ use Lpdf\Engine\WasmRunner;
 
 final class PdfEngine
 {
-    /** Bytes of entropy sent with an AES-256 request: one 256-bit key's worth. */
+    /** Bytes of entropy sent with a request that has a password: one 256-bit key's worth. */
     private const ENTROPY_BYTES = 32;
 
     /** @var array<string, string> Font name → raw TTF/OTF bytes */
@@ -25,12 +25,6 @@ final class PdfEngine
     private array $markdownStyles = [];
 
     private string $licenseKey = '';
-
-    /**
-     * Optional encryption config.
-     * @var array{user_password: string, owner_password: string, permissions: array<string, bool>, algorithm: string}|null
-     */
-    private ?array $encrypt = null;
 
     public function __construct(
         private readonly EngineOptions $options = new EngineOptions(),
@@ -78,44 +72,6 @@ final class PdfEngine
     }
 
     /**
-     * Configure encryption for all subsequent render() calls.
-     * Use clearEncryption() to remove it.
-     *
-     * Each AES-256 render gets a fresh random key, so two renders of one document differ in
-     * their bytes.
-     *
-     * @param array<string, bool> $permissions  Flags: print, modify, copy, annotate,
-     *                                          fill_forms, accessibility, assemble, print_hq.
-     *                                          Omitted flags default to true (allowed).
-     * @param string              $algorithm    'aes-256' (the default) or 'rc4-128', which PDF 2.0
-     *                                          deprecates: use it only for readers that cannot
-     *                                          open AES-256.
-     */
-    public function setEncryption(
-        string $userPassword,
-        string $ownerPassword,
-        array $permissions = [],
-        string $algorithm = 'aes-256',
-    ): static {
-        $this->encrypt = [
-            'user_password'  => $userPassword,
-            'owner_password' => $ownerPassword,
-            'permissions'    => $permissions,
-            'algorithm'      => $algorithm,
-        ];
-        return $this;
-    }
-
-    /**
-     * Remove any previously configured encryption.
-     */
-    public function clearEncryption(): static
-    {
-        $this->encrypt = null;
-        return $this;
-    }
-
-    /**
      * Register a custom font asset.
      *
      * The name must match the `ref` attribute of a `<font>` element in the
@@ -157,7 +113,7 @@ final class PdfEngine
      * Render an lpdf XML string or PdfDocument tree and return raw PDF bytes.
      *
      * @param  string|PdfDocument  $input    XML string or a PdfDocument.
-     * @param  RenderOptions|null  $options  Per-call options (createdOn, data).
+     * @param  RenderOptions|null  $options  Per-call options (createdOn, data, the passwords, skipEncryption).
      * @throws EngineException On render or process error.
      */
     public function render(string|PdfDocument $input, ?RenderOptions $options = null): string
@@ -244,13 +200,19 @@ final class PdfEngine
             $payload['created_on'] = $options->createdOn;
         }
 
-        if ($this->encrypt !== null) {
-            $payload['encrypt'] = $this->encrypt;
-            // AES-256 needs random bytes, which the engine does not make: they come from PHP's
-            // secure generator, 32 bytes for each render.
-            if ($this->encrypt['algorithm'] === 'aes-256') {
-                $payload['encrypt']['entropy'] = base64_encode(random_bytes(self::ENTROPY_BYTES));
-            }
+        if ($options?->userPassword !== null) {
+            $payload['user_password'] = $options->userPassword;
+        }
+        if ($options?->ownerPassword !== null) {
+            $payload['owner_password'] = $options->ownerPassword;
+        }
+        // With a password, AES-256 needs random bytes, which the engine does not make: they come from PHP's
+        // secure generator, 32 bytes for each render.
+        if ($options?->userPassword !== null || $options?->ownerPassword !== null) {
+            $payload['entropy'] = base64_encode(random_bytes(self::ENTROPY_BYTES));
+        }
+        if ($options?->skipEncryption === true) {
+            $payload['skip_encryption'] = true;
         }
 
         if ($options?->data !== null && $method === 'render_pdf') {

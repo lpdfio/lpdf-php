@@ -5,8 +5,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
 /**
- * encrypt-open-password.php — render showcase-encryption.xml with AES-256 encryption,
- * open password required, copy disabled.
+ * encrypt-open-password.php — render showcase-encryption.xml, whose <output> asks for AES-256
+ * and allows neither copying nor modifying, with an open password.
  *
  * Run from lpdf's root (after 'make build-sdk-php'):
  *   make example-php
@@ -14,6 +14,7 @@ require_once __DIR__ . '/../../../vendor/autoload.php';
  * Output: tmp/sdk-examples/encrypt-open-password-php.pdf in lpdf's root.
  */
 
+use Lpdf\Engine\RenderOptions;
 use Lpdf\L;
 
 $lpdf    = dirname(__DIR__, 3);
@@ -26,9 +27,8 @@ $xml = file_get_contents($xmlFile);
 $engine = L::engine();  // no key → renders with the attribution line
 
 // With open password — viewers prompt for 'password' before displaying content.
-$engine->setEncryption('password', 'owner', ['copy' => false]);
-
-$pdf = $engine->render($xml);
+// The cipher and the permissions come from the document's <output>, the passwords from here.
+$pdf = $engine->render($xml, new RenderOptions(userPassword: 'password', ownerPassword: 'owner'));
 
 if (!is_dir($output)) {
     mkdir($output, 0777, true);
