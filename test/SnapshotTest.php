@@ -254,6 +254,17 @@ final class SnapshotTest extends TestCase
         self::assertStringContainsString('/StructTreeRoot', $bytes);
     }
 
+    public function testRefusesPdfuaWithoutTheLanguageOfTheDocument(): void
+    {
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage('add lang to <meta>');
+        L::engine()->setLicenseKey('test-key')->render(
+            '<lpdf version="1"><document><meta title="Report"/><output pdfua="1"/><section><layout>'
+            . '<column height="40pt"/></layout></section></document></lpdf>',
+            new RenderOptions(createdOn: '2026-10-31'),
+        );
+    }
+
     public function testRefusesPdfaWithoutCreatedOn(): void
     {
         $this->expectException(EngineException::class);
