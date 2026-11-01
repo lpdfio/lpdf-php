@@ -10,6 +10,7 @@ use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentMeta;
 use Lpdf\Kit\DocumentOutput;
 use Lpdf\Layout\ColumnAttr;
+use Lpdf\Layout\TextAttr;
 use Lpdf\Kit\Permission;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\FontAttr;
@@ -241,6 +242,18 @@ final class SnapshotTest extends TestCase
         self::assertSame(['pdfa' => '2b'], json_decode(json_encode($doc), true)['attrs']['output']);
         $bytes = L::engine()->setLicenseKey('test-key')->render($doc, new RenderOptions(createdOn: '2026-10-31'));
         self::assertStringContainsString('<pdfaid:conformance>B</pdfaid:conformance>', $bytes);
+    }
+
+    public function testPutsKitElementsInPrintAndScreenContent(): void
+    {
+        $doc = L::document(null, [L::section(null, [L::layout(null, [
+            L::text(new TextAttr(ocg: 'print'), ['Printed']),
+            L::column(new ColumnAttr(ocg: 'screen'), [L::text(null, ['On screen'])]),
+        ])])]);
+        $bytes = L::engine()->setLicenseKey('test-key')->render($doc);
+        self::assertStringContainsString('/OCProperties', $bytes);
+        self::assertStringContainsString('(Print only)', $bytes);
+        self::assertStringContainsString('(Screen only)', $bytes);
     }
 
     public function testTakesPdfuaAndLangFromAKitDocumentAndTagsTheFile(): void
