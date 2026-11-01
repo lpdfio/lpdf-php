@@ -24,6 +24,9 @@ final class PdfEngine
     /** @var array<string, string> `ref` or name of a `<file>` of `<attachments>` → the bytes the PDF carries */
     private array $files = [];
 
+    /** @var array<string, string> `ref` or name of a `<profile>` of `<assets>` → the bytes of the ICC profile */
+    private array $profiles = [];
+
     /** @var array<string, string> `src` of a `<markdown-styles>` → the text of the file of rules it names */
     private array $markdownStyles = [];
 
@@ -115,6 +118,18 @@ final class PdfEngine
     }
 
     /**
+     * Register the bytes of an ICC color profile, for the `<profile>` of the document's `<assets>` whose `ref`, or
+     * with no ref whose name, is `$name`: the press profile a PDF/X document names in its output, e.g.:
+     *   XML:  <profile name="press"/>
+     *   PHP:  $engine->loadProfile('press', file_get_contents('press.icc'));
+     */
+    public function loadProfile(string $name, string $bytes): static
+    {
+        $this->profiles[$name] = $bytes;
+        return $this;
+    }
+
+    /**
      * Register the text of a file of Markdown rules, the root of which is a `<markdown-styles>`, for the `src`
      * that names it in `<markdown-styles src="…">`.
      */
@@ -195,6 +210,23 @@ final class PdfEngine
             $mergedFiles[$key] = $bytes;
         }
 
+        // The color profiles the document declares: the ones loaded here, and the ones read from the src of a profile
+        // that wasn't. A src that can't be read is an error that names the profile, as for a file.
+        $mergedProfiles = $this->profiles;
+        $profileSrcs = $method === 'render_pdf'
+            ? self::xmlSrcs($xml, '//assets/profile')
+            : self::jsonAssetSrcs($inputStr, 'profiles');
+        foreach ($profileSrcs as $key => $path) {
+            if (array_key_exists($key, $mergedProfiles)) {
+                continue;
+            }
+            $bytes = is_readable($path) ? file_get_contents($path) : false;
+            if ($bytes === false) {
+                throw new EngineException("profile '{$key}' of <assets>: cannot read its src '{$path}'");
+            }
+            $mergedProfiles[$key] = $bytes;
+        }
+
         // The files of Markdown rules that a document names with a src: the ones loaded here, and the ones read
         // from the path. A file that can't be read is left for the engine to report, naming the src.
         $mergedStyles = $this->markdownStyles;
@@ -229,6 +261,10 @@ final class PdfEngine
 
         if ($mergedFiles !== []) {
             $payload['files'] = array_map('base64_encode', $mergedFiles);
+        }
+
+        if ($mergedProfiles !== []) {
+            $payload['profiles'] = array_map('base64_encode', $mergedProfiles);
         }
 
         if ($mergedStyles !== []) {
@@ -296,7 +332,7 @@ final class PdfEngine
 
     /**
      * The `ref ?? name` → file path of each element that `$path` finds in a document: `//assets/font`,
-     * `//assets/image` or `//attachments/file`.
+     * `//assets/image`, `//assets/profile` or `//attachments/file`.
      *
      * @return array<string,string>
      */

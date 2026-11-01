@@ -14,6 +14,8 @@ use Lpdf\Kit\Permission;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\FontAttr;
 use Lpdf\Kit\ImageAttr;
+use Lpdf\Kit\ProfileAttr;
+use Lpdf\Kit\SectionAttr;
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\RenderOptions;
 use PHPUnit\Framework\TestCase;
@@ -278,6 +280,83 @@ final class SnapshotTest extends TestCase
         $this->expectExceptionMessage('"Hello" is in Helvetica');
         L::engine()->setLicenseKey('test-key')
             ->render(self::pdfaXml('2b', '<text>Hello</text>'), new RenderOptions(createdOn: '2026-10-31'));
+    }
+
+    /**
+     * The header of an ICC printer profile in CMYK, with a description and nothing else: enough for the engine to take
+     * it as the press profile of a PDF/X document.
+     */
+    private static function pressProfile(string $description = 'Test press'): string
+    {
+        $desc = 'desc' . str_repeat("\0", 4) . pack('N', strlen($description) + 1) . $description . "\0" . str_repeat("\0", 12);
+        $header = str_repeat("\0", 12) . 'prtrCMYKLab ' . str_repeat("\0", 12) . 'acsp' . str_repeat("\0", 88);
+        $bytes = $header . pack('N', 1) . 'desc' . pack('N', 144) . pack('N', strlen($desc)) . $desc;
+        return pack('N', strlen($bytes)) . substr($bytes, 4);
+    }
+
+    /** A titled document with no text of its own that asks for PDF/X-4 with the profile `press`. */
+    private static function pdfxXml(string $profile = '<profile name="press"/>'): string
+    {
+        return '<lpdf version="1"><assets>' . $profile . '</assets>'
+            . '<document bleed="3mm"><meta title="Flyer"/><output pdfx="4" profile="press"/>'
+            . '<section><layout><column background="#e8f0fc" height="40pt"/></layout></section></document></lpdf>';
+    }
+
+    public function testWritesPdfxWhenTheOutputAsksForItWithTheProfileFromLoadProfile(): void
+    {
+        $bytes = L::engine()->setLicenseKey('test-key')->loadProfile('press', self::pressProfile('Coated press'))
+            ->render(self::pdfxXml(), new RenderOptions(createdOn: '2026-10-31T09:30:00Z'));
+        self::assertStringStartsWith('%PDF-1.6', $bytes);
+        self::assertStringContainsString('/S /GTS_PDFX', $bytes);
+        self::assertStringContainsString('/Info (Coated press)', $bytes);
+        self::assertStringContainsString('/TrimBox', $bytes);
+        self::assertStringContainsString('/DefaultRGB', $bytes);
+        self::assertStringContainsString('<pdfxid:GTS_PDFXVersion>PDF/X-4</pdfxid:GTS_PDFXVersion>', $bytes);
+    }
+
+    public function testTakesPdfxProfileBleedAndTheProfilesOfTheAssetsFromAKitDocument(): void
+    {
+        $src = tempnam(sys_get_temp_dir(), 'lpdf-profile-');
+        file_put_contents($src, self::pressProfile());
+        try {
+            $doc = L::document(
+                new DocumentAttr(
+                    assets: new DocumentAssets(profiles: [new ProfileAttr(name: 'press', src: $src)]),
+                    meta: new DocumentMeta(title: 'Flyer'),
+                    output: new DocumentOutput(pdfx: '4', profile: 'press'),
+                    bleed: '3mm',
+                ),
+                [L::section(new SectionAttr(bleed: '5mm'), [L::layout(null, [L::column(new ColumnAttr(background: '#e8f0fc', height: '40pt'), [])])])],
+            );
+            $attrs = json_decode(json_encode($doc), true)['attrs'];
+            self::assertSame(['pdfx' => '4', 'profile' => 'press'], $attrs['output']);
+            self::assertSame('3mm', $attrs['bleed']);
+            $options = new RenderOptions(createdOn: '2026-10-31');
+            $engine = L::engine()->setLicenseKey('test-key');
+            $bytes = $engine->render($doc, $options);
+            self::assertStringContainsString('/S /GTS_PDFX', $bytes);
+            self::assertStringContainsString('/BleedBox [-14.173', $bytes);
+            self::assertSame($bytes, $engine->render(L::toXml($doc), $options));
+        } finally {
+            unlink($src);
+        }
+    }
+
+    public function testAProfileWithNoBytesIsAnErrorThatSaysHowToLoadIt(): void
+    {
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage("loadProfile('press', bytes)");
+        L::engine()->setLicenseKey('test-key')->render(self::pdfxXml(), new RenderOptions(createdOn: '2026-10-31'));
+    }
+
+    public function testAProfileWhoseSrcCannotBeReadIsAnErrorThatNamesIt(): void
+    {
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage("profile 'press' of <assets>: cannot read its src '/no/such/press.icc'");
+        L::engine()->setLicenseKey('test-key')->render(
+            self::pdfxXml('<profile name="press" src="/no/such/press.icc"/>'),
+            new RenderOptions(createdOn: '2026-10-31'),
+        );
     }
 
     public function testEncryptsADocumentBuiltWithTheKitAsItsOutputAsks(): void
