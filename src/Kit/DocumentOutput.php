@@ -39,6 +39,17 @@ final readonly class DocumentOutput implements \JsonSerializable
          * glyph for, a barcode's digits, a form field, and `encrypt` with an `allow` that leaves out `accessibility`.
          */
         public ?string $pdfua = null,
+        /**
+         * Writes the PDF as PDF/X-4, for a commercial printer: `4`. It needs `profile`, and combines with `pdfua`.
+         * Every page gets a TrimBox and a BleedBox, RGB is tied to sRGB, and links print as text, as PDF/X allows
+         * nothing clickable. The render needs `createdOn`, the meta a `title`, and every text a font of the assets.
+         * What PDF/X cannot hold is an error that says what to change: a profile that is not a printer profile, a
+         * built-in font, a form field, a CMYK color with a profile that is not a CMYK one, `encrypt`, `pdfa`,
+         * attachments.
+         */
+        public ?string $pdfx = null,
+        /** The profile of the assets that a PDF/X file is made for: the ICC profile of the printing press. It needs `pdfx`. */
+        public ?string $profile = null,
     ) {}
 
     public function jsonSerialize(): mixed
@@ -49,6 +60,8 @@ final readonly class DocumentOutput implements \JsonSerializable
                 'allow'   => $this->allow,
                 'pdfa'    => $this->pdfa,
                 'pdfua'   => $this->pdfua,
+                'pdfx'    => $this->pdfx,
+                'profile' => $this->profile,
             ],
             static fn($v) => $v !== null,
         );

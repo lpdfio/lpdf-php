@@ -11,6 +11,10 @@ final readonly class DocumentAttr
      *                                         the XML does: a reader lists them in its attachments panel. Each file's
      *                                         bytes are read from its `src`, or loaded with `loadFile` under its
      *                                         `ref` or name.
+     * @param string|null         $bleed       How far each page reaches past its trim edge, such as `3mm`, for a
+     *                                         background or an image that runs off the page when it is cut. The page
+     *                                         grows by it and its background fills it; the layout keeps to the trimmed
+     *                                         page.
      */
     public function __construct(
         public ?string         $size        = null,
@@ -24,5 +28,6 @@ final readonly class DocumentAttr
         public ?string         $footnoteCounter = null,
         public ?DocumentOutput $output      = null,
         public ?array          $attachments = null,
+        public ?string         $bleed       = null,
     ) {}
 }
