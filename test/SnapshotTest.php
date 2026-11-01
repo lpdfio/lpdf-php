@@ -376,6 +376,21 @@ final class SnapshotTest extends TestCase
         self::assertStringContainsString('/CFM /AESV3', $bytes);
     }
 
+    public function testLinearizesADocumentBuiltWithTheKitAfterEncryptingIt(): void
+    {
+        $doc = L::document(
+            new DocumentAttr(output: new DocumentOutput(encrypt: Cipher::Aes256, linearize: true)),
+            [L::section(null, [L::layout(null, [L::text(null, ['Hello PDF'])])])],
+        );
+        self::assertSame(
+            ['encrypt' => 'aes-256', 'linearize' => true],
+            json_decode(json_encode($doc), true)['attrs']['output'],
+        );
+        $bytes = L::engine()->setLicenseKey('test-key')->render($doc, new RenderOptions(ownerPassword: 's3cr3t'));
+        self::assertStringContainsString('<< /Linearized 1 ', $bytes);
+        self::assertStringContainsString('/CFM /AESV3', $bytes);
+    }
+
     public function testLoadImageDoesNotThrowAndProducesValidPdf(): void
     {
         // A minimal 1×1 white grayscale PNG
