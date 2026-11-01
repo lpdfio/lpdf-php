@@ -39,6 +39,13 @@ final readonly class BarcodeAttr
          * to the next line; in a column it takes the full width.
          */
         public ?string $width = null,
+        /**
+         * What the barcode is for, which a screen reader reads in a PDF/UA document in place of its
+         * data, which means nothing read aloud: "QR code to pay this invoice". alt="" marks it as
+         * decoration. A PDF/UA document needs it on every barcode of the layout. A document without
+         * pdfua ignores it.
+         */
+        public ?string $alt = null,
         public ?string $paginate = null,
         public ?bool $debug = null,
     ) {}

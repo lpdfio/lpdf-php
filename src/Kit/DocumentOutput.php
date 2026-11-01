@@ -31,6 +31,14 @@ final readonly class DocumentOutput implements \JsonSerializable
          * digits, `encrypt`.
          */
         public ?string $pdfa = null,
+        /**
+         * Writes the PDF as PDF/UA-1, a tagged PDF a screen reader can read: `1`. It combines with `pdfa`. The
+         * render needs `createdOn`, the meta a `title` and a `lang`, every image and barcode of the layout an `alt`,
+         * and every text a font of the assets. What PDF/UA cannot hold is an error that says what to change: headings
+         * that don't start at h1 or skip a level, a font whose licence forbids embedding, a character the font has no
+         * glyph for, a barcode's digits, a form field, and `encrypt` with an `allow` that leaves out `accessibility`.
+         */
+        public ?string $pdfua = null,
     ) {}
 
     public function jsonSerialize(): mixed
@@ -40,6 +48,7 @@ final readonly class DocumentOutput implements \JsonSerializable
                 'encrypt' => $this->encrypt,
                 'allow'   => $this->allow,
                 'pdfa'    => $this->pdfa,
+                'pdfua'   => $this->pdfua,
             ],
             static fn($v) => $v !== null,
         );

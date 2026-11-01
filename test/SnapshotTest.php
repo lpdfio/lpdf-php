@@ -7,6 +7,7 @@ namespace Lpdf\Tests;
 use Lpdf\L;
 use Lpdf\Kit\Cipher;
 use Lpdf\Kit\DocumentAttr;
+use Lpdf\Kit\DocumentMeta;
 use Lpdf\Kit\DocumentOutput;
 use Lpdf\Layout\ColumnAttr;
 use Lpdf\Kit\Permission;
@@ -238,6 +239,30 @@ final class SnapshotTest extends TestCase
         self::assertSame(['pdfa' => '2b'], json_decode(json_encode($doc), true)['attrs']['output']);
         $bytes = L::engine()->setLicenseKey('test-key')->render($doc, new RenderOptions(createdOn: '2026-10-31'));
         self::assertStringContainsString('<pdfaid:conformance>B</pdfaid:conformance>', $bytes);
+    }
+
+    public function testTakesPdfuaAndLangFromAKitDocumentAndTagsTheFile(): void
+    {
+        $doc = L::document(
+            new DocumentAttr(meta: new DocumentMeta(title: 'Report', lang: 'en-US'), output: new DocumentOutput(pdfua: '1')),
+            [L::section(null, [L::layout(null, [L::column(new ColumnAttr(background: '#e8f0fc', height: '40pt'), [])])])],
+        );
+        self::assertSame(['pdfua' => '1'], json_decode(json_encode($doc), true)['attrs']['output']);
+        $bytes = L::engine()->setLicenseKey('test-key')->render($doc, new RenderOptions(createdOn: '2026-10-31'));
+        self::assertStringContainsString('<pdfuaid:part>1</pdfuaid:part>', $bytes);
+        self::assertStringContainsString('/Lang (en-US)', $bytes);
+        self::assertStringContainsString('/StructTreeRoot', $bytes);
+    }
+
+    public function testRefusesPdfuaWithoutTheLanguageOfTheDocument(): void
+    {
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage('add lang to <meta>');
+        L::engine()->setLicenseKey('test-key')->render(
+            '<lpdf version="1"><document><meta title="Report"/><output pdfua="1"/><section><layout>'
+            . '<column height="40pt"/></layout></section></document></lpdf>',
+            new RenderOptions(createdOn: '2026-10-31'),
+        );
     }
 
     public function testRefusesPdfaWithoutCreatedOn(): void

@@ -18,6 +18,12 @@ final readonly class ImgAttr
 {
     public function __construct(
         public string $name,
+        /**
+         * What the image shows, which a screen reader reads in a PDF/UA document; alt="" marks it
+         * as decoration, which a reader skips. A PDF/UA document needs it on every image of the
+         * layout. A document without pdfua ignores it.
+         */
+        public ?string $alt = null,
         public ?string $height = null,
         /**
          * Width of the element. A length fixes it. fill, in a row, takes the width its line leaves
