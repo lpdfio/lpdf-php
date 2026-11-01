@@ -48,6 +48,8 @@ $doc = L::document(new DocumentAttr(size: 'letter'), [
 $pdf = $engine->render($doc);
 ```
 
+An attribute class takes its attributes as named arguments, `new TextAttr(fontSize: 'xl')`. Positional arguments aren't supported: the parameters follow the schema's order, so an attribute added in a later version can move them.
+
 ## Requirements
 
 - PHP 8.3+ with the DOM extension (`ext-dom`; on Debian and Ubuntu it is the `php-xml` package)
