@@ -44,5 +44,13 @@ final readonly class LayerAttr
          * token.
          */
         public ?string $color = null,
+        /**
+         * In a PDF/UA document, what the layer shows, which a screen reader reads as one figure at
+         * the layer's place in the document: a layer before the layout before it, one after the
+         * layout after it. Without alt a layer is decoration, as a header is, and a screen reader
+         * skips it with all its text: a watermark, a running title, a logo's letters. A document
+         * without pdfua ignores it.
+         */
+        public ?string $alt = null,
     ) {}
 }

@@ -13,6 +13,8 @@ final readonly class DocumentMeta implements \JsonSerializable
         public ?string $subject  = null,
         public ?string $keywords = null,
         public ?string $creator  = null,
+        /** The language the document is written in, as a language tag such as `en-US`. A PDF/UA document needs it. */
+        public ?string $lang     = null,
     ) {}
 
     public function jsonSerialize(): mixed
@@ -24,6 +26,7 @@ final readonly class DocumentMeta implements \JsonSerializable
                 'subject'  => $this->subject,
                 'keywords' => $this->keywords,
                 'creator'  => $this->creator,
+                'lang'     => $this->lang,
             ],
             static fn($v) => $v !== null,
         );
