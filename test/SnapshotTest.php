@@ -234,6 +234,16 @@ final class SnapshotTest extends TestCase
         self::assertStringContainsString('/ModDate (D:20261031093000Z)', $bytes);
     }
 
+    public function testWritesPdfaLevelATaggedWithoutPdfuaWhenTheOutputAsksFor2a(): void
+    {
+        $bytes = L::engine()->setLicenseKey('test-key')
+            ->render(self::pdfaXml('2a'), new RenderOptions(createdOn: '2026-10-31'));
+        self::assertStringContainsString('<pdfaid:conformance>A</pdfaid:conformance>', $bytes);
+        self::assertStringContainsString('/StructTreeRoot', $bytes);
+        self::assertStringContainsString('/Marked true', $bytes);
+        self::assertStringNotContainsString('pdfuaid', $bytes);
+    }
+
     public function testTakesPdfaFromTheOutputOfAKitDocument(): void
     {
         $doc = L::document(
