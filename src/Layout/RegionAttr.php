@@ -22,8 +22,10 @@ final readonly class RegionAttr
          */
         public string $pin,
         /**
-         * Which pages show the region: each, first, last, odd, even, or a range such as 2-last.
-         * Defaults to each.
+         * Which pages show the region: each, first, last, odd, even, or a range such as 2-last. odd
+         * and even follow the number printed on the page, so in a section that starts on page 4
+         * even shows on its first page. first, last and ranges count the section's own pages,
+         * whatever their numbers. Defaults to each.
          */
         public ?string $page = null,
         public ?string $w = null,
