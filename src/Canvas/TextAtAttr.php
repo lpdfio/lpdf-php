@@ -9,7 +9,8 @@ namespace Lpdf\Canvas;
  * document's font or Helvetica, 11pt and the text colour. It is one line unless told otherwise;
  * give width to cut it off at a width or to wrap it with max-lines. x and y place its box: the
  * top-left corner, or with anchor, an offset from that point of the page, where the box's matching
- * point goes. {page} and {pages} in it count within the section, and a text that comes from data
+ * point goes. {page} in it prints the page's number and {pages} how many pages its run has, as its
+ * section's page-start, page-format and page-prefix number them, and a text that comes from data
  * belongs in the layout, since a longer text loses its end here without a warning.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
