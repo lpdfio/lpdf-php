@@ -514,6 +514,36 @@ final class SchemaTest extends TestCase
         self::assertSame($pdf, $this->render(L::toXml($built)));
     }
 
+    public function testACrossReferenceLinksToItsBookmarkARefOnlyBookmarkStaysOutOfTheOutlineAndBothRenderLikeTheirXml(): void
+    {
+        $built = L::document(null, [
+            L::section(null, [
+                L::layout(null, [
+                    L::text(null, ['See ', L::span(new SpanAttr(bookmarkRef: 'prices'), ['{bookmark-label} on page {bookmark-page}'])]),
+                    L::bookmark(new BookmarkAttr(label: 'Methods')),
+                    L::text(null, ['Methods']),
+                    L::bookmark(new BookmarkAttr(label: 'Table 3', id: 'prices', refOnly: true)),
+                    L::text(null, ['Prices']),
+                ]),
+            ]),
+        ]);
+        $xml = L::toXml($built);
+        self::assertStringContainsString('<span bookmark-ref="prices">', $xml);
+        self::assertMatchesRegularExpression('/<bookmark [^>]*ref-only="true"/', $xml);
+
+        $pdf = $this->render($built);
+        self::assertStringContainsString('/D /prices', $pdf);
+        self::assertStringContainsString('/Title (Methods)', $pdf);
+        self::assertStringNotContainsString('/Title (Table 3)', $pdf);
+        self::assertSame($pdf, $this->render($xml));
+
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage("bookmark-ref 'nowhere' names no bookmark");
+        $this->render(L::document(null, [L::section(null, [L::layout(null, [
+            L::text(null, [L::span(new SpanAttr(bookmarkRef: 'nowhere'), ['{bookmark-page}'])]),
+        ])])]));
+    }
+
     // -- Assets ----------------------------------------------------------------------------------
 
     public function testAssetsDeclareFontsAndImagesWithTheSchemaNames(): void
