@@ -12,6 +12,6 @@ namespace Lpdf\Kit;
  */
 final class Cipher
 {
-    public const string Aes256 = 'aes-256';
-    public const string Rc4128 = 'rc4-128';
+    public const Aes256 = 'aes-256';
+    public const Rc4128 = 'rc4-128';
 }

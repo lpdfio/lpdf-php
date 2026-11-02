@@ -13,12 +13,12 @@ namespace Lpdf\Kit;
  */
 final class Permission
 {
-    public const string All = 'all';
-    public const string Print = 'print';
-    public const string Modify = 'modify';
-    public const string Copy = 'copy';
-    public const string Annotate = 'annotate';
-    public const string FillForms = 'fill-forms';
-    public const string Accessibility = 'accessibility';
-    public const string Assemble = 'assemble';
+    public const All = 'all';
+    public const Print = 'print';
+    public const Modify = 'modify';
+    public const Copy = 'copy';
+    public const Annotate = 'annotate';
+    public const FillForms = 'fill-forms';
+    public const Accessibility = 'accessibility';
+    public const Assemble = 'assemble';
 }

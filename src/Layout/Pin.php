@@ -12,8 +12,8 @@ namespace Lpdf\Layout;
  */
 final class Pin
 {
-    public const string Top = 'top';
-    public const string Bottom = 'bottom';
-    public const string Left = 'left';
-    public const string Right = 'right';
+    public const Top = 'top';
+    public const Bottom = 'bottom';
+    public const Left = 'left';
+    public const Right = 'right';
 }

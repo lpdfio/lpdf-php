@@ -13,9 +13,9 @@ namespace Lpdf\Kit;
  */
 final class FileRelationship
 {
-    public const string Source = 'source';
-    public const string Data = 'data';
-    public const string Alternative = 'alternative';
-    public const string Supplement = 'supplement';
-    public const string Unspecified = 'unspecified';
+    public const Source = 'source';
+    public const Data = 'data';
+    public const Alternative = 'alternative';
+    public const Supplement = 'supplement';
+    public const Unspecified = 'unspecified';
 }
