@@ -9,6 +9,7 @@ final readonly class EngineOptions
     public function __construct(
         public ?string $wasmBinary = null,   // path to .wasm file
         public ?string $wasmRunner = null,   // runner executable name/path
-        public ?int    $timeout    = null,   // WASI process timeout in seconds (default: 30)
+        /** The seconds a render may run before it stops with an EngineException: 5 when left out, no limit at 0. */
+        public ?int    $timeout    = null,
     ) {}
 }

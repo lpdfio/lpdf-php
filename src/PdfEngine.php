@@ -67,7 +67,7 @@ final class PdfEngine
         $runner = new WasmRunner(
             wasmBinary: $this->options->wasmBinary ?? self::defaultBinary(),
             wasmRunner: $this->options->wasmRunner ?? 'wasmtime',
-            timeout:    $this->options->timeout    ?? 30,
+            timeout:    $this->options->timeout    ?? WasmRunner::DEFAULT_TIMEOUT,
         );
 
         return $runner->invoke([
@@ -159,7 +159,7 @@ final class PdfEngine
         $runner = new WasmRunner(
             wasmBinary: $this->options->wasmBinary ?? self::defaultBinary(),
             wasmRunner: $this->options->wasmRunner ?? 'wasmtime',
-            timeout:    $this->options->timeout    ?? 30,
+            timeout:    $this->options->timeout    ?? WasmRunner::DEFAULT_TIMEOUT,
         );
 
         // An XML document is parsed once, for the src of every file it names.
