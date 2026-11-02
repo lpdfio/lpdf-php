@@ -13,6 +13,7 @@ use Lpdf\Layout\ColumnAttr;
 use Lpdf\Layout\TextAttr;
 use Lpdf\Kit\Permission;
 use Lpdf\Kit\DocumentAssets;
+use Lpdf\Kit\FileAttr;
 use Lpdf\Kit\FontAttr;
 use Lpdf\Kit\ImageAttr;
 use Lpdf\Kit\ProfileAttr;
@@ -242,6 +243,41 @@ final class SnapshotTest extends TestCase
         self::assertSame(['pdfa' => '2b'], json_decode(json_encode($doc), true)['attrs']['output']);
         $bytes = L::engine()->setLicenseKey('test-key')->render($doc, new RenderOptions(createdOn: '2026-10-31'));
         self::assertStringContainsString('<pdfaid:conformance>B</pdfaid:conformance>', $bytes);
+    }
+
+    /** The XML of a Factur-X invoice of the EN 16931 profile, as little of it as the engine reads: its BT-24. */
+    private const CII_INVOICE = '<rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"'
+        . ' xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100">'
+        . '<rsm:ExchangedDocumentContext><ram:GuidelineSpecifiedDocumentContextParameter><ram:ID>urn:cen.eu:en16931:2017</ram:ID>'
+        . '</ram:GuidelineSpecifiedDocumentContextParameter></rsm:ExchangedDocumentContext></rsm:CrossIndustryInvoice>';
+
+    /** @param list<FileAttr> $files */
+    private static function invoice(DocumentOutput $output, array $files): \Lpdf\Kit\PdfDocument
+    {
+        return L::document(
+            new DocumentAttr(output: $output, attachments: $files),
+            [L::section(null, [L::layout(null, [L::column(new ColumnAttr(background: '#e8f0fc', height: '40pt'), [])])])],
+        );
+    }
+
+    public function testMakesAFacturXInvoiceOfAKitDocumentWithPdfa3bAndFacturXXml(): void
+    {
+        $engine = L::engine()->setLicenseKey('test-key')->loadFile('factur-x.xml', self::CII_INVOICE);
+        $options = new RenderOptions(createdOn: '2026-10-31');
+        $bytes = $engine->render(self::invoice(new DocumentOutput(pdfa: '3b'), [new FileAttr(name: 'factur-x.xml')]), $options);
+        self::assertStringContainsString('<pdfaid:part>3</pdfaid:part>', $bytes);
+        self::assertStringContainsString('<fx:ConformanceLevel>EN 16931</fx:ConformanceLevel>', $bytes);
+        self::assertStringContainsString('/AFRelationship /Alternative', $bytes);
+        self::assertStringContainsString('/Subtype /text#2Fxml', $bytes);
+
+        $typed = [new FileAttr(name: 'factur-x.xml', mime: 'application/xml')];
+        $engine->render(self::invoice(new DocumentOutput(pdfa: '3u'), $typed), $options);
+        $strict = self::invoice(new DocumentOutput(pdfa: '3u', facturxStrict: true), $typed);
+        self::assertSame(['pdfa' => '3u', 'facturx-strict' => true], json_decode(json_encode($strict), true)['attrs']['output']);
+        self::assertStringContainsString('facturx-strict="true"', L::toXml($strict));
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage("mime 'application/xml'");
+        $engine->render($strict, $options);
     }
 
     public function testPutsKitElementsInPrintAndScreenContent(): void
