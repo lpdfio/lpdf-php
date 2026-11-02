@@ -114,7 +114,7 @@ final class L
         $runner = new WasmRunner(
             wasmBinary: \dirname(__DIR__) . '/resources/lpdf-wasi.wasm',
             wasmRunner: 'wasmtime',
-            timeout: 30,
+            timeout: WasmRunner::DEFAULT_TIMEOUT,
         );
         $payload  = ['method' => 'kit_to_xml', 'key' => '', 'input' => $inputStr];
         $response = $runner->invoke($payload);

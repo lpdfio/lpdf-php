@@ -50,6 +50,8 @@ $pdf = $engine->render($doc);
 
 An attribute class takes its attributes as named arguments, `new TextAttr(fontSize: 'xl')`. Positional arguments aren't supported: the parameters follow the schema's order, so an attribute added in a later version can move them.
 
+A render stops with an `EngineException` after 5 seconds; `L::engine(new EngineOptions(timeout: 60))` sets another limit in seconds, and `timeout: 0` sets none.
+
 ## Requirements
 
 - PHP 8.2+ with the DOM extension (`ext-dom`; on Debian and Ubuntu it is the `php-xml` package)
