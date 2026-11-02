@@ -12,9 +12,9 @@ namespace Lpdf\Layout;
  */
 final class FieldType
 {
-    public const string Text = 'text';
-    public const string Checkbox = 'checkbox';
-    public const string Dropdown = 'dropdown';
-    public const string Radio = 'radio';
-    public const string Button = 'button';
+    public const Text = 'text';
+    public const Checkbox = 'checkbox';
+    public const Dropdown = 'dropdown';
+    public const Radio = 'radio';
+    public const Button = 'button';
 }

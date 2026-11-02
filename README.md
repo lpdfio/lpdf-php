@@ -52,7 +52,7 @@ An attribute class takes its attributes as named arguments, `new TextAttr(fontSi
 
 ## Requirements
 
-- PHP 8.3+ with the DOM extension (`ext-dom`; on Debian and Ubuntu it is the `php-xml` package)
+- PHP 8.2+ with the DOM extension (`ext-dom`; on Debian and Ubuntu it is the `php-xml` package)
 - [`wasmtime`](https://wasmtime.dev) CLI must be available in `PATH` (used to run the bundled WASI binary).
 
 ## Docs

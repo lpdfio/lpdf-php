@@ -12,6 +12,6 @@ namespace Lpdf\Kit;
  */
 final class Orientation
 {
-    public const string Portrait = 'portrait';
-    public const string Landscape = 'landscape';
+    public const Portrait = 'portrait';
+    public const Landscape = 'landscape';
 }

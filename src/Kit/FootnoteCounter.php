@@ -12,7 +12,7 @@ namespace Lpdf\Kit;
  */
 final class FootnoteCounter
 {
-    public const string Page = 'page';
-    public const string Section = 'section';
-    public const string Document = 'document';
+    public const Page = 'page';
+    public const Section = 'section';
+    public const Document = 'document';
 }

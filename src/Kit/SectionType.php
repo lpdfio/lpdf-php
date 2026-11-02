@@ -12,5 +12,5 @@ namespace Lpdf\Kit;
  */
 final class SectionType
 {
-    public const string Toc = 'toc';
+    public const Toc = 'toc';
 }

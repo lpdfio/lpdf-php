@@ -13,9 +13,9 @@ namespace Lpdf\Shared;
  */
 final class PageScope
 {
-    public const string Each = 'each';
-    public const string First = 'first';
-    public const string Last = 'last';
-    public const string Odd = 'odd';
-    public const string Even = 'even';
+    public const Each = 'each';
+    public const First = 'first';
+    public const Last = 'last';
+    public const Odd = 'odd';
+    public const Even = 'even';
 }

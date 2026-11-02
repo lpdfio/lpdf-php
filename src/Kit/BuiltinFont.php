@@ -12,18 +12,18 @@ namespace Lpdf\Kit;
  */
 final class BuiltinFont
 {
-    public const string Courier = 'Courier';
-    public const string CourierBold = 'Courier-Bold';
-    public const string CourierOblique = 'Courier-Oblique';
-    public const string CourierBoldOblique = 'Courier-BoldOblique';
-    public const string Helvetica = 'Helvetica';
-    public const string HelveticaBold = 'Helvetica-Bold';
-    public const string HelveticaOblique = 'Helvetica-Oblique';
-    public const string HelveticaBoldOblique = 'Helvetica-BoldOblique';
-    public const string TimesRoman = 'Times-Roman';
-    public const string TimesBold = 'Times-Bold';
-    public const string TimesItalic = 'Times-Italic';
-    public const string TimesBoldItalic = 'Times-BoldItalic';
-    public const string Symbol = 'Symbol';
-    public const string ZapfDingbats = 'ZapfDingbats';
+    public const Courier = 'Courier';
+    public const CourierBold = 'Courier-Bold';
+    public const CourierOblique = 'Courier-Oblique';
+    public const CourierBoldOblique = 'Courier-BoldOblique';
+    public const Helvetica = 'Helvetica';
+    public const HelveticaBold = 'Helvetica-Bold';
+    public const HelveticaOblique = 'Helvetica-Oblique';
+    public const HelveticaBoldOblique = 'Helvetica-BoldOblique';
+    public const TimesRoman = 'Times-Roman';
+    public const TimesBold = 'Times-Bold';
+    public const TimesItalic = 'Times-Italic';
+    public const TimesBoldItalic = 'Times-BoldItalic';
+    public const Symbol = 'Symbol';
+    public const ZapfDingbats = 'ZapfDingbats';
 }
