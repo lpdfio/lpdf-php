@@ -8,6 +8,7 @@ use Lpdf\Kit\PdfDocument;
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\EngineOptions;
 use Lpdf\Engine\RenderOptions;
+use Lpdf\Engine\StampAttr;
 use Lpdf\Engine\WasmRunner;
 
 final class PdfEngine
@@ -308,6 +309,72 @@ final class PdfEngine
             throw new EngineException('Failed to decode base64 PDF response.');
         }
 
+        return $bytes;
+    }
+
+    /**
+     * Draw PNG images over the pages of an existing PDF, and return the PDF with them. Nothing is laid out: each image
+     * is drawn in its stamp's box, over the pages its `page` names, in the order of `$stamps`.
+     *
+     * The output is the input, byte for byte, with an incremental update after it, so an owner password and its
+     * permissions stay, and so does a digital signature, for the revision it signed. A PDF/A file stays PDF/A. Without
+     * a license key each stamped page gets the attribution line in its top-right corner. A stamp covers what is under
+     * it and does not remove it: the text under an image can still be selected and found, so a stamp is not a
+     * redaction.
+     *
+     * @param  string            $pdf     The bytes of the PDF to stamp.
+     * @param  list<StampAttr>   $stamps  The stamps, drawn in this order.
+     * @return string                     The bytes of the stamped PDF.
+     * @throws EngineException When the input is not a PDF, needs a password to open, or doesn't have a page a stamp
+     *                         names; when an image is not a PNG or a stamp's options are wrong; or past the timeout or
+     *                         the memory cap, or when the engine crashes.
+     */
+    public function stamp(string $pdf, array $stamps): string
+    {
+        $images = [];
+        $names = [];
+        $requestStamps = [];
+        foreach (array_values($stamps) as $i => $stamp) {
+            if (!$stamp instanceof StampAttr) {
+                throw new \InvalidArgumentException(sprintf('stamp %d is not a StampAttr', $i + 1));
+            }
+            // The same bytes, given to several stamps, go to the engine once.
+            if (!isset($names[$stamp->image])) {
+                $names[$stamp->image] = 'stamp-' . count($names);
+                $images[$names[$stamp->image]] = base64_encode($stamp->image);
+            }
+            $options = [
+                'image' => $names[$stamp->image], 'page' => $stamp->page, 'x' => $stamp->x, 'y' => $stamp->y,
+                'anchor' => $stamp->anchor, 'width' => $stamp->width, 'height' => $stamp->height,
+                'align' => $stamp->align, 'justify' => $stamp->justify, 'scale' => $stamp->scale,
+                'max-grow' => $stamp->maxGrow,
+            ];
+            $requestStamps[] = array_filter($options, static fn ($value) => $value !== null);
+        }
+
+        $runner = new WasmRunner(
+            wasmBinary: $this->options->wasmBinary ?? self::defaultBinary(),
+            wasmRunner: $this->options->wasmRunner ?? 'wasmtime',
+            timeout:    $this->options->timeout    ?? WasmRunner::DEFAULT_TIMEOUT,
+            maxMemoryMb: $this->options->maxMemoryMb ?? WasmRunner::DEFAULT_MAX_MEMORY_MB,
+        );
+        $response = $runner->invoke([
+            'method' => 'stamp',
+            'key'    => $this->licenseKey,
+            // See render: without the clock the engine cannot check the key's expiry.
+            'now'    => time(),
+            'pdf'    => base64_encode($pdf),
+            'images' => (object) $images,
+            'stamps' => $requestStamps,
+        ]);
+
+        if (!isset($response['pdf'])) {
+            throw new EngineException('Unexpected response from WASI process.');
+        }
+        $bytes = base64_decode($response['pdf'], strict: true);
+        if ($bytes === false) {
+            throw new EngineException('Failed to decode base64 PDF response.');
+        }
         return $bytes;
     }
 
