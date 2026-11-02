@@ -40,10 +40,11 @@ final readonly class BarcodeAttr
          */
         public ?string $width = null,
         /**
-         * What the barcode is for, which a screen reader reads in a PDF/UA document in place of its
-         * data, which means nothing read aloud: "QR code to pay this invoice". alt="" marks it as
-         * decoration. A PDF/UA document needs it on every barcode of the layout. A document without
-         * pdfua ignores it.
+         * What the barcode is for, which a screen reader reads in a tagged document, one with pdfua
+         * or a pdfa of level a, in place of its data, which means nothing read aloud: "QR code to
+         * pay this invoice". alt="" marks it as decoration. A PDF/UA document needs it on every
+         * barcode of the layout; at PDF/A level a without pdfua, a barcode without it is
+         * decoration. A document that is not tagged ignores it.
          */
         public ?string $alt = null,
         public ?string $paginate = null,

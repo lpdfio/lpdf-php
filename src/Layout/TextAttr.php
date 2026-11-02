@@ -51,11 +51,11 @@ final readonly class TextAttr
          */
         public ?string $width = null,
         /**
-         * Makes the text a heading, h1 to h6, which a PDF/UA document tags as one: a screen reader
-         * lists the headings and moves between them. A text without role is a paragraph. A PDF/UA
-         * document's headings start at h1 and go down one level at a time. It changes nothing a
-         * page shows: set the size and the weight as on any text. A document without pdfua ignores
-         * it.
+         * Makes the text a heading, h1 to h6, which a tagged document, one with pdfua or a pdfa of
+         * level a, tags as one: a screen reader lists the headings and moves between them. A text
+         * without role is a paragraph. A PDF/UA document's headings start at h1 and go down one
+         * level at a time. It changes nothing a page shows: set the size and the weight as on any
+         * text. A document that is not tagged ignores it.
          */
         public ?string $role = null,
         /**
