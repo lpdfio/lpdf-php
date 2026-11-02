@@ -11,19 +11,26 @@ final readonly class WasmRunner
     /** The seconds a render may run when `timeout` is left out. A timeout of 0 means no limit. */
     public const DEFAULT_TIMEOUT = 5;
 
+    /** The megabytes a render may allocate when `maxMemoryMb` is left out. */
+    public const DEFAULT_MAX_MEMORY_MB = 1024;
+
     public function __construct(
         private readonly string $wasmBinary,
         private readonly string $wasmRunner = 'wasmtime',
         private readonly int $timeout = self::DEFAULT_TIMEOUT,
+        private readonly int $maxMemoryMb = self::DEFAULT_MAX_MEMORY_MB,
     ) {}
 
     /**
      * @param  array<string, mixed> $payload  Already-built request array.
      * @return array<string, mixed>            Decoded response.
-     * @throws EngineException On process or render error, or when the process runs past the timeout.
+     * @throws EngineException On process or render error, when the engine crashes, or when the process runs past the
+     *                         timeout.
      */
     public function invoke(array $payload): array
     {
+        $payload['max_memory_mb'] = $this->maxMemoryMb;
+
         $proc = proc_open(
             [$this->wasmRunner, 'run', $this->wasmBinary],
             [
@@ -81,7 +88,14 @@ final readonly class WasmRunner
 
         fclose($pipes[1]);
         fclose($pipes[2]);
-        proc_close($proc);
+        $exitCode = proc_close($proc);
+
+        // wasmtime reports a trap on stderr and exits with an error: a crash, by a bug, a stack that ran out, or memory
+        // that did before the cap stopped the render. Each render runs a process of its own, so the next one starts on
+        // a fresh engine.
+        if ($exitCode !== 0 && str_contains($err, 'wasm trap')) {
+            throw new EngineException(EngineException::CRASHED, 0, new \RuntimeException(trim($err)));
+        }
 
         if ($out === '') {
             throw new EngineException("WASI process produced no output. Stderr: $err");
