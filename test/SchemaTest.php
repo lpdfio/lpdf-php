@@ -13,6 +13,7 @@ use Lpdf\Canvas\RectAttr;
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\RenderOptions;
 use Lpdf\Kit\BuiltinFont;
+use Lpdf\Kit\ColumnFill;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentTokens;
@@ -334,6 +335,26 @@ final class SchemaTest extends TestCase
         self::assertMatchesRegularExpression('/<section [^>]*footnote-counter="page"/', $xml);
         self::assertStringContainsString('<text>Total<fn>See <span bold="true">this</span>.</fn> here</text>', $xml);
         self::assertSame(['type' => 'fn', 'attrs' => [], 'nodes' => ['a']], $this->json(L::fn(null, ['a'])));
+    }
+
+    public function testASectionInColumnsAndAnInsetAreWrittenUnderTheirSchemaNamesRenderAsTheirXmlAndAnInsetPastTheColumnsIsRejected(): void
+    {
+        $build = static fn (int $col) => L::document(null, [
+            L::section(new SectionAttr(columns: 3, columnGap: 'm', columnRule: '0.5pt #cccccc', columnFill: ColumnFill::Balance), [L::layout(null, [
+                L::region(new RegionAttr(pin: Pin::Inset, col: $col, colspan: 2, top: '50pt', height: '100pt'), [L::text(null, ['Inset'])]),
+                L::text(null, ['One']),
+                L::text(new TextAttr(paginate: 'break-before'), ['Two']),
+            ])]),
+        ]);
+
+        $xml = L::toXml($build(2));
+        self::assertStringContainsString('<section column-fill="balance" column-gap="m" column-rule="0.5pt #cccccc" columns="3">', $xml);
+        self::assertStringContainsString('<region col="2" colspan="2" height="100pt" pin="inset" top="50pt">', $xml);
+        self::assertSame($this->render($build(2)), $this->render($xml));
+
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage("col 3 and colspan 2 reach column 4, past the section's 3 columns");
+        $this->render($build(3));
     }
 
     public function testASectionsPageNumberingIsWrittenUnderItsSchemaNamesRendersAsItsXmlDoesAndLabelsThePages(): void

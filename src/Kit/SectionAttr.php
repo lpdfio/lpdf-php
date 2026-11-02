@@ -16,6 +16,12 @@ final readonly class SectionAttr
      *                                as `lower-roman`. Without it the section keeps the format before.
      * @param string|null $pagePrefix Text before the section's page numbers, such as `A-`. Without it the section keeps
      *                                the prefix before; `''` takes it away.
+     * @param int|null    $columns    Sets the section's flow in this many columns, 1 to 12, each filled like a small
+     *                                page, left to right.
+     * @param string|null $columnGap  The space between two columns, a space token or a length; `l` by default.
+     * @param string|null $columnRule A line in the middle of each gap, as a border, such as `0.5pt #ccc`.
+     * @param string|null $columnFill How the last page's columns fill: `ColumnFill::Auto`, in order, the default, or
+     *                                `ColumnFill::Balance`, levelled.
      */
     public function __construct(
         public ?string      $size        = null,
@@ -30,5 +36,9 @@ final readonly class SectionAttr
         public ?int         $pageStart   = null,
         public ?string      $pageFormat  = null,
         public ?string      $pagePrefix  = null,
+        public ?int         $columns     = null,
+        public ?string      $columnGap   = null,
+        public ?string      $columnRule  = null,
+        public ?string      $columnFill  = null,
     ) {}
 }

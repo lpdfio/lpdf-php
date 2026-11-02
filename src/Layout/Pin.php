@@ -16,4 +16,5 @@ final class Pin
     public const Bottom = 'bottom';
     public const Left = 'left';
     public const Right = 'right';
+    public const Inset = 'inset';
 }
