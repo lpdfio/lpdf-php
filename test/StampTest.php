@@ -61,7 +61,7 @@ final class StampTest extends TestCase
         $this->assertSame(2, preg_match_all('#/Subtype\s*/Image#', substr($out, strlen($pdf))));
     }
 
-    public function testWithoutALicenseKeyEachStampGetsTheAttributionLineLinkedToLpdfIo(): void
+    public function testWithoutALicenseKeyEachStampedPageGetsTheAttributionLineLinkedToLpdfIo(): void
     {
         $pdf = self::pdf(1);
         $out = (new PdfEngine())->stamp($pdf, [
