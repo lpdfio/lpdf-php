@@ -50,7 +50,7 @@ $pdf = $engine->render($doc);
 
 An attribute class takes its attributes as named arguments, `new TextAttr(fontSize: 'xl')`. Positional arguments aren't supported: the parameters follow the schema's order, so an attribute added in a later version can move them.
 
-A render stops with an `EngineException` after 5 seconds; `L::engine(new EngineOptions(timeout: 60))` sets another limit in seconds, and `timeout: 0` sets none.
+A render stops with an `EngineException` after 5 seconds; `L::engine(new EngineOptions(timeout: 60))` sets another limit in seconds, and `timeout: 0` sets none. It also stops once it needs more than 1024 MB of memory; `maxMemoryMb: 2048` sets another cap, from 1 to 4096 MB.
 
 ## Requirements
 

@@ -68,6 +68,7 @@ final class PdfEngine
             wasmBinary: $this->options->wasmBinary ?? self::defaultBinary(),
             wasmRunner: $this->options->wasmRunner ?? 'wasmtime',
             timeout:    $this->options->timeout    ?? WasmRunner::DEFAULT_TIMEOUT,
+            maxMemoryMb: $this->options->maxMemoryMb ?? WasmRunner::DEFAULT_MAX_MEMORY_MB,
         );
 
         return $runner->invoke([
@@ -144,7 +145,8 @@ final class PdfEngine
      *
      * @param  string|PdfDocument  $input    XML string or a PdfDocument.
      * @param  RenderOptions|null  $options  Per-call options (createdOn, data, the passwords, skipEncryption).
-     * @throws EngineException On render or process error.
+     * @throws EngineException On render or process error, past the timeout or the memory cap, or when the engine
+     *                         crashes.
      */
     public function render(string|PdfDocument $input, ?RenderOptions $options = null): string
     {
@@ -160,6 +162,7 @@ final class PdfEngine
             wasmBinary: $this->options->wasmBinary ?? self::defaultBinary(),
             wasmRunner: $this->options->wasmRunner ?? 'wasmtime',
             timeout:    $this->options->timeout    ?? WasmRunner::DEFAULT_TIMEOUT,
+            maxMemoryMb: $this->options->maxMemoryMb ?? WasmRunner::DEFAULT_MAX_MEMORY_MB,
         );
 
         // An XML document is parsed once, for the src of every file it names.
