@@ -18,6 +18,12 @@ namespace Lpdf\Canvas;
 final readonly class LayerAttr
 {
     public function __construct(
+        /**
+         * Which pages of the section show the layer: each, first, last, odd, even, or a range such
+         * as 2-last. odd and even follow the number printed on the page, so in a section that
+         * starts on page 4 even shows on its first page. first, last and ranges count the section's
+         * own pages, whatever their numbers. Defaults to each.
+         */
         public ?string $page = null,
         /**
          * How opaque everything in the layer is, from 0 to 1. To fade one element, put it in a
