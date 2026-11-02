@@ -33,6 +33,7 @@ use Lpdf\Layout\FieldType;
 use Lpdf\Layout\ListAttr;
 use Lpdf\Layout\ImgAttr;
 use Lpdf\Layout\Pin;
+use Lpdf\Layout\RegionAttr;
 use Lpdf\Layout\FieldAttr;
 use Lpdf\Layout\LinkAttr;
 use Lpdf\Layout\RowAttr;
@@ -333,6 +334,29 @@ final class SchemaTest extends TestCase
         self::assertMatchesRegularExpression('/<section [^>]*footnote-counter="page"/', $xml);
         self::assertStringContainsString('<text>Total<fn>See <span bold="true">this</span>.</fn> here</text>', $xml);
         self::assertSame(['type' => 'fn', 'attrs' => [], 'nodes' => ['a']], $this->json(L::fn(null, ['a'])));
+    }
+
+    public function testASectionsPageNumberingIsWrittenUnderItsSchemaNamesRendersAsItsXmlDoesAndLabelsThePages(): void
+    {
+        $footer = L::region(new RegionAttr(pin: 'bottom'), [L::text(null, ['Page {page} of {pages}'])]);
+        $document = L::document(null, [
+            L::section(new SectionAttr(pageFormat: 'lower-roman'), [L::layout(null, [L::text(null, ['Front']), $footer])]),
+            L::section(new SectionAttr(pageStart: 1, pageFormat: 'decimal', pagePrefix: 'A-'), [L::layout(null, [L::text(null, ['Body']), $footer])]),
+        ]);
+
+        $xml = L::toXml($document);
+        self::assertStringContainsString('<section page-format="lower-roman">', $xml);
+        self::assertStringContainsString('<section page-format="decimal" page-prefix="A-" page-start="1">', $xml);
+        $pdf = $this->render($document);
+        self::assertSame($pdf, $this->render($xml));
+        self::assertStringContainsString(
+            '/PageLabels << /Nums [0 << /S /r >> 1 << /S /D /P (A-) >>] >>',
+            (string) preg_replace('/\s+/', ' ', $pdf),
+        );
+
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage('page-start must be a whole number from 1 to 2147483647, not 0');
+        $this->render(L::document(null, [L::section(new SectionAttr(pageStart: 0), [L::layout(null, [])])]));
     }
 
     public function testACodeAndACodeSpanAreWrittenAsTheirElementsAndRenderTheSameFromTheBuilderAndItsXml(): void
