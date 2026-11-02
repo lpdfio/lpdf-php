@@ -26,9 +26,12 @@ final readonly class DocumentOutput implements \JsonSerializable
         public ?string $allow = null,
         /**
          * Writes the PDF as PDF/A, the standard for files kept for the long term: `2b`, or `2u` when its text must
-         * also be searchable. The render needs `createdOn`, and every text a font of the assets. What PDF/A cannot
-         * hold is an error that says what to change: a built-in font, a CMYK color, a form field, a barcode's
-         * digits, `encrypt`.
+         * also be searchable, and `3b` or `3u` to carry attachments of any kind. The render needs `createdOn`, and
+         * every text a font of the assets. What PDF/A cannot hold is an error that says what to change: a built-in
+         * font, a CMYK color, a form field, a barcode's digits, `encrypt`, attachments in `2b` or `2u`. With `3b` or
+         * `3u`, an attachment named `factur-x.xml`, or `xrechnung.xml` for the XRECHNUNG profile, makes the file a
+         * Factur-X or ZUGFeRD e-invoice: the engine reads the profile from BT-24 of that XML and names the invoice in
+         * the file's metadata. The XML is attached as given, and its content is not checked.
          */
         public ?string $pdfa = null,
         /**
@@ -58,6 +61,14 @@ final readonly class DocumentOutput implements \JsonSerializable
          * linearization.
          */
         public ?bool $linearize = null,
+        /**
+         * Refuses, in a Factur-X e-invoice, the attachments the Factur-X spec does not allow: an invoice file whose
+         * mime is not `text/xml`, an invoice file whose relationship its profile does not allow, and another file with
+         * no mime or one that is not of a format the spec lists (PDF, TXT, GIF, TIFF, JPG, CSV, XML, JSON, XLS, XLSX,
+         * ODS). Without it, every file is written as the document gives it. It does nothing in a document without
+         * `factur-x.xml` or `xrechnung.xml`. It is `facturx-strict` in the XML.
+         */
+        public ?bool $facturxStrict = null,
     ) {}
 
     public function jsonSerialize(): mixed
@@ -71,6 +82,7 @@ final readonly class DocumentOutput implements \JsonSerializable
                 'pdfx'      => $this->pdfx,
                 'profile'   => $this->profile,
                 'linearize' => $this->linearize,
+                'facturx-strict' => $this->facturxStrict,
             ],
             static fn($v) => $v !== null,
         );
