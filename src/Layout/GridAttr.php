@@ -90,5 +90,19 @@ final readonly class GridAttr
         public ?string $width = null,
         public ?string $colWidth = null,
         public ?int $cols = null,
+        /**
+         * true lays out the cells that the child with data-source repeats one page at a time,
+         * straight from the data, for sheets of tens of thousands of labels or cards and more. The
+         * pages are the ones the same grid would have without bulk. The cells follow rules, and so
+         * do the grid's other children: a cell is a text, or a column that holds texts, a text
+         * holds plain words with no span, link, bookmark, footnote or reference, and sets no widows
+         * or orphans, a text without max-lines holds one line and ends in an ellipsis, and nothing
+         * in a cell has data-source. A row of cells never splits across pages. The grid sits
+         * directly in the layout, has no data-source of its own and one child with it, has no
+         * height, and neither it nor anything in it has paginate. Its document has no table of
+         * contents, no reference to a bookmark, no pdfua and no pdfa of level a, and its section's
+         * columns are not balanced. Breaking a rule is an error that names it. Default false.
+         */
+        public ?bool $bulk = null,
     ) {}
 }

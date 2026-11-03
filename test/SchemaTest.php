@@ -357,6 +357,30 @@ final class SchemaTest extends TestCase
         $this->render($build(3));
     }
 
+    public function testABulkTableRendersFromDataAsTheTableWithoutBulkAndOneBuiltWithLWhichHasNoDataIsRejected(): void
+    {
+        $xml = static fn (string $bulk) => '<lpdf version="1"><document size="a4"><section><layout margin="36pt">'
+            . "<table cols=\"1fr 2fr\"{$bulk}><thead><td><text bold=\"true\">Date</text></td><td><text bold=\"true\">Amount</text></td></thead>"
+            . '<tr data-source="entries"><td><text data-value="date">-</text></td><td><text data-value="amount">-</text></td></tr></table>'
+            . '<region pin="bottom"><text align="right">Page {page} of {pages}</text></region></layout></section></document></lpdf>';
+        $entries = array_map(static fn (int $i) => ['date' => sprintf('2026-01-%02d', $i % 28 + 1), 'amount' => "\${$i}.00"], range(0, 1999));
+        $engine = L::engine()->setLicenseKey('test-key');
+        $render = fn (string $input) => $this->normalised($engine->render($input, new RenderOptions(data: ['entries' => $entries])));
+
+        $pdf = $render($xml(' bulk="true"'));
+        self::assertSame($pdf, $render($xml('')));
+        preg_match('~/Type /Pages[^>]*/Count (\d+)~', $pdf, $count);
+        self::assertGreaterThan(20, (int) $count[1], 'the rows run over many pages');
+
+        $built = L::document(null, [L::section(null, [L::layout(null, [
+            L::table(new TableAttr(cols: '1fr', bulk: true), [L::tr(null, [L::td(null, [L::text(null, ['A'])])])]),
+        ])])]);
+        self::assertStringContainsString('<table bulk="true" cols="1fr">', L::toXml($built));
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage('a bulk table repeats one tr with data-source: it has none');
+        $this->render($built);
+    }
+
     public function testASectionsPageNumberingIsWrittenUnderItsSchemaNamesRendersAsItsXmlDoesAndLabelsThePages(): void
     {
         $footer = L::region(new RegionAttr(pin: 'bottom'), [L::text(null, ['Page {page} of {pages}'])]);
