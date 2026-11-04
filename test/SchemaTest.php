@@ -18,6 +18,8 @@ use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentTokens;
 use Lpdf\Kit\Gradient;
+use Lpdf\Kit\Ruling;
+use Lpdf\Kit\RulingLines;
 use Lpdf\Kit\FileAttr;
 use Lpdf\Kit\FileRelationship;
 use Lpdf\Kit\FontAttr;
@@ -513,6 +515,21 @@ final class SchemaTest extends TestCase
         self::assertSame($pdf, $this->render(L::toXml($gradient)));
         self::assertNotSame($pdf, $this->render($build('#336699')));
         self::assertStringContainsString('/ShadingType 2', $pdf);
+    }
+
+    public function testARulingOfTheTokensIsDrawnOnceAndRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        $document = L::document(
+            new DocumentAttr(tokens: new DocumentTokens(rulings: [
+                'notes' => new Ruling(lines: [new RulingLines(stepY: '8mm', color: '#c9d6e8')], edges: false),
+            ])),
+            [L::section(new SectionAttr(ruling: 'notes'), [L::layout(null, [L::text(null, ['On ruled paper'])])])],
+        );
+
+        $pdf = $this->render($document);
+
+        self::assertSame($pdf, $this->render(L::toXml($document)));
+        self::assertSame(1, substr_count($pdf, '/Subtype /Form'));
     }
 
     public function testBoldTextIsTheBoldFaceOfTheFont(): void
