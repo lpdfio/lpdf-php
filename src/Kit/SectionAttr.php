@@ -22,6 +22,8 @@ final readonly class SectionAttr
      * @param string|null $columnRule A line in the middle of each gap, as a border, such as `0.5pt #ccc`.
      * @param string|null $columnFill How the last page's columns fill: `ColumnFill::Auto`, in order, the default, or
      *                                `ColumnFill::Balance`, levelled.
+     * @param string|null $ruling     The name of a ruling of the tokens, whose lines are drawn on every page of the
+     *                                section, under everything else.
      */
     public function __construct(
         public ?string      $size        = null,
@@ -40,5 +42,6 @@ final readonly class SectionAttr
         public ?string      $columnGap   = null,
         public ?string      $columnRule  = null,
         public ?string      $columnFill  = null,
+        public ?string      $ruling      = null,
     ) {}
 }

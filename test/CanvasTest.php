@@ -18,6 +18,8 @@ use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentTokens;
 use Lpdf\Kit\Gradient;
 use Lpdf\Kit\GradientStop;
+use Lpdf\Kit\Ruling;
+use Lpdf\Kit\RulingLines;
 use Lpdf\Kit\LayoutAttr;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\Kit\SectionAttr;
@@ -241,6 +243,31 @@ final class CanvasTest extends TestCase
             'fade' => ['type' => 'linear', 'from' => 'primary', 'to' => '#0f3e8a', 'angle' => 90],
             'sunset' => ['type' => 'radial', 'stops' => [['offset' => '0%', 'color' => '#f97316'], ['offset' => '100%', 'color' => '#8b5cf6']]],
         ], $document['attrs']['tokens']['gradients']);
+    }
+
+    public function testRulingsAreATokenRowOfNamedRulingsWithTheirLinesUnderTheSchemaNames(): void
+    {
+        $rulings = [
+            'graph' => new Ruling(
+                lines: [new RulingLines(step: '5mm'), new RulingLines(countX: 12, stepY: '25mm', color: '#b5c4d6')],
+                origin: 'margin',
+                edges: false,
+            ),
+        ];
+        $document = $this->json(L::document(new DocumentAttr(tokens: new DocumentTokens(rulings: $rulings))));
+
+        self::assertSame([
+            'graph' => [
+                'origin' => 'margin',
+                'edges' => false,
+                'lines' => [['step' => '5mm'], ['step-y' => '25mm', 'count-x' => 12, 'color' => '#b5c4d6']],
+            ],
+        ], $document['attrs']['tokens']['rulings']);
+    }
+
+    public function testASectionNamesARuling(): void
+    {
+        self::assertSame(['ruling' => 'graph'], $this->json(L::section(new SectionAttr(ruling: 'graph')))['attrs']);
     }
 
     public function testALayerGivesItsTextAFontASizeAndAColorAndABoxHasAColorAndAnOpacity(): void
