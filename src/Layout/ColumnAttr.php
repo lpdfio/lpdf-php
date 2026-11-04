@@ -90,5 +90,20 @@ final readonly class ColumnAttr
          * to the next line; in a column it takes the full width.
          */
         public ?string $width = null,
+        /**
+         * true lays out the texts that the text with data-source repeats one page at a time,
+         * straight from the data, for logs and lists of tens of thousands of lines and more. The
+         * pages are the ones the same column would have without bulk, but where a page would end
+         * inside a text of four lines or more: without bulk the text splits there, and with bulk it
+         * moves whole to the next page. The column holds texts only, and they follow rules: a text
+         * holds plain words with no span, link, bookmark, footnote or reference, sets no widows or
+         * orphans and has no data-source inside it, and a text without max-lines holds one line and
+         * ends in an ellipsis. The column sits directly in the layout, has no data-source of its
+         * own and one text with it, has no height, and neither it nor anything in it has paginate.
+         * Its document has no table of contents, no reference to a bookmark, no pdfua and no pdfa
+         * of level a, and its section's columns are not balanced. Breaking a rule is an error that
+         * names it. Default false.
+         */
+        public ?bool $bulk = null,
     ) {}
 }

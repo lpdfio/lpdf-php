@@ -53,6 +53,21 @@ final readonly class TableAttr
         public ?string $paginate = null,
         public ?bool $debug = null,
         /**
+         * true lays out the rows that the tr with data-source repeats one page at a time, straight
+         * from the data, for reports of tens of thousands of rows and more. The pages are the ones
+         * the same table would have without bulk. The rows follow rules, and so do the thead and
+         * the other rows: each td holds one text or none, a text holds plain words with no span,
+         * link, bookmark, footnote or reference, and sets no widows or orphans, a text without
+         * max-lines holds one line and ends in an ellipsis, a td has no rowspan, a row no keep, and
+         * nothing in a row has data-source. A row never splits across pages. The table sits
+         * directly in the layout, has no data-source of its own and one tr with it, sets its cols
+         * in fr, pt or %, has no height, and neither it nor anything in it has paginate. Its
+         * document has no table of contents, no reference to a bookmark, no pdfua and no pdfa of
+         * level a, and its section's columns are not balanced. Breaking a rule is an error that
+         * names it. Default false.
+         */
+        public ?bool $bulk = null,
+        /**
          * Puts the element, and everything in it, in an optional content group, which the viewer
          * shows or hides. print: printed, and not shown on screen. screen: shown on screen, and not
          * printed. The element keeps its room either way, so nothing moves. An element with a group
