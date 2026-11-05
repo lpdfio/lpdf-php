@@ -129,15 +129,22 @@ final class FfiRunner implements EngineRunner
     /**
      * Whether PHP runs on musl, Alpine's C library, which isn't supported: the library is built for glibc. The loader
      * mapped into PHP's own process says, since musl's loader in /lib doesn't: Debian's musl package puts it there
-     * beside glibc's. Where open_basedir hides /proc, that file is the only sign left.
+     * beside glibc's. Where open_basedir hides /proc, and /lib with it, the C library itself says, as open_basedir
+     * doesn't govern FFI: only glibc has `gnu_get_libc_version`. Where `ffi.enable` refuses FFI, loading the library
+     * says so next.
      */
     private static function onMusl(): bool
     {
         $maps = @file_get_contents('/proc/self/maps');
-        if ($maps === false) {
-            return (glob('/lib/ld-musl-*.so.1') ?: []) !== [];
+        if ($maps !== false) {
+            return str_contains($maps, '/ld-musl-');
         }
-        return str_contains($maps, '/ld-musl-');
+        try {
+            \FFI::cdef('const char *gnu_get_libc_version(void);');
+            return false;
+        } catch (\FFI\Exception $e) {
+            return str_contains($e->getMessage(), 'gnu_get_libc_version');
+        }
     }
 
     /** The library at `$path`, loaded, or what loading it threw. */

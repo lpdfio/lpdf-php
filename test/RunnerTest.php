@@ -106,6 +106,23 @@ final class RunnerTest extends TestCase
             implode("\n", $output));
     }
 
+    /**
+     * Where open_basedir hides /proc and /lib, as on a shared host, `auto` picks as it does without it: musl is still
+     * told apart from glibc. open_basedir can be set only when PHP starts, so the pick runs in a PHP of its own, with
+     * this one's `ffi.enable`.
+     */
+    public function testUnderOpenBasedirAutoPicksTheRunnerTheJobExpects(): void
+    {
+        $expected = RunnerSupport::expectedAuto() ?? $this->markTestSkipped('LPDF_TEST_AUTO says what auto picks in a CI job.');
+        $app = \dirname(__DIR__);
+        $ffi = \extension_loaded('ffi') ? ' -d ffi.enable=' . escapeshellarg((string) \ini_get('ffi.enable')) : '';
+        $pick = 'require ' . var_export("$app/vendor/autoload.php", true) . '; echo Lpdf\L::engine()->runner();';
+        exec(escapeshellarg(\PHP_BINARY) . ' -d open_basedir=' . escapeshellarg($app) . $ffi . ' -r '
+            . escapeshellarg($pick) . ' 2>&1', $output);
+
+        $this->assertSame($expected, implode("\n", $output));
+    }
+
     public function testAnUnknownRunnerIsRefused(): void
     {
         $this->expectException(\InvalidArgumentException::class);
