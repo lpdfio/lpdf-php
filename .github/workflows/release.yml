@@ -73,31 +73,35 @@ jobs:
           fi
           echo "main is ${GITHUB_SHA:0:7}, the commit $RC_TAG tested here (${RC_SHA:0:7})."
 
-      # ── Download WASI binary from core release ───────────────────────────────
-      # PHP adapter expects resources/lpdf-wasi.wasm
-      - name: Download lpdf-wasi.wasm
+      # ── Download the engine from core release ────────────────────────────────
+      # The package carries resources/lpdf-wasi.wasm, which the wasmtime runner
+      # runs, and the native library for each CPU in resources/lib, which the FFI
+      # runner loads.
+      - name: Download the engine
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p resources
-          DOWNLOADED=""
-          for attempt in 1 2 3; do
-            gh release download "$CORE_TAG" \
-              --repo lpdfio/lpdf \
-              --pattern "lpdf-wasi.wasm" \
-              --dir resources \
-              --clobber && DOWNLOADED=1 && break
-            echo "Attempt $attempt failed — retrying in 10s..."
-            sleep 10
+          mkdir -p resources/lib
+          for file in lpdf-wasi.wasm lib/liblpdf-linux-x86_64.so lib/liblpdf-linux-aarch64.so; do
+            DOWNLOADED=""
+            for attempt in 1 2 3; do
+              gh release download "$CORE_TAG" \
+                --repo lpdfio/lpdf \
+                --pattern "$(basename "$file")" \
+                --dir "resources/$(dirname "$file")" \
+                --clobber && DOWNLOADED=1 && break
+              echo "Attempt $attempt failed — retrying in 10s..."
+              sleep 10
+            done
+            # No fallback to the latest core: vX.Y.Z must ship engine vX.Y.0
+            # (var/VERSIONING.md in lpdfio/lpdf). ci.yml keeps its fallback.
+            # The flag matters here: the engine's files are tracked in git,
+            # so a file exists even when its download failed.
+            if [ -z "$DOWNLOADED" ]; then
+              echo "::error::Could not download $(basename "$file") from core $CORE_TAG. This release must ship engine $CORE_TAG — publish that core release first, or check the tag."
+              exit 1
+            fi
           done
-          # No fallback to the latest core: vX.Y.Z must ship engine vX.Y.0
-          # (var/VERSIONING.md in lpdfio/lpdf). ci.yml keeps its fallback.
-          # The flag matters here: resources/lpdf-wasi.wasm is tracked in git,
-          # so the file exists even when this download failed.
-          if [ -z "$DOWNLOADED" ]; then
-            echo "::error::Could not download core $CORE_TAG. This release must ship engine $CORE_TAG — publish that core release first, or check the tag."
-            exit 1
-          fi
 
       # ── Install wasmtime runtime ─────────────────────────────────────────────
       # Pinned, straight from the release archive — see ci.yml for why
@@ -126,6 +130,7 @@ jobs:
         with:
           php-version: '8.2'
           tools: composer
+          extensions: ffi
 
       - name: Install composer dependencies
         run: composer install --no-interaction --prefer-dist
@@ -136,20 +141,33 @@ jobs:
       # that snapshot tests can actually run in this adapter's CI.
       # Cloned at CORE_TAG, the engine this release ships, so the snapshots
       # match it even after core's main has moved on (e.g. between an RC and
-      # the final release).
-      - name: Fetch test fixtures and snapshots from core
+      # the final release). The assets are the fonts, images and profile that
+      # core's snapshot tests load.
+      - name: Fetch test fixtures, snapshots and assets from core
         run: |
           git clone --depth 1 --branch "$CORE_TAG" --filter=blob:none --sparse \
             https://github.com/lpdfio/lpdf.git _core
-          git -C _core sparse-checkout set test/fixtures test/snapshots
-          mkdir -p test/fixtures test/snapshots
+          git -C _core sparse-checkout set test/fixtures test/snapshots test/assets
+          mkdir -p test/fixtures test/snapshots test/assets
           cp -r _core/test/fixtures/. test/fixtures/
           cp -r _core/test/snapshots/. test/snapshots/
+          cp -r _core/test/assets/. test/assets/
           rm -rf _core
 
       # ── Test ─────────────────────────────────────────────────────────────────
-      - name: Test
+      # Through both runners, as rc.yml tests them.
+      - name: Test, with the native library
+        env:
+          LPDF_TEST_RUNNERS: ffi,wasm
+          LPDF_TEST_AUTO: ffi
         run: php vendor/bin/phpunit test
+
+      - name: Test, with ffi.enable refused
+        env:
+          LPDF_TEST_RUNNERS: wasm
+          LPDF_TEST_AUTO: wasm
+          LPDF_TEST_FFI_REFUSED: 'restricted by "ffi.enable"'
+        run: php -d ffi.enable=false vendor/bin/phpunit test
 
       # ── Commit new wasm, tag, and push ───────────────────────────────────────
       # Every push uses this run's GITHUB_TOKEN, which actions/checkout leaves
@@ -168,9 +186,9 @@ jobs:
 
       # ── Changelog ────────────────────────────────────────────────────────────
       # php deliberately differs from the other three adapters: it does NOT
-      # switch to main first. resources/lpdf-wasi.wasm is tracked and already
-      # modified in the working tree by this point, so a branch switch would be
-      # refused. Instead the file is written here and carried by the existing
+      # switch to main first. The engine's files in resources/ are tracked and
+      # already modified in the working tree by this point, so a branch switch
+      # would be refused. Instead the file is written here and carried by the existing
       # commit/push steps below, which already push HEAD:main.
       #
       # Fails the job on error, deliberately — see changelog-plan.md, "Rollout".
@@ -226,9 +244,9 @@ jobs:
           } > CHANGELOG.next
           mv CHANGELOG.next CHANGELOG.md
 
-      - name: Commit updated wasm binary and changelog
+      - name: Commit the engine and the changelog
         run: |
-          git add -f resources/lpdf-wasi.wasm
+          git add -f resources/lpdf-wasi.wasm resources/lib/liblpdf-linux-x86_64.so resources/lib/liblpdf-linux-aarch64.so
           git add CHANGELOG.md
           git diff --cached --quiet || git commit -m "release: $ADAPTER_TAG"
 
@@ -251,7 +269,7 @@ jobs:
       # tries again. Merge, not rebase: Packagist ships the tagged tree itself,
       # so the tag stays on the release commit, the tree that was tested here,
       # and the newer commit on main waits for the next release. If the newer
-      # commit also changed the wasm or the top of CHANGELOG.md, the job stops
+      # commit also changed the engine or the top of CHANGELOG.md, the job stops
       # with nothing pushed.
       #
       # On a direct tag trigger (adapter patch) the tag already exists; only
@@ -275,7 +293,7 @@ jobs:
             git checkout -q --detach FETCH_HEAD
             if ! git merge --no-edit -m "release: merge $ADAPTER_TAG into main" "$RELEASE_COMMIT"; then
               git merge --abort
-              echo "::error::A commit pushed to main during the release conflicts with the release commit (resources/lpdf-wasi.wasm or CHANGELOG.md). Nothing was pushed. Resolve it on main, then re-run this job."
+              echo "::error::A commit pushed to main during the release conflicts with the release commit (the engine's files in resources/ or CHANGELOG.md). Nothing was pushed. Resolve it on main, then re-run this job."
               exit 1
             fi
           done

@@ -7,12 +7,15 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
-  test:
-    name: Tests
+  # The engine and what the tests need from core, fetched once: the jobs below run from this artifact, some of them in
+  # containers that have no gh, no git and no composer.
+  engine:
+    name: Engine, fixtures and dependencies
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v5
         with:
@@ -23,17 +26,18 @@ jobs:
           php-version: '8.2'
           tools: composer
 
-      # ── Download WASI binary from core release ───────────────────────────────
+      # ── Download the engine from core's release ──────────────────────────────
       # The newest core release, pre-releases included. `main` is built against the engine it will
       # ship with, and between a core RC and its final release that engine is the RC: an SDK API change
       # lands with the core release that carries it (Lpdf-devcycle.md §4.2 in lpdfio/lpdf), so pinning
       # to the last final release fails the build for the whole window. release.yml and rc.yml stay
       # pinned to the tag they ship.
-      - name: Download lpdf-wasi.wasm
+      # The WebAssembly the wasmtime runner runs, and the native library for each CPU, which the FFI runner loads.
+      - name: Download the engine
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p resources
+          mkdir -p resources/lib
           CORE_TAG=$(gh api repos/lpdfio/lpdf/releases \
             --jq 'map(select(.draft | not))[0].tag_name // empty')
           if [ -z "$CORE_TAG" ]; then
@@ -41,21 +45,98 @@ jobs:
             exit 1
           fi
           echo "Resolved core tag: $CORE_TAG"
-          DOWNLOADED=""
-          for attempt in 1 2 3; do
-            gh release download "$CORE_TAG" \
-              --repo lpdfio/lpdf \
-              --pattern "lpdf-wasi.wasm" \
-              --dir resources \
-              --clobber && DOWNLOADED=1 && break
-            echo "Attempt $attempt failed — retrying in 10s..."
-            sleep 10
+          for file in lpdf-wasi.wasm lib/liblpdf-linux-x86_64.so lib/liblpdf-linux-aarch64.so; do
+            DOWNLOADED=""
+            for attempt in 1 2 3; do
+              gh release download "$CORE_TAG" \
+                --repo lpdfio/lpdf \
+                --pattern "$(basename "$file")" \
+                --dir "resources/$(dirname "$file")" \
+                --clobber && DOWNLOADED=1 && break
+              echo "Attempt $attempt failed — retrying in 10s..."
+              sleep 10
+            done
+            if [ -z "$DOWNLOADED" ]; then
+              echo "::error::Could not download $(basename "$file") from core $CORE_TAG."
+              exit 1
+            fi
           done
-          if [ -z "$DOWNLOADED" ]; then
-            echo "::error::Could not download the engine file from core $CORE_TAG."
-            exit 1
-          fi
           echo "EFFECTIVE_CORE_TAG=$CORE_TAG" >> "$GITHUB_ENV"
+
+      - name: Install composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      # The check below is a Node script.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      # ── Check the API against the schema ─────────────────────────────────────
+      # The attribute classes and constants follow from schema/lpdf.xsd, and the scripts that check
+      # them live in core. Fails if a generated file differs from what the schema gives, or a class
+      # has other attributes than the schema's element.
+      # The schema is the one at the core tag the engine was taken from.
+      - name: Check the API against the schema
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse \
+            --branch "$EFFECTIVE_CORE_TAG" \
+            https://github.com/lpdfio/lpdf.git _schema
+          git -C _schema sparse-checkout set schema scripts
+          node _schema/scripts/gen-sdk-api.mjs --check --sdk php=.
+          node _schema/scripts/check-sdk-parity.mjs --sdk php=.
+          rm -rf _schema
+
+      # ── Fetch test fixtures, snapshots and assets from core ──────────────────
+      # The assets are the fonts, images and profile that core's snapshot tests load.
+      - name: Fetch test fixtures, snapshots and assets from core
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse \
+            --branch "$EFFECTIVE_CORE_TAG" \
+            https://github.com/lpdfio/lpdf.git _core
+          git -C _core sparse-checkout set test/fixtures test/snapshots test/assets
+          mkdir -p test/fixtures test/snapshots test/assets
+          cp -r _core/test/fixtures/. test/fixtures/
+          cp -r _core/test/snapshots/. test/snapshots/
+          cp -r _core/test/assets/. test/assets/
+          rm -rf _core
+
+      - name: Pack them
+        run: tar -czf sdk.tgz vendor resources test/fixtures test/snapshots test/assets
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: sdk
+          path: sdk.tgz
+          retention-days: 1
+
+  # ── The whole suite on each CPU, through both runners ────────────────────────
+  # First with the native library, which `auto` picks, then with `ffi.enable` refused, where `auto` falls back to
+  # wasmtime: the tests that pick no runner run through each. RunnerHashTest sends every fixture with a stored hash
+  # through both runners in the first pass.
+  test:
+    name: Tests (${{ matrix.arch }})
+    needs: engine
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: sdk
+      - run: tar -xzf sdk.tgz
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: ffi
 
       # ── Install wasmtime runtime ─────────────────────────────────────────────
       # Pinned, straight from the release archive. wasmtime.dev/install.sh
@@ -84,40 +165,134 @@ jobs:
           which wasmtime
           wasmtime --version
 
-      - name: Install composer dependencies
-        run: composer install --no-interaction --prefer-dist
-
-      # The check below is a Node script.
-      - uses: actions/setup-node@v5
-        with:
-          node-version: '24'
-
-      # ── Check the API against the schema ─────────────────────────────────────
-      # The attribute classes and constants follow from schema/lpdf.xsd, and the scripts that check
-      # them live in core. Fails if a generated file differs from what the schema gives, or a class
-      # has other attributes than the schema's element.
-      # The schema is the one at the core tag the engine was taken from.
-      - name: Check the API against the schema
-        run: |
-          git clone --depth 1 --filter=blob:none --sparse \
-            --branch "$EFFECTIVE_CORE_TAG" \
-            https://github.com/lpdfio/lpdf.git _schema
-          git -C _schema sparse-checkout set schema scripts
-          node _schema/scripts/gen-sdk-api.mjs --check --sdk php=.
-          node _schema/scripts/check-sdk-parity.mjs --sdk php=.
-          rm -rf _schema
-
-      # ── Fetch test fixtures and snapshots from core ──────────────────────────
-      - name: Fetch test fixtures and snapshots from core
-        run: |
-          git clone --depth 1 --filter=blob:none --sparse \
-            --branch "$EFFECTIVE_CORE_TAG" \
-            https://github.com/lpdfio/lpdf.git _core
-          git -C _core sparse-checkout set test/fixtures test/snapshots
-          mkdir -p test/fixtures test/snapshots
-          cp -r _core/test/fixtures/. test/fixtures/
-          cp -r _core/test/snapshots/. test/snapshots/
-          rm -rf _core
-
-      - name: Test
+      - name: Test, with the native library
+        env:
+          LPDF_TEST_RUNNERS: ffi,wasm
+          LPDF_TEST_AUTO: ffi
         run: php vendor/bin/phpunit test
+
+      - name: Test, with ffi.enable refused
+        env:
+          LPDF_TEST_RUNNERS: wasm
+          LPDF_TEST_AUTO: wasm
+          LPDF_TEST_FFI_REFUSED: 'restricted by "ffi.enable"'
+        run: php -d ffi.enable=false vendor/bin/phpunit test
+
+      - name: Time both runners
+        run: php test/bench-runners.php | tee -a "$GITHUB_STEP_SUMMARY"
+
+  # ── The native library on the supported releases ─────────────────────────────
+  # Each loads the library with its own glibc. Ubuntu 22.04's PHP is 8.1, older than the SDK needs, so it takes 8.2
+  # from Ondřej Surý's PPA; the others take their own. No wasmtime: the snapshot tests run through the library.
+  distros:
+    name: Native library on ${{ matrix.image }} (${{ matrix.os == 'ubuntu-24.04' && 'x86_64' || 'aarch64' }})
+    needs: engine
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['ubuntu:22.04', 'ubuntu:24.04', 'debian:12', 'debian:13']
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.image }}
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Install PHP
+        run: |
+          apt-get update
+          . /etc/os-release
+          PHP=php
+          if [ "$ID" = ubuntu ] && [ "$VERSION_ID" = 22.04 ]; then
+            apt-get install -y --no-install-recommends software-properties-common gpg-agent
+            LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
+            apt-get update
+            PHP=php8.2
+          fi
+          apt-get install -y --no-install-recommends "$PHP-cli" "$PHP-xml" "$PHP-mbstring"
+          php -v
+          ldd --version | head -n 1
+          php -m | grep -qx FFI || { echo "::error::$(php -v | head -n 1) has no FFI extension"; exit 1; }
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: sdk
+      - run: tar -xzf sdk.tgz
+
+      - name: Test the snapshots through the native library
+        env:
+          LPDF_TEST_RUNNERS: ffi
+          LPDF_TEST_AUTO: ffi
+        run: php vendor/bin/phpunit --filter 'RunnerHashTest|SnapshotTest|RunnerTest' test
+
+  # ── Where `auto` falls back to wasmtime ───────────────────────────────────────
+  # The official images, as a user gets them: without the FFI extension; under PHP-FPM, where `ffi.enable` at its
+  # default refuses the library; and on Alpine, whose musl the library doesn't support.
+  fallback:
+    name: Falls back to wasmtime (${{ matrix.case }})
+    needs: engine
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - case: no FFI extension
+            image: php:8.2-cli
+            runners: wasm
+            auto: wasm
+            refused: "PHP's FFI extension is not loaded"
+          - case: PHP-FPM
+            image: php:8.2-fpm
+            ffi: true
+            fpm: php-fpm
+            runners: ffi,wasm
+            auto: ffi
+          - case: Alpine
+            image: php:8.2-cli-alpine
+            ffi: true
+            runners: wasm
+            auto: wasm
+            refused: "musl isn't supported"
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    steps:
+      # The FFI extension where the case needs it loaded, cgi-fcgi to send PHP-FPM a request, and wasmtime: the musl
+      # build on Alpine.
+      - name: Install the FFI extension and wasmtime
+        env:
+          WASMTIME_VERSION: v48.0.2
+          FFI: ${{ matrix.ffi }}
+        run: |
+          if [ -f /etc/alpine-release ]; then
+            apk add --no-cache curl xz libffi-dev $PHPIZE_DEPS
+            LIBC=musl
+          else
+            apt-get update
+            apt-get install -y --no-install-recommends curl xz-utils libffi-dev libfcgi-bin
+            LIBC=linux
+          fi
+          if [ "$FFI" = true ]; then
+            docker-php-ext-install ffi
+          fi
+          ARCHIVE="wasmtime-${WASMTIME_VERSION}-$(uname -m)-$LIBC"
+          curl -sSfL --retry 3 \
+            "https://github.com/bytecodealliance/wasmtime/releases/download/${WASMTIME_VERSION}/${ARCHIVE}.tar.xz" \
+            -o /tmp/wasmtime.tar.xz
+          tar -xJf /tmp/wasmtime.tar.xz -C /usr/local/bin --strip-components=1 "${ARCHIVE}/wasmtime"
+          wasmtime --version
+          php -m | grep -x FFI || echo "no FFI extension"
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: sdk
+      - run: tar -xzf sdk.tgz
+
+      - name: Test which runner renders
+        env:
+          LPDF_TEST_RUNNERS: ${{ matrix.runners }}
+          LPDF_TEST_AUTO: ${{ matrix.auto }}
+          LPDF_TEST_FFI_REFUSED: ${{ matrix.refused }}
+          LPDF_TEST_FPM: ${{ matrix.fpm }}
+        run: php vendor/bin/phpunit --filter 'RunnerTest|SnapshotTest' test

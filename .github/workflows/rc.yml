@@ -3,7 +3,7 @@ run-name: "RC ${{ github.event.client_payload.version }}: build and test, no pub
 
 # Answers core's `core-rc` dispatch for a vX.Y.0-rc.N tag (Lpdf-devcycle.md
 # §4.2 in lpdfio/lpdf). Tests this repo's main against the RC engine.
-# Publishes nothing: no commit (the downloaded wasm is never committed), no
+# Publishes nothing: no commit (the downloaded engine is never committed), no
 # tag, no changelog, no GitHub Release, and no push. Packagist ships
 # the git tree itself, so there is no package to keep. release.yml stays the
 # only path to Packagist.
@@ -38,29 +38,32 @@ jobs:
           echo "CORE_TAG=$PAYLOAD_VERSION"          >> "$GITHUB_ENV"
           echo "FINAL_TAG=${PAYLOAD_VERSION%-rc.*}" >> "$GITHUB_ENV"
 
-      # ── Download WASI binary from the RC pre-release ─────────────────────────
+      # ── Download the engine from the RC pre-release ──────────────────────────
       # No fallback: a test against any other engine proves nothing about this RC.
-      # The flag matters here: resources/lpdf-wasi.wasm is tracked in git, so the
-      # file exists even when this download failed.
-      - name: Download lpdf-wasi.wasm
+      # The flag matters here: the engine's files are tracked in git, so a file
+      # exists even when its download failed. The WebAssembly the wasmtime runner
+      # runs, and the native library for each CPU, which the FFI runner loads.
+      - name: Download the engine
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p resources
-          DOWNLOADED=""
-          for attempt in 1 2 3; do
-            gh release download "$CORE_TAG" \
-              --repo lpdfio/lpdf \
-              --pattern "lpdf-wasi.wasm" \
-              --dir resources \
-              --clobber && DOWNLOADED=1 && break
-            echo "Attempt $attempt failed — retrying in 10s..."
-            sleep 10
+          mkdir -p resources/lib
+          for file in lpdf-wasi.wasm lib/liblpdf-linux-x86_64.so lib/liblpdf-linux-aarch64.so; do
+            DOWNLOADED=""
+            for attempt in 1 2 3; do
+              gh release download "$CORE_TAG" \
+                --repo lpdfio/lpdf \
+                --pattern "$(basename "$file")" \
+                --dir "resources/$(dirname "$file")" \
+                --clobber && DOWNLOADED=1 && break
+              echo "Attempt $attempt failed — retrying in 10s..."
+              sleep 10
+            done
+            if [ -z "$DOWNLOADED" ]; then
+              echo "::error::Could not download $(basename "$file") from core RC $CORE_TAG."
+              exit 1
+            fi
           done
-          if [ -z "$DOWNLOADED" ]; then
-            echo "::error::Could not download core RC $CORE_TAG."
-            exit 1
-          fi
 
       # ── Install wasmtime runtime ─────────────────────────────────────────────
       # Pinned, straight from the release archive — see ci.yml for why
@@ -88,6 +91,7 @@ jobs:
         with:
           php-version: '8.2'
           tools: composer
+          extensions: ffi
 
       - name: Install composer dependencies
         run: composer install --no-interaction --prefer-dist
@@ -112,21 +116,36 @@ jobs:
           node _schema/scripts/check-sdk-parity.mjs --sdk php=.
           rm -rf _schema
 
-      # ── Fetch test fixtures and snapshots from core ──────────────────────────
-      # At the RC tag, so the golden snapshots match the engine under test.
-      - name: Fetch test fixtures and snapshots from core
+      # ── Fetch test fixtures, snapshots and assets from core ──────────────────
+      # At the RC tag, so the golden snapshots match the engine under test. The
+      # assets are the fonts, images and profile that core's snapshot tests load.
+      - name: Fetch test fixtures, snapshots and assets from core
         run: |
           git clone --depth 1 --branch "$CORE_TAG" --filter=blob:none --sparse \
             https://github.com/lpdfio/lpdf.git _core
-          git -C _core sparse-checkout set test/fixtures test/snapshots
-          mkdir -p test/fixtures test/snapshots
+          git -C _core sparse-checkout set test/fixtures test/snapshots test/assets
+          mkdir -p test/fixtures test/snapshots test/assets
           cp -r _core/test/fixtures/. test/fixtures/
           cp -r _core/test/snapshots/. test/snapshots/
+          cp -r _core/test/assets/. test/assets/
           rm -rf _core
 
       # ── Test ─────────────────────────────────────────────────────────────────
-      - name: Test
+      # Through both runners: first with the native library, which `auto` picks,
+      # then with ffi.enable refused, where it falls back to wasmtime. ci.yml
+      # covers aarch64, the Ubuntu and Debian releases and the other fallbacks.
+      - name: Test, with the native library
+        env:
+          LPDF_TEST_RUNNERS: ffi,wasm
+          LPDF_TEST_AUTO: ffi
         run: php vendor/bin/phpunit test
+
+      - name: Test, with ffi.enable refused
+        env:
+          LPDF_TEST_RUNNERS: wasm
+          LPDF_TEST_AUTO: wasm
+          LPDF_TEST_FFI_REFUSED: 'restricted by "ffi.enable"'
+        run: php -d ffi.enable=false vendor/bin/phpunit test
 
       # ── What ships from this repo ────────────────────────────────────────────
       # The final core release publishes this repo's main as it stands. Anything
