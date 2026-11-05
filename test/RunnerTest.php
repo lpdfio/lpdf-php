@@ -93,6 +93,19 @@ final class RunnerTest extends TestCase
         }
     }
 
+    /** `disable_functions` can be set only when PHP starts, so the render runs in a PHP of its own. */
+    public function testWhereProcOpenIsDisabledTheErrorSaysSo(): void
+    {
+        $render = 'require ' . var_export(\dirname(__DIR__) . '/vendor/autoload.php', true) . ';'
+            . ' try { Lpdf\L::engine(new Lpdf\Engine\EngineOptions(libPath: "/nowhere/liblpdf.so"))->render('
+            . var_export(self::MINIMAL, true) . '); } catch (Lpdf\Engine\EngineException $e) { echo $e->getMessage(); }';
+        exec(escapeshellarg(\PHP_BINARY) . ' -d disable_functions=proc_open -r ' . escapeshellarg($render) . ' 2>&1', $output);
+
+        $this->assertStringStartsWith("Lpdf could not start 'wasmtime' to render (proc_open is disabled in php.ini): remove "
+            . "proc_open from disable_functions in php.ini, or let PHP load the native library, which it didn't because ",
+            implode("\n", $output));
+    }
+
     public function testAnUnknownRunnerIsRefused(): void
     {
         $this->expectException(\InvalidArgumentException::class);

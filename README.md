@@ -70,9 +70,9 @@ A render stops with an `EngineException` after 5 seconds; `L::engine(new EngineO
 | Each render | A call in PHP's own process | A process of its own, which adds about 20 ms |
 | Sandbox | None: the engine has the rights of the PHP process | WebAssembly's: no files, no network |
 
-`new EngineOptions(runner: 'ffi')` renders with the native library only, and throws an `EngineException` that names what stands in the way where it can't load; `runner: 'wasm'` renders with `wasmtime` only. For an app that renders templates, fonts or images its own users upload, `wasm` keeps the engine in WebAssembly's sandbox. `libPath` loads the native library from another path.
+`runner` on `EngineOptions` picks how: `'auto'`, the default, chooses as above; `'ffi'` renders with the native library only, and throws an `EngineException` that names what stands in the way where it can't load; `'wasm'` renders with `wasmtime` only. For an app that renders templates, fonts or images its own users upload, `wasm` keeps the engine in WebAssembly's sandbox. `libPath` loads the native library from another path.
 
-The timeout and the memory cap hold through both. The engine's memory is outside PHP's `memory_limit` either way. Through the native library, a fault the engine can't catch ends PHP's process, where through `wasmtime` it ends the `wasmtime` process and the render throws an `EngineException`.
+The timeout and the memory cap hold through both. The engine's memory is outside PHP's `memory_limit` either way. Through the native library, a fault the engine can't catch, such as running out of memory before its cap stops it, ends PHP's process; through `wasmtime` it ends the `wasmtime` process, and the render throws an `EngineException`. Where a render could need more memory than the machine has, keep `maxMemoryMb` below it, or render with `wasm`. Through the native library the engine stops a render at its timeout itself, and a step it hands to a library, such as reading the XML, subsetting a font or compressing an image, finishes first.
 
 ## Docs
 

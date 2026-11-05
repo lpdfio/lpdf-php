@@ -68,7 +68,7 @@ final class FfiRunner implements EngineRunner
         try {
             $out = \FFI::string($answer, $length->cdata);
         } finally {
-                $this->library->lpdf_free($answer, $length->cdata);
+            $this->library->lpdf_free($answer, $length->cdata);
         }
 
         $response = json_decode($out, true, 512, JSON_THROW_ON_ERROR);
@@ -115,8 +115,7 @@ final class FfiRunner implements EngineRunner
         if (!isset(self::CPUS[$cpu])) {
             return "the native library is for x86_64 and aarch64, and this CPU is $cpu";
         }
-        // Alpine's C library: the library is built for glibc, and musl isn't supported.
-        if (glob('/lib/ld-musl-*.so.1') !== []) {
+        if (self::onMusl()) {
             return "the native library is for glibc, and this system's C library is musl, as on Alpine: musl isn't "
                 . "supported, so render with the wasm runner";
         }
@@ -125,6 +124,20 @@ final class FfiRunner implements EngineRunner
             return "the native library is not at $path";
         }
         return null;
+    }
+
+    /**
+     * Whether PHP runs on musl, Alpine's C library, which isn't supported: the library is built for glibc. The loader
+     * mapped into PHP's own process says, since musl's loader in /lib doesn't: Debian's musl package puts it there
+     * beside glibc's. Where open_basedir hides /proc, that file is the only sign left.
+     */
+    private static function onMusl(): bool
+    {
+        $maps = @file_get_contents('/proc/self/maps');
+        if ($maps === false) {
+            return (glob('/lib/ld-musl-*.so.1') ?: []) !== [];
+        }
+        return str_contains($maps, '/ld-musl-');
     }
 
     /** The library at `$path`, loaded, or what loading it threw. */

@@ -183,7 +183,8 @@ jobs:
 
   # ── The native library on the supported releases ─────────────────────────────
   # Each loads the library with its own glibc. Ubuntu 22.04's PHP is 8.1, older than the SDK needs, so it takes 8.2
-  # from Ondřej Surý's PPA; the others take their own. No wasmtime: the snapshot tests run through the library.
+  # from Ondřej Surý's PPA; the others take their own. No wasmtime: the snapshot tests run through the library. The
+  # musl package puts musl's loader in /lib beside glibc's, and the SDK must still load the library there.
   distros:
     name: Native library on ${{ matrix.image }} (${{ matrix.os == 'ubuntu-24.04' && 'x86_64' || 'aarch64' }})
     needs: engine
@@ -208,7 +209,8 @@ jobs:
             apt-get update
             PHP=php8.2
           fi
-          apt-get install -y --no-install-recommends "$PHP-cli" "$PHP-xml" "$PHP-mbstring"
+          apt-get install -y --no-install-recommends "$PHP-cli" "$PHP-xml" "$PHP-mbstring" musl
+          ls /lib/ld-musl-*.so.1
           php -v
           ldd --version | head -n 1
           php -m | grep -qx FFI || { echo "::error::$(php -v | head -n 1) has no FFI extension"; exit 1; }
@@ -296,3 +298,20 @@ jobs:
           LPDF_TEST_FFI_REFUSED: ${{ matrix.refused }}
           LPDF_TEST_FPM: ${{ matrix.fpm }}
         run: php vendor/bin/phpunit --filter 'RunnerTest|SnapshotTest' test
+
+  # ── The check the default branch requires ─────────────────────────────────────
+  # One check for the jobs above, matrices included: it passes only when every one of them passed.
+  tests:
+    name: Tests
+    needs: [engine, test, distros, fallback]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Every job passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = success ] || exit 1
+          done

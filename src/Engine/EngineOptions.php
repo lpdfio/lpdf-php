@@ -10,8 +10,8 @@ final readonly class EngineOptions
     private const MOST_MEMORY_MB = 4096;
 
     /**
-     * @throws \InvalidArgumentException When `maxMemoryMb` is below 1 or above 4096, or `runner` is not `auto`, `ffi`
-     *                                   or `wasm`.
+     * @throws \InvalidArgumentException When `timeout` is below 0, `maxMemoryMb` is below 1 or above 4096, or `runner`
+     *                                   is not `auto`, `ffi` or `wasm`.
      */
     public function __construct(
         public ?string $wasmBinary = null,   // path to .wasm file
@@ -32,6 +32,9 @@ final readonly class EngineOptions
         /** The native library to load through FFI, in place of the one in the package for this CPU. */
         public ?string $libPath = null,
     ) {
+        if ($timeout !== null && $timeout < 0) {
+            throw new \InvalidArgumentException("timeout must be a whole number of seconds, 0 for no limit, not $timeout");
+        }
         if ($maxMemoryMb !== null && ($maxMemoryMb < 1 || $maxMemoryMb > self::MOST_MEMORY_MB)) {
             throw new \InvalidArgumentException(
                 'maxMemoryMb must be a whole number of megabytes from 1 to ' . self::MOST_MEMORY_MB . ", not $maxMemoryMb",

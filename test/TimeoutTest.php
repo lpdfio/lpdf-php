@@ -75,6 +75,14 @@ final class TimeoutTest extends TestCase
         $this->assertGreaterThanOrEqual(2, (hrtime(true) - $start) / 1e9);
     }
 
+    public function testANegativeTimeoutIsRefused(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('timeout must be a whole number of seconds, 0 for no limit, not -1');
+
+        new EngineOptions(timeout: -1);
+    }
+
     public function testARenderStopsAfter5SecondsWhenTheTimeoutIsLeftOut(): void
     {
         [$seconds, $error] = self::timedRender($this->standIn(self::SPIN_FOREVER, null));

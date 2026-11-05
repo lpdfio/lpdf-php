@@ -42,6 +42,14 @@ final readonly class WasmRunner implements EngineRunner
     {
         $payload['max_memory_mb'] = $this->maxMemoryMb;
 
+        // A host that lists proc_open in disable_functions has no such function.
+        if (!\function_exists('proc_open')) {
+            throw new EngineException($this->notStarted(
+                'proc_open is disabled in php.ini',
+                'remove proc_open from disable_functions in php.ini',
+            ));
+        }
+
         // Without the program, proc_open warns and returns false: the error below says what to do instead.
         error_clear_last();
         $proc = @proc_open(
@@ -130,10 +138,10 @@ final readonly class WasmRunner implements EngineRunner
         return $response;
     }
 
-    /** The error of a render whose program didn't start, which PHP explained with `$why`. */
-    private function notStarted(string $why): string
+    /** The error of a render whose program didn't start, which PHP explained with `$why`, and `$fix` would start. */
+    private function notStarted(string $why, string $fix = 'install wasmtime where PHP finds it'): string
     {
-        $message = "Lpdf could not start '{$this->wasmRunner}' to render ($why): install wasmtime where PHP finds it";
+        $message = "Lpdf could not start '{$this->wasmRunner}' to render ($why): $fix";
         if ($this->ffiRefused === null) {
             return "$message.";
         }
