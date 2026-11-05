@@ -5,7 +5,9 @@ FROM php:cli
 # unauthenticated GitHub API and exits 0 when that fails, installing nothing.
 ARG WASMTIME_VERSION=v48.0.2
 
-RUN apt-get update && apt-get install -y curl xz-utils unzip && \
+# The FFI extension, which the official images leave out, for the native library: the CLI allows FFI as it is.
+RUN apt-get update && apt-get install -y curl xz-utils unzip libffi-dev && \
+    docker-php-ext-install ffi && \
     ARCHIVE="wasmtime-${WASMTIME_VERSION}-$(uname -m)-linux" && \
     curl -sSfL --retry 3 \
       "https://github.com/bytecodealliance/wasmtime/releases/download/${WASMTIME_VERSION}/${ARCHIVE}.tar.xz" \

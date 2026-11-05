@@ -7,12 +7,16 @@ namespace Lpdf\Tests;
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\EngineOptions;
 use Lpdf\Engine\RenderOptions;
+use Lpdf\Engine\Runner;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\L;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/** Big documents, the memory cap of a render, how deep a document may nest, and an engine that crashes. */
+/**
+ * Big documents, the memory cap of a render, how deep a document may nest, and an engine that crashes. The cap and the
+ * depth hold through both runners: under the native library, a document nested past the stack would end PHP's process.
+ */
 final class MemoryTest extends TestCase
 {
     private const CAP_ERROR = 'lpdf render error: the render needs more memory than its cap of ';
@@ -60,10 +64,18 @@ final class MemoryTest extends TestCase
         $this->assertGreaterThanOrEqual(1200, self::pageCount($pdf));
     }
 
-    public function testARenderPastTheCapStopsWithItsErrorAndTheNextRendersRight(): void
+    /** @return array<string, array{string}> */
+    public static function runners(): array
     {
+        return RunnerSupport::runners();
+    }
+
+    #[DataProvider('runners')]
+    public function testARenderPastTheCapStopsWithItsErrorAndTheNextRendersRight(string $runner): void
+    {
+        RunnerSupport::need($runner);
         $this->needsFixtures();
-        $engine = L::engine(new EngineOptions(maxMemoryMb: 8))->setLicenseKey('test-key');
+        $engine = L::engine(new EngineOptions(maxMemoryMb: 8, runner: $runner))->setLicenseKey('test-key');
 
         try {
             $engine->render(self::fixture('bench_max'));
@@ -83,8 +95,10 @@ final class MemoryTest extends TestCase
         $this->assertSame(188, self::pageCount($pdf));
     }
 
-    public function testABigDataObjectCountsTowardTheCap(): void
+    #[DataProvider('runners')]
+    public function testABigDataObjectCountsTowardTheCap(string $runner): void
     {
+        RunnerSupport::need($runner);
         $xml = '<lpdf version="1"><document><section><layout><text data-value="title">x</text></layout></section></document></lpdf>';
         // 8 MB of text in rows the template doesn't show: PHP's own memory_limit, 128 MB by default, holds it.
         $rows = [];
@@ -94,12 +108,12 @@ final class MemoryTest extends TestCase
         $data = new RenderOptions(data: ['title' => 'Report', 'rows' => $rows]);
 
         try {
-            L::engine(new EngineOptions(maxMemoryMb: 4))->render($xml, $data);
+            L::engine(new EngineOptions(maxMemoryMb: 4, runner: $runner))->render($xml, $data);
             $this->fail('the render passed its cap');
         } catch (EngineException $e) {
             $this->assertStringStartsWith(self::CAP_ERROR . '4 MB', $e->getMessage());
         }
-        $this->assertSame(1, self::pageCount(L::engine(new EngineOptions(maxMemoryMb: 64))->render($xml, $data)));
+        $this->assertSame(1, self::pageCount(L::engine(new EngineOptions(maxMemoryMb: 64, runner: $runner))->render($xml, $data)));
     }
 
     /** @return array<string, array{int}> */
@@ -117,17 +131,21 @@ final class MemoryTest extends TestCase
         new EngineOptions(maxMemoryMb: $megabytes);
     }
 
-    public function testADocumentNested100LevelsDeepRendersAsXmlAndAsATree(): void
+    #[DataProvider('runners')]
+    public function testADocumentNested100LevelsDeepRendersAsXmlAndAsATree(string $runner): void
     {
-        $engine = L::engine();
+        RunnerSupport::need($runner);
+        $engine = L::engine(new EngineOptions(runner: $runner));
 
         $this->assertSame(1, self::pageCount($engine->render(self::nestedXml(100))));
         $this->assertSame(1, self::pageCount($engine->render(self::nestedTree(100))));
     }
 
-    public function testADocumentNested101LevelsDeepFailsWithTheDepthErrorAsXmlAndAsATree(): void
+    #[DataProvider('runners')]
+    public function testADocumentNested101LevelsDeepFailsWithTheDepthErrorAsXmlAndAsATree(string $runner): void
     {
-        $engine = L::engine();
+        RunnerSupport::need($runner);
+        $engine = L::engine(new EngineOptions(runner: $runner));
 
         foreach ([[self::nestedXml(101), '<text> at line 1'], [self::nestedTree(101), "the node 'text'"]] as [$input, $named]) {
             try {
@@ -152,13 +170,14 @@ final class MemoryTest extends TestCase
     #[DataProvider('traps')]
     public function testACrashThrowsTheCrashMessageWithWasmtimesErrorInside(string $wat, string $trap): void
     {
+        RunnerSupport::need(Runner::Wasm);
         $path = tempnam(sys_get_temp_dir(), 'lpdf-stand-in-');
         $this->assertIsString($path);
         file_put_contents($path, $wat);
         $this->standIns[] = $path;
 
         try {
-            L::engine(new EngineOptions(wasmBinary: $path))->render(self::nestedXml(10));
+            L::engine(new EngineOptions(wasmBinary: $path, runner: Runner::Wasm))->render(self::nestedXml(10));
             $this->fail('the stand-in did not crash');
         } catch (EngineException $e) {
             $this->assertSame(

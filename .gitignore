@@ -1,4 +1,5 @@
 vendor/
 
-# Generated WASM artifacts
+# The engine, from core's release: the release commits them with its tag (release.yml)
 resources/lpdf-wasi.wasm
+resources/lib/
