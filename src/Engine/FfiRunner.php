@@ -88,8 +88,17 @@ final class FfiRunner implements EngineRunner
     /** The library in the package for this CPU, or null on a CPU it isn't built for. */
     public static function packagedLibrary(): ?string
     {
-        $cpu = self::CPUS[php_uname('m')] ?? null;
+        $cpu = self::CPUS[self::machine() ?? ''] ?? null;
         return $cpu === null ? null : \dirname(__DIR__, 2) . "/resources/lib/liblpdf-linux-$cpu.so";
+    }
+
+    /**
+     * The CPU, as `php_uname('m')` says it, or null where php.ini's `disable_functions` lists `php_uname`, as shared
+     * hosts do: PHP 8 has no such function there, and calling it would throw.
+     */
+    private static function machine(): ?string
+    {
+        return \function_exists('php_uname') ? php_uname('m') : null;
     }
 
     /** The library at `$libPath`, or the packaged one, loaded once in this process; or why it can't be used here. */
@@ -111,7 +120,10 @@ final class FfiRunner implements EngineRunner
         if (\PHP_OS_FAMILY !== 'Linux') {
             return 'the native library is for Linux, and PHP runs on ' . \PHP_OS_FAMILY;
         }
-        $cpu = php_uname('m');
+        $cpu = self::machine();
+        if ($cpu === null) {
+            return 'php_uname is disabled in php.ini, and the SDK needs it to tell this CPU';
+        }
         if (!isset(self::CPUS[$cpu])) {
             return "the native library is for x86_64 and aarch64, and this CPU is $cpu";
         }
@@ -132,7 +144,8 @@ final class FfiRunner implements EngineRunner
      * beside glibc's. Where open_basedir hides /proc, and /lib with it, the C library itself says, as open_basedir
      * doesn't govern FFI: only glibc has `gnu_get_libc_version`. Where `ffi.enable` refuses FFI as well, Alpine's
      * release file is the sign left, so that Alpine is named before `ffi.enable`, whose fix would only lead to the
-     * musl error: `glob` answers false where open_basedir hides a match, and [] where there is none.
+     * musl error: `glob` answers false where open_basedir hides a match, and [] where there is none. Where
+     * `disable_functions` lists `glob` too, nothing is left to tell, and loading the library names `ffi.enable`.
      */
     private static function onMusl(): bool
     {
@@ -148,7 +161,7 @@ final class FfiRunner implements EngineRunner
                 return true;
             }
         }
-        return glob('/etc/alpine-release') !== [];
+        return \function_exists('glob') && glob('/etc/alpine-release') !== [];
     }
 
     /** The library at `$path`, loaded, or what loading it threw. */
