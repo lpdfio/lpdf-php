@@ -20,6 +20,13 @@ use PHPUnit\Framework\TestCase;
  */
 final class RunnerTest extends TestCase
 {
+    /** Prints the runner `auto` picks, then a newline, for `inPhpOfItsOwn`. */
+    private const PICK = 'echo Lpdf\L::engine()->runner(), "\n";';
+
+    /** Prints why `runner: 'ffi'` can't render, for `inPhpOfItsOwn`. */
+    private const FFI_REFUSAL = 'try { Lpdf\L::engine(new Lpdf\Engine\EngineOptions(runner: "ffi"))->runner(); }'
+        . ' catch (Lpdf\Engine\EngineException $e) { echo $e->getMessage(); }';
+
     private const MINIMAL =
         '<lpdf version="1"><document><section><layout><text>x</text></layout></section></document></lpdf>';
 
@@ -93,34 +100,71 @@ final class RunnerTest extends TestCase
         }
     }
 
-    /** `disable_functions` can be set only when PHP starts, so the render runs in a PHP of its own. */
     public function testWhereProcOpenIsDisabledTheErrorSaysSo(): void
     {
-        $render = 'require ' . var_export(\dirname(__DIR__) . '/vendor/autoload.php', true) . ';'
-            . ' try { Lpdf\L::engine(new Lpdf\Engine\EngineOptions(libPath: "/nowhere/liblpdf.so"))->render('
-            . var_export(self::MINIMAL, true) . '); } catch (Lpdf\Engine\EngineException $e) { echo $e->getMessage(); }';
-        exec(escapeshellarg(\PHP_BINARY) . ' -d disable_functions=proc_open -r ' . escapeshellarg($render) . ' 2>&1', $output);
+        $render = 'try { Lpdf\L::engine(new Lpdf\Engine\EngineOptions(libPath: "/nowhere/liblpdf.so"))'
+            . '->render(' . var_export(self::MINIMAL, true) . '); }'
+            . ' catch (Lpdf\Engine\EngineException $e) { echo $e->getMessage(); }';
+
+        $output = self::inPhpOfItsOwn('-d disable_functions=proc_open', $render);
 
         $this->assertStringStartsWith("Lpdf could not start 'wasmtime' to render (proc_open is disabled in php.ini): remove "
             . "proc_open from disable_functions in php.ini, or let PHP load the native library, which it didn't because ",
-            implode("\n", $output));
+            $output);
     }
 
     /**
      * Where open_basedir hides /proc and /lib, as on a shared host, `auto` picks as it does without it: musl is still
-     * told apart from glibc. open_basedir can be set only when PHP starts, so the pick runs in a PHP of its own, with
-     * this one's `ffi.enable`.
+     * told apart from glibc. It runs with this PHP's `ffi.enable`.
      */
     public function testUnderOpenBasedirAutoPicksTheRunnerTheJobExpects(): void
     {
         $expected = RunnerSupport::expectedAuto() ?? $this->markTestSkipped('LPDF_TEST_AUTO says what auto picks in a CI job.');
-        $app = \dirname(__DIR__);
         $ffi = \extension_loaded('ffi') ? ' -d ffi.enable=' . escapeshellarg((string) \ini_get('ffi.enable')) : '';
-        $pick = 'require ' . var_export("$app/vendor/autoload.php", true) . '; echo Lpdf\L::engine()->runner();';
-        exec(escapeshellarg(\PHP_BINARY) . ' -d open_basedir=' . escapeshellarg($app) . $ffi . ' -r '
-            . escapeshellarg($pick) . ' 2>&1', $output);
 
-        $this->assertSame($expected, implode("\n", $output));
+        $basedir = '-d open_basedir=' . escapeshellarg(\dirname(__DIR__));
+        $output = self::inPhpOfItsOwn($basedir . $ffi, 'echo Lpdf\L::engine()->runner();');
+
+        $this->assertSame($expected, $output);
+    }
+
+    /**
+     * Where open_basedir hides /proc and `ffi.enable` refuses FFI too, `runner: 'ffi'` gives the reason the job
+     * expects: musl on Alpine, not `ffi.enable`, whose fix would only lead to the musl error; `ffi.enable` on glibc.
+     */
+    public function testUnderOpenBasedirWithFfiRefusedRunnerFfiGivesTheReasonTheJobExpects(): void
+    {
+        $expected = RunnerSupport::expectedFfiRefusal()
+            ?? $this->markTestSkipped('LPDF_TEST_FFI_REFUSED says why the library can\'t load in a CI job.');
+        $basedir = '-d open_basedir=' . escapeshellarg(\dirname(__DIR__));
+
+        $output = self::inPhpOfItsOwn("$basedir -d ffi.enable=false", self::FFI_REFUSAL);
+
+        $this->assertStringContainsString($expected, $output);
+    }
+
+    /** Shared hosts list `php_uname` in `disable_functions`, where PHP 8 has no such function. */
+    public function testWherePhpUnameIsDisabledAutoRendersWithWasmtimeAndFfiSaysWhy(): void
+    {
+        self::needsTheChecksOnLinux();
+
+        $output = self::inPhpOfItsOwn('-d disable_functions=php_uname', self::PICK . self::FFI_REFUSAL);
+
+        $this->assertSame(Runner::Wasm . "\nThe native library can't render here: php_uname is disabled in php.ini, "
+            . 'and the SDK needs it to tell this CPU.', $output);
+    }
+
+    /** `glob` is the last sign of musl, where open_basedir hides /proc and FFI is refused. */
+    public function testWhereGlobIsDisabledAutoRendersWithWasmtimeAndFfiNamesFfiEnable(): void
+    {
+        self::needsTheChecksOnLinux();
+        $settings = '-d disable_functions=glob -d open_basedir=' . escapeshellarg(\dirname(__DIR__))
+            . ' -d ffi.enable=false';
+
+        $output = self::inPhpOfItsOwn($settings, self::PICK . self::FFI_REFUSAL);
+
+        $this->assertStringStartsWith(Runner::Wasm . "\nThe native library can't render here: ", $output);
+        $this->assertStringContainsString('restricted by "ffi.enable"', $output);
     }
 
     public function testAnUnknownRunnerIsRefused(): void
@@ -185,6 +229,25 @@ final class RunnerTest extends TestCase
         $answer = json_decode($body, true);
         self::assertIsArray($answer, $response . "\n" . @file_get_contents("$dir/fpm.log"));
         return $answer;
+    }
+
+    /**
+     * What `$code` prints in a PHP of its own, started with `$settings`, such as `-d disable_functions=…`: php.ini's
+     * `disable_functions` and `open_basedir` are set only when PHP starts.
+     */
+    private static function inPhpOfItsOwn(string $settings, string $code): string
+    {
+        $code = 'require ' . var_export(\dirname(__DIR__) . '/vendor/autoload.php', true) . "; $code";
+        exec(escapeshellarg(\PHP_BINARY) . " $settings -r " . escapeshellarg($code) . ' 2>&1', $output);
+        return implode("\n", $output);
+    }
+
+    /** The checks before the library loads reach `php_uname` and `glob` only with the FFI extension, on Linux. */
+    private static function needsTheChecksOnLinux(): void
+    {
+        if (!\extension_loaded('ffi') || \PHP_OS_FAMILY !== 'Linux') {
+            self::markTestSkipped('Without FFI, or off Linux, the checks stop before php_uname and glob.');
+        }
     }
 
     private function needsFixtures(): void
