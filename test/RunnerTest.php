@@ -123,6 +123,26 @@ final class RunnerTest extends TestCase
         $this->assertSame($expected, implode("\n", $output));
     }
 
+    /**
+     * On Alpine where open_basedir hides /proc and `ffi.enable` refuses FFI too, `runner: 'ffi'` names musl, not
+     * `ffi.enable`, whose fix would only lead to the musl error.
+     */
+    public function testUnderOpenBasedirWithFfiRefusedRunnerFfiNamesMusl(): void
+    {
+        $expected = RunnerSupport::expectedFfiRefusal();
+        if ($expected === null || !str_contains($expected, 'musl')) {
+            $this->markTestSkipped('The Alpine job runs it: LPDF_TEST_FFI_REFUSED names musl there.');
+        }
+        $app = \dirname(__DIR__);
+        $refusal = 'require ' . var_export("$app/vendor/autoload.php", true) . ';'
+            . ' try { Lpdf\L::engine(new Lpdf\Engine\EngineOptions(runner: "ffi"))->runner(); }'
+            . ' catch (Lpdf\Engine\EngineException $e) { echo $e->getMessage(); }';
+        exec(escapeshellarg(\PHP_BINARY) . ' -d open_basedir=' . escapeshellarg($app) . ' -d ffi.enable=false -r '
+            . escapeshellarg($refusal) . ' 2>&1', $output);
+
+        $this->assertStringContainsString($expected, implode("\n", $output));
+    }
+
     public function testAnUnknownRunnerIsRefused(): void
     {
         $this->expectException(\InvalidArgumentException::class);
