@@ -10,8 +10,8 @@ final readonly class EngineOptions
     private const MOST_MEMORY_MB = 4096;
 
     /**
-     * @throws \InvalidArgumentException When `timeout` is below 0, `maxMemoryMb` is below 1 or above 4096, or `runner`
-     *                                   is not `auto`, `ffi` or `wasm`.
+     * @throws \InvalidArgumentException When `timeout` is below 0, `maxMemoryMb` is below 1 or above 4096, `runner` is
+     *                                   not `auto`, `ffi` or `wasm`, or `wasmCacheDir` is empty.
      */
     public function __construct(
         public ?string $wasmBinary = null,   // path to .wasm file
@@ -31,6 +31,16 @@ final readonly class EngineOptions
         public ?string $runner = null,
         /** The native library to load through FFI, in place of the one in the package for this CPU. */
         public ?string $libPath = null,
+        /**
+         * The folder where the `wasmtime` program keeps the engine compiled to native code, so a render after the
+         * first doesn't compile it again: `lpdf-wasmtime-<uid>` in the temp directory when left out, and taken from
+         * PHP's working directory where it is relative. It is made with mode 0700 where it is missing, and used only
+         * when it is a directory, not a link, that PHP's user owns and group and others can't open, since wasmtime
+         * runs what it holds unchecked; otherwise wasmtime keeps the engine in its own default place. Only the folder
+         * itself is checked, not those above it, so put it inside a folder only PHP's user can write. Not used on
+         * Windows, where PHP has no POSIX extension to tell a folder's owner.
+         */
+        public ?string $wasmCacheDir = null,
     ) {
         if ($timeout !== null && $timeout < 0) {
             throw new \InvalidArgumentException("timeout must be a whole number of seconds, 0 for no limit, not $timeout");
@@ -43,6 +53,12 @@ final readonly class EngineOptions
         if ($runner !== null && !\in_array($runner, Runner::ALL, true)) {
             throw new \InvalidArgumentException(
                 "runner must be '" . implode("', '", Runner::ALL) . "', not '$runner'",
+            );
+        }
+        // An empty path would be PHP's working directory, which is rarely a folder for the cache.
+        if ($wasmCacheDir === '') {
+            throw new \InvalidArgumentException(
+                "wasmCacheDir must be a folder's path, not empty: leave it out for the SDK's folder in the temp directory",
             );
         }
     }
@@ -76,6 +92,7 @@ final readonly class EngineOptions
             timeout: $timeout,
             maxMemoryMb: $maxMemoryMb,
             ffiRefused: $ffiRefused,
+            wasmCacheDir: $this->wasmCacheDir,
         );
     }
 }

@@ -230,7 +230,8 @@ jobs:
 
   # ── Where `auto` falls back to wasmtime ───────────────────────────────────────
   # The official images, as a user gets them: without the FFI extension; under PHP-FPM, where `ffi.enable` at its
-  # default refuses the library; and on Alpine, whose musl the library doesn't support.
+  # default refuses the library; and on Alpine, whose musl the library doesn't support. Their containers run as root,
+  # where WasmCacheTest can give a folder to another user, which the `test` job's user can't.
   fallback:
     name: Falls back to wasmtime (${{ matrix.case }})
     needs: engine
@@ -297,7 +298,7 @@ jobs:
           LPDF_TEST_AUTO: ${{ matrix.auto }}
           LPDF_TEST_FFI_REFUSED: ${{ matrix.refused }}
           LPDF_TEST_FPM: ${{ matrix.fpm }}
-        run: php vendor/bin/phpunit --filter 'RunnerTest|SnapshotTest' test
+        run: php vendor/bin/phpunit --filter 'RunnerTest|SnapshotTest|WasmCacheTest' test
 
   # ── The check the default branch requires ─────────────────────────────────────
   # One check for the jobs above, matrices included: it passes only when every one of them passed.
