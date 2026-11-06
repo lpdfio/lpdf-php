@@ -10,8 +10,8 @@ final readonly class EngineOptions
     private const MOST_MEMORY_MB = 4096;
 
     /**
-     * @throws \InvalidArgumentException When `timeout` is below 0, `maxMemoryMb` is below 1 or above 4096, or `runner`
-     *                                   is not `auto`, `ffi` or `wasm`.
+     * @throws \InvalidArgumentException When `timeout` is below 0, `maxMemoryMb` is below 1 or above 4096, `runner` is
+     *                                   not `auto`, `ffi` or `wasm`, or `wasmCacheDir` is empty.
      */
     public function __construct(
         public ?string $wasmBinary = null,   // path to .wasm file
@@ -53,6 +53,12 @@ final readonly class EngineOptions
         if ($runner !== null && !\in_array($runner, Runner::ALL, true)) {
             throw new \InvalidArgumentException(
                 "runner must be '" . implode("', '", Runner::ALL) . "', not '$runner'",
+            );
+        }
+        // An empty path would be PHP's working directory, which is rarely a folder for the cache.
+        if ($wasmCacheDir === '') {
+            throw new \InvalidArgumentException(
+                "wasmCacheDir must be a folder's path, not empty: leave it out for the SDK's folder in the temp directory",
             );
         }
     }

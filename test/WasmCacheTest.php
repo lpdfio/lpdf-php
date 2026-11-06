@@ -60,10 +60,34 @@ final class WasmCacheTest extends TestCase
         $this->assertSame(["cache-config=$folder/config.toml"], $this->cacheOptions($folder . $ending));
     }
 
-    /** @return array<string, array{string}> How a folder's path may end. */
+    /** @return array<string, array{string}> How a folder's path may end and still name it. */
     public static function endings(): array
     {
-        return ['as given' => [''], 'with a slash' => ['/'], 'with two slashes' => ['//']];
+        return [
+            'as given' => [''],
+            'with a slash' => ['/'],
+            'with two slashes' => ['//'],
+            'with /.' => ['/.'],
+            'with /./' => ['/./'],
+        ];
+    }
+
+    /** A path that ends in `..` names the folder above the one before it, which may be a link. */
+    public function testAWasmCacheDirEndingInDotDotIsNotUsed(): void
+    {
+        mkdir("$this->scratch/a/b", 0700, true);
+
+        $this->assertSame([], $this->cacheOptions("$this->scratch/a/b/.."));
+        $this->assertFileDoesNotExist("$this->scratch/a/config.toml");
+    }
+
+    public function testAnEmptyWasmCacheDirIsRefused(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("wasmCacheDir must be a folder's path, not empty: leave it out for the SDK's folder "
+            . 'in the temp directory');
+
+        new EngineOptions(wasmCacheDir: '');
     }
 
     /** The temp directory is `sys_temp_dir`'s, set in a PHP of its own. */
@@ -78,7 +102,10 @@ final class WasmCacheTest extends TestCase
         $this->assertSame(0700, fileperms($folder) & 0777);
     }
 
-    /** With a slash at its end, the path names what the link leads to: a folder of PHP's user, closed to others. */
+    /**
+     * With a slash or `/.` at its end, the path names what the link leads to: a folder of PHP's user, closed to
+     * others.
+     */
     #[DataProvider('endings')]
     public function testAWasmCacheDirThatIsALinkIsNotUsed(string $ending): void
     {

@@ -53,8 +53,12 @@ final readonly class WasmCache
             }
             $folder = "$workingDirectory/$folder";
         }
-        // With a slash at its end the path names what a link leads to, and the link itself would pass the checks.
-        $folder = rtrim($folder, '/') ?: '/';
+        // With a slash or `/.` at its end the path names what a link leads to, and the link itself would pass the
+        // checks; with `/..`, the folder above that.
+        $folder = (string) preg_replace('#(?:/\.?)+$#', '', $folder) ?: '/';
+        if (str_ends_with($folder, '/..')) {
+            return "the path of $folder ends in .., which may lead through a link";
+        }
         // config.toml is TOML, which is UTF-8, and takes control characters only escaped, DEL among them.
         if (preg_match('//u', $folder) !== 1) {
             return "the path of $folder isn't UTF-8, which config.toml needs";
