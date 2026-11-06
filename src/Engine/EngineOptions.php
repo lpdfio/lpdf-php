@@ -31,6 +31,13 @@ final readonly class EngineOptions
         public ?string $runner = null,
         /** The native library to load through FFI, in place of the one in the package for this CPU. */
         public ?string $libPath = null,
+        /**
+         * The folder where the `wasmtime` program keeps the engine compiled to native code, so a render after the
+         * first doesn't compile it again: `lpdf-wasmtime-<uid>` in the temp directory when left out. It is made with
+         * mode 0700 where it is missing, and used only when PHP's user owns it and group and others can't open it,
+         * since wasmtime runs what it holds unchecked; otherwise wasmtime keeps the engine in its own default place.
+         */
+        public ?string $wasmCacheDir = null,
     ) {
         if ($timeout !== null && $timeout < 0) {
             throw new \InvalidArgumentException("timeout must be a whole number of seconds, 0 for no limit, not $timeout");
@@ -76,6 +83,7 @@ final readonly class EngineOptions
             timeout: $timeout,
             maxMemoryMb: $maxMemoryMb,
             ffiRefused: $ffiRefused,
+            wasmCacheDir: $this->wasmCacheDir,
         );
     }
 }

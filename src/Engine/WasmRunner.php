@@ -6,6 +6,8 @@ namespace Lpdf\Engine;
 
 /**
  * Renders with the `wasmtime` program, which runs the engine's WebAssembly in a process of its own, for each render.
+ * wasmtime compiles the engine to native code the first time, and keeps it in the SDK's folder for the renders after it
+ * (`WasmCache`).
  */
 final readonly class WasmRunner implements EngineRunner
 {
@@ -16,8 +18,10 @@ final readonly class WasmRunner implements EngineRunner
     public const DEFAULT_MAX_MEMORY_MB = 1024;
 
     /**
-     * @param ?string $ffiRefused Why the native library wasn't used, when `auto` chose this runner in its place: what
-     *                            a render that can't start the program says too.
+     * @param ?string $ffiRefused   Why the native library wasn't used, when `auto` chose this runner in its place: what
+     *                              a render that can't start the program says too.
+     * @param ?string $wasmCacheDir The folder where wasmtime keeps the compiled engine, `lpdf-wasmtime-<uid>` in the
+     *                              temp directory when null (`WasmCache`).
      */
     public function __construct(
         private readonly string $wasmBinary,
@@ -25,6 +29,7 @@ final readonly class WasmRunner implements EngineRunner
         private readonly int $timeout = self::DEFAULT_TIMEOUT,
         private readonly int $maxMemoryMb = self::DEFAULT_MAX_MEMORY_MB,
         private readonly ?string $ffiRefused = null,
+        private readonly ?string $wasmCacheDir = null,
     ) {}
 
     public function name(): string
@@ -36,7 +41,7 @@ final readonly class WasmRunner implements EngineRunner
      * @param  array<string, mixed> $payload  Already-built request array.
      * @return array<string, mixed>            Decoded response.
      * @throws EngineException On process or render error, when the engine crashes, when the process runs past the
-     *                         timeout, or when the program can't be started.
+     *                         timeout, when the program can't be started, or when it can't create its cache directory.
      */
     public function invoke(array $payload): array
     {
@@ -50,10 +55,18 @@ final readonly class WasmRunner implements EngineRunner
             ));
         }
 
+        // Checked at each render, since a cleaner of the temp directory may remove the folder between two.
+        $cache = WasmCache::open($this->wasmCacheDir);
+        $command = [$this->wasmRunner, 'run'];
+        if ($cache instanceof WasmCache) {
+            array_push($command, '-C', "cache-config={$cache->configFile}");
+        }
+        $command[] = $this->wasmBinary;
+
         // Without the program, proc_open warns and returns false: the error below says what to do instead.
         error_clear_last();
         $proc = @proc_open(
-            [$this->wasmRunner, 'run', $this->wasmBinary],
+            $command,
             [
                 0 => ['pipe', 'r'],   // stdin
                 1 => ['pipe', 'w'],   // stdout
@@ -125,6 +138,12 @@ final readonly class WasmRunner implements EngineRunner
             throw new EngineException($this->notStarted($why));
         }
 
+        // wasmtime stops before it runs the engine when it can't create its cache directory: in the SDK's folder, or in
+        // its own default place, a home folder PHP's user may not write, where the SDK gave it none.
+        if ($out === '' && str_contains($err, 'failed to create cache directory')) {
+            throw new EngineException(self::noCacheDirectory($err, $cache));
+        }
+
         if ($out === '') {
             throw new EngineException("WASI process produced no output. Stderr: $err");
         }
@@ -136,6 +155,29 @@ final readonly class WasmRunner implements EngineRunner
         }
 
         return $response;
+    }
+
+    /**
+     * The error of a render that wasmtime didn't run because it can't create its cache directory, as its `$err` says,
+     * with `$cache`'s reason where the SDK gave it no folder.
+     */
+    private static function noCacheDirectory(string $err, WasmCache|string $cache): string
+    {
+        // wasmtime's error and its causes, each on lines of its own, on one line.
+        $lines = array_filter(
+            array_map('trim', explode("\n", $err)),
+            static fn (string $line): bool => $line !== '' && $line !== 'Caused by:',
+        );
+        $detail = implode(': ', array_map(
+            static fn (string $line): string => (string) preg_replace('/^(Error: |\d+: )/', '', $line),
+            $lines,
+        ));
+        $message = "wasmtime could not create its cache directory, so it didn't render ($detail)";
+        if (\is_string($cache)) {
+            $message .= ". The SDK gave it no folder of its own, since $cache";
+        }
+        return "$message. Set wasmCacheDir in EngineOptions to a folder PHP's user can make, or one it owns that group "
+            . "and others can't open.";
     }
 
     /** The error of a render whose program didn't start, which PHP explained with `$why`, and `$fix` would start. */
