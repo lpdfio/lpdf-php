@@ -100,8 +100,37 @@ jobs:
           cp -r _core/test/assets/. test/assets/
           rm -rf _core
 
+      # ── The code generator and the check of its code ─────────────────────────
+      # codegen_wasm is in the engine files of the core tag (lpdf.js and lpdf_bg.wasm), which the WASI binary is not.
+      # The script that checks the code it writes (scripts/check-codegen-sdk.mjs) and the documents it renders come from
+      # the same tag. The test jobs run it, so each architecture checks the code with the native library of its own.
+      - name: Fetch the code generator and its check from core
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DOWNLOADED=""
+          for attempt in 1 2 3; do
+            gh release download "$EFFECTIVE_CORE_TAG" \
+              --repo lpdfio/lpdf \
+              --pattern "lpdf.js" \
+              --pattern "lpdf_bg.wasm" \
+              --dir _engine \
+              --clobber && DOWNLOADED=1 && break
+            echo "Attempt $attempt failed — retrying in 10s..."
+            sleep 10
+          done
+          if [ -z "$DOWNLOADED" ]; then
+            echo "::error::Could not download the code generator from core $EFFECTIVE_CORE_TAG."
+            exit 1
+          fi
+          git clone --depth 1 --filter=blob:none --sparse \
+            --branch "$EFFECTIVE_CORE_TAG" \
+            https://github.com/lpdfio/lpdf.git _check
+          git -C _check sparse-checkout set scripts test
+          rm -rf _check/.git
+
       - name: Pack them
-        run: tar -czf sdk.tgz vendor resources test/fixtures test/snapshots test/assets
+        run: tar -czf sdk.tgz vendor resources test/fixtures test/snapshots test/assets _engine _check
 
       - uses: actions/upload-artifact@v6
         with:
@@ -177,6 +206,17 @@ jobs:
           LPDF_TEST_AUTO: wasm
           LPDF_TEST_FFI_REFUSED: 'restricted by "ffi.enable"'
         run: php -d ffi.enable=false vendor/bin/phpunit test
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      # ── Check the code the code generator writes ─────────────────────────────
+      # For every fixture of core, and a document for every attribute of the schema, the code the generator writes for
+      # PHP is built with this SDK and has to render the PDF of the XML, through the runner PHP picks here: the native
+      # library.
+      - name: Check the code the code generator writes
+        run: node _check/scripts/check-codegen-sdk.mjs --sdk php=. --engine _engine
 
       - name: Time both runners
         run: php test/bench-runners.php | tee -a "$GITHUB_STEP_SUMMARY"
