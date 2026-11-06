@@ -20,6 +20,9 @@ use PHPUnit\Framework\TestCase;
  */
 final class RunnerTest extends TestCase
 {
+    /** Prints the runner `auto` picks, then a newline, for `inPhpOfItsOwn`. */
+    private const PICK = 'echo Lpdf\L::engine()->runner(), "\n";';
+
     /** Prints why `runner: 'ffi'` can't render, for `inPhpOfItsOwn`. */
     private const FFI_REFUSAL = 'try { Lpdf\L::engine(new Lpdf\Engine\EngineOptions(runner: "ffi"))->runner(); }'
         . ' catch (Lpdf\Engine\EngineException $e) { echo $e->getMessage(); }';
@@ -126,40 +129,40 @@ final class RunnerTest extends TestCase
     }
 
     /**
-     * On Alpine where open_basedir hides /proc and `ffi.enable` refuses FFI too, `runner: 'ffi'` names musl, not
-     * `ffi.enable`, whose fix would only lead to the musl error.
+     * Where open_basedir hides /proc and `ffi.enable` refuses FFI too, `runner: 'ffi'` gives the reason the job
+     * expects: musl on Alpine, not `ffi.enable`, whose fix would only lead to the musl error; `ffi.enable` on glibc.
      */
-    public function testUnderOpenBasedirWithFfiRefusedRunnerFfiNamesMusl(): void
+    public function testUnderOpenBasedirWithFfiRefusedRunnerFfiGivesTheReasonTheJobExpects(): void
     {
-        $expected = RunnerSupport::expectedFfiRefusal();
-        if ($expected === null || !str_contains($expected, 'musl')) {
-            $this->markTestSkipped('The Alpine job runs it: LPDF_TEST_FFI_REFUSED names musl there.');
-        }
-
+        $expected = RunnerSupport::expectedFfiRefusal()
+            ?? $this->markTestSkipped('LPDF_TEST_FFI_REFUSED says why the library can\'t load in a CI job.');
         $basedir = '-d open_basedir=' . escapeshellarg(\dirname(__DIR__));
+
         $output = self::inPhpOfItsOwn("$basedir -d ffi.enable=false", self::FFI_REFUSAL);
 
         $this->assertStringContainsString($expected, $output);
     }
 
-    /**
-     * Shared hosts list functions such as `php_uname` and `glob` in `disable_functions`, and PHP 8 has none of them
-     * there: the checks before the library loads don't call them, and `auto` renders with wasmtime.
-     */
-    public function testWherePhpUnameOrGlobIsDisabledAutoFallsBackToWasmtime(): void
+    /** Shared hosts list `php_uname` in `disable_functions`, where PHP 8 has no such function. */
+    public function testWherePhpUnameIsDisabledAutoRendersWithWasmtimeAndFfiSaysWhy(): void
     {
-        if (!\extension_loaded('ffi') || \PHP_OS_FAMILY !== 'Linux') {
-            $this->markTestSkipped('Without FFI, or off Linux, the checks stop before php_uname and glob.');
-        }
-        $pickAndRefusal = 'echo Lpdf\L::engine()->runner(), "\n";' . self::FFI_REFUSAL;
+        self::needsTheChecksOnLinux();
 
-        $output = self::inPhpOfItsOwn('-d disable_functions=php_uname', $pickAndRefusal);
+        $output = self::inPhpOfItsOwn('-d disable_functions=php_uname', self::PICK . self::FFI_REFUSAL);
+
         $this->assertSame(Runner::Wasm . "\nThe native library can't render here: php_uname is disabled in php.ini, "
             . 'and the SDK needs it to tell this CPU.', $output);
+    }
 
-        // glob is the last sign of musl, where open_basedir hides /proc and FFI is refused.
-        $basedir = '-d open_basedir=' . escapeshellarg(\dirname(__DIR__));
-        $output = self::inPhpOfItsOwn("-d disable_functions=glob $basedir -d ffi.enable=false", $pickAndRefusal);
+    /** `glob` is the last sign of musl, where open_basedir hides /proc and FFI is refused. */
+    public function testWhereGlobIsDisabledAutoRendersWithWasmtimeAndFfiNamesFfiEnable(): void
+    {
+        self::needsTheChecksOnLinux();
+        $settings = '-d disable_functions=glob -d open_basedir=' . escapeshellarg(\dirname(__DIR__))
+            . ' -d ffi.enable=false';
+
+        $output = self::inPhpOfItsOwn($settings, self::PICK . self::FFI_REFUSAL);
+
         $this->assertStringStartsWith(Runner::Wasm . "\nThe native library can't render here: ", $output);
         $this->assertStringContainsString('restricted by "ffi.enable"', $output);
     }
@@ -237,6 +240,14 @@ final class RunnerTest extends TestCase
         $code = 'require ' . var_export(\dirname(__DIR__) . '/vendor/autoload.php', true) . "; $code";
         exec(escapeshellarg(\PHP_BINARY) . " $settings -r " . escapeshellarg($code) . ' 2>&1', $output);
         return implode("\n", $output);
+    }
+
+    /** The checks before the library loads reach `php_uname` and `glob` only with the FFI extension, on Linux. */
+    private static function needsTheChecksOnLinux(): void
+    {
+        if (!\extension_loaded('ffi') || \PHP_OS_FAMILY !== 'Linux') {
+            self::markTestSkipped('Without FFI, or off Linux, the checks stop before php_uname and glob.');
+        }
     }
 
     private function needsFixtures(): void

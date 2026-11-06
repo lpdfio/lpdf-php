@@ -85,7 +85,7 @@ final class FfiRunner implements EngineRunner
         return $response;
     }
 
-    /** The library in the package for this CPU, or null on a CPU it isn't built for. */
+    /** The library in the package for this CPU, or null on a CPU it isn't built for or where php_uname is disabled. */
     public static function packagedLibrary(): ?string
     {
         $cpu = self::CPUS[self::machine() ?? ''] ?? null;
