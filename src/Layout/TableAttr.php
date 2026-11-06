@@ -15,12 +15,13 @@ final readonly class TableAttr
 {
     public function __construct(
         /**
-         * Column widths, separated by spaces, in fr, pt or % units, or auto: for example 2fr 1fr
-         * 120pt 20%. An auto column takes the width its cells need on one line, and the auto
-         * columns share what the pt and % columns leave, in proportion to what they need. When they
-         * do not fit, each keeps at least its longest word, and when not even those fit, the
-         * longest are cut and a short column keeps its width. auto and fr cannot be in one table:
-         * use pt or % for the fixed columns. For example auto 90pt 60pt.
+         * Column widths, separated by spaces, in fr, pt, mm, in or % units, or auto: for example
+         * 2fr 1fr 120pt 20%, or 1fr 40mm. A width that is none of these is an error. An auto column
+         * takes the width its cells need on one line, and the auto columns share what the fixed
+         * columns (pt, mm, in and %) leave, in proportion to what they need. When they do not fit,
+         * each keeps at least its longest word, and when not even those fit, the longest are cut
+         * and a short column keeps its width. auto and fr cannot be in one table: use a length or %
+         * for the fixed columns. For example auto 90pt 60pt.
          */
         public string $cols,
         /**
