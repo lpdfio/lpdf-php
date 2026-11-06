@@ -55,7 +55,24 @@ A render stops with an `EngineException` after 5 seconds; `L::engine(new EngineO
 ## Requirements
 
 - PHP 8.2+ with the DOM extension (`ext-dom`; on Debian and Ubuntu it is the `php-xml` package)
-- [`wasmtime`](https://wasmtime.dev) CLI must be available in `PATH` (used to run the bundled WASI binary).
+- One of the two ways the SDK runs the engine, which it picks itself:
+  - **The native library** in the package, through PHP's FFI extension (`ext-ffi`): on Linux with glibc 2.17 or newer, on x86_64 or arm64. A web server needs `ffi.enable=true` in php.ini; the command line allows FFI as it is.
+  - **[`wasmtime`](https://wasmtime.dev)** on `PATH`, which runs the engine's WebAssembly: everywhere else, such as macOS, Windows and Alpine, and where FFI isn't allowed.
+
+## How PHP runs the engine
+
+`L::engine()` renders with the native library where it loads, and with `wasmtime` otherwise. `$engine->runner()` says which one renders: `ffi` or `wasm`.
+
+| | Native library (`ffi`) | wasmtime (`wasm`) |
+|---|---|---|
+| Runs on | Linux with glibc 2.17 or newer, x86_64 and arm64 | Wherever wasmtime runs |
+| Needs | The FFI extension, and `ffi.enable=true` under a web server | The `wasmtime` program on `PATH` |
+| Each render | A call in PHP's own process | A process of its own, which adds about 20 ms |
+| Sandbox | None: the engine has the rights of the PHP process | WebAssembly's: no files, no network |
+
+`runner` on `EngineOptions` picks how: `'auto'`, the default, chooses as above; `'ffi'` renders with the native library only, and throws an `EngineException` that names what stands in the way where it can't load; `'wasm'` renders with `wasmtime` only. For an app that renders templates, fonts or images its own users upload, `wasm` keeps the engine in WebAssembly's sandbox. `libPath` loads the native library from another path.
+
+The timeout and the memory cap hold through both. The engine's memory is outside PHP's `memory_limit` either way. Through the native library, a fault the engine can't catch, such as running out of memory before its cap stops it, ends PHP's process; through `wasmtime` it ends the `wasmtime` process, and the render throws an `EngineException`. Where a render could need more memory than the machine has, keep `maxMemoryMb` below it, or render with `wasm`. Through the native library the engine stops a render at its timeout itself, and a step it hands to a library, such as reading the XML, subsetting a font or compressing an image, finishes first.
 
 ## Docs
 

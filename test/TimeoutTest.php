@@ -7,14 +7,17 @@ namespace Lpdf\Tests;
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\EngineOptions;
 use Lpdf\Engine\RenderOptions;
+use Lpdf\Engine\Runner;
 use Lpdf\L;
 use Lpdf\PdfEngine;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The timeout: the `wasmtime` process is ended at the deadline. A render that runs long is a small WebAssembly module
- * of the test's own, in the text format, which `wasmtime` runs in place of the engine: the real engine renders the
- * largest fixture in well under a second.
+ * The timeout. Through `wasmtime`, its process is ended at the deadline: a render that runs long is a small WebAssembly
+ * module of the test's own, in the text format, which `wasmtime` runs in place of the engine, since the real engine
+ * renders the largest fixture in well under a second. Through the native library, the engine stops the render itself:
+ * a render that runs long is a big document.
  */
 final class TimeoutTest extends TestCase
 {
@@ -72,6 +75,14 @@ final class TimeoutTest extends TestCase
         $this->assertGreaterThanOrEqual(2, (hrtime(true) - $start) / 1e9);
     }
 
+    public function testANegativeTimeoutIsRefused(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('timeout must be a whole number of seconds, 0 for no limit, not -1');
+
+        new EngineOptions(timeout: -1);
+    }
+
     public function testARenderStopsAfter5SecondsWhenTheTimeoutIsLeftOut(): void
     {
         [$seconds, $error] = self::timedRender($this->standIn(self::SPIN_FOREVER, null));
@@ -89,26 +100,63 @@ final class TimeoutTest extends TestCase
         [, $error] = self::timedRender($this->standIn(self::SPIN_FOREVER, 1));
         $this->assertInstanceOf(EngineException::class, $error);
 
-        SnapshotHelper::compareOrUpdate('bench_m', self::renderFixture('bench_m', new EngineOptions()));
+        SnapshotHelper::compareOrUpdate('bench_m', self::renderFixture('bench_m', new EngineOptions(runner: Runner::Wasm)));
     }
 
-    public function testAFixtureRendersWithATimeoutOf0(): void
+    public function testARenderThroughTheNativeLibraryPastItsTimeoutThrowsAndTheNextGivesTheRightHash(): void
     {
+        RunnerSupport::need(Runner::Ffi);
+        if (!SnapshotHelper::hasFixtures()) {
+            $this->markTestSkipped('Fixture files not available outside the monorepo.');
+        }
+        $engine = L::engine(new EngineOptions(runner: Runner::Ffi, timeout: 1, maxMemoryMb: 4096))->setLicenseKey('test-key');
+        // Two million lines, a page at a time: about 40,000 pages, which take the native library several seconds.
+        $xml = '<lpdf version="1"><document><section><layout><column bulk="true"><text data-source="rows">'
+            . 'A line of a long report, with words enough to fill the width of a line or two of the page.'
+            . '</text></column></layout></section></document></lpdf>';
+        $data = new RenderOptions(data: ['rows' => range(1, 2_000_000)]);
+
+        $start = hrtime(true);
+        try {
+            $engine->render($xml, $data);
+            $this->fail('the render ran past its timeout');
+        } catch (EngineException $e) {
+            $seconds = (hrtime(true) - $start) / 1e9;
+            $this->assertSame('The render timed out after 1 second.', $e->getMessage());
+        }
+        // What the render held is freed as it stops, which takes a moment for thousands of pages.
+        $this->assertGreaterThanOrEqual(1, $seconds);
+        $this->assertLessThan(2, $seconds);
+
+        SnapshotHelper::compareOrUpdate('bench_m', $engine->render(self::fixture('bench_m'), new RenderOptions(skipEncryption: true)));
+    }
+
+    #[DataProvider('runners')]
+    public function testAFixtureRendersWithATimeoutOf0(string $runner): void
+    {
+        RunnerSupport::need($runner);
         if (!SnapshotHelper::hasFixtures()) {
             $this->markTestSkipped('Fixture files not available outside the monorepo.');
         }
 
-        SnapshotHelper::compareOrUpdate('bench_l', self::renderFixture('bench_l', new EngineOptions(timeout: 0)));
+        SnapshotHelper::compareOrUpdate('bench_l', self::renderFixture('bench_l', new EngineOptions(timeout: 0, runner: $runner)));
     }
 
-    /** An engine that runs the module `$wat` in place of the engine's binary. */
+    /** @return array<string, array{string}> */
+    public static function runners(): array
+    {
+        return RunnerSupport::runners();
+    }
+
+    /** An engine that runs the module `$wat` with wasmtime in place of the engine's binary. */
     private function standIn(string $wat, ?int $timeout): PdfEngine
     {
+        RunnerSupport::need(Runner::Wasm);
         $path = tempnam(sys_get_temp_dir(), 'lpdf-stand-in-');
         $this->assertIsString($path);
         file_put_contents($path, $wat);
         $this->standIns[] = $path;
-        return L::engine(new EngineOptions(wasmBinary: $path, timeout: $timeout));
+        return L::engine(new EngineOptions(wasmBinary: $path, timeout: $timeout, runner: Runner::Wasm));
     }
 
     /** @return array{float, ?EngineException} The seconds the render took, and its error if it threw one. */
@@ -125,7 +173,11 @@ final class TimeoutTest extends TestCase
 
     private static function renderFixture(string $name, EngineOptions $options): string
     {
-        $xml = (string) file_get_contents(SnapshotHelper::fixtures() . "/$name.xml");
-        return L::engine($options)->setLicenseKey('test-key')->render($xml, new RenderOptions(skipEncryption: true));
+        return L::engine($options)->setLicenseKey('test-key')->render(self::fixture($name), new RenderOptions(skipEncryption: true));
+    }
+
+    private static function fixture(string $name): string
+    {
+        return (string) file_get_contents(SnapshotHelper::fixtures() . "/$name.xml");
     }
 }

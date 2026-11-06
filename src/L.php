@@ -25,7 +25,6 @@ use Lpdf\Canvas\TextAtAttr;
 use Lpdf\Canvas\TextAtNode;
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\EngineOptions;
-use Lpdf\Engine\WasmRunner;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentTokens;
@@ -111,15 +110,11 @@ final class L
     public static function toXml(PdfDocument $doc): string
     {
         $inputStr = json_encode($doc, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
-        $runner = new WasmRunner(
-            wasmBinary: \dirname(__DIR__) . '/resources/lpdf-wasi.wasm',
-            wasmRunner: 'wasmtime',
-            timeout: WasmRunner::DEFAULT_TIMEOUT,
-        );
+        $runner = (new EngineOptions())->engineRunner();
         $payload  = ['method' => 'kit_to_xml', 'key' => '', 'input' => $inputStr];
         $response = $runner->invoke($payload);
         if (!isset($response['xml'])) {
-            throw new EngineException('Unexpected response from WASI kit_to_xml call.');
+            throw new EngineException('Unexpected response from the engine to kit_to_xml.');
         }
         return $response['xml'];
     }

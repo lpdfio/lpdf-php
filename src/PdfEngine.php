@@ -7,9 +7,9 @@ namespace Lpdf;
 use Lpdf\Kit\PdfDocument;
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\EngineOptions;
+use Lpdf\Engine\EngineRunner;
 use Lpdf\Engine\RenderOptions;
 use Lpdf\Engine\StampAttr;
-use Lpdf\Engine\WasmRunner;
 
 final class PdfEngine
 {
@@ -33,6 +33,9 @@ final class PdfEngine
 
     private string $licenseKey = '';
 
+    /** The runner this engine renders with, picked on its first render. */
+    private ?EngineRunner $engineRunner = null;
+
     public function __construct(
         private readonly EngineOptions $options = new EngineOptions(),
     ) {}
@@ -47,6 +50,18 @@ final class PdfEngine
     {
         $this->licenseKey = $key;
         return $this;
+    }
+
+    /**
+     * Which runner renders: `ffi`, the native library through PHP's FFI, or `wasm`, the `wasmtime` program
+     * (`Lpdf\Engine\Runner`). With the default `runner: 'auto'`, the native library where it loads here, else
+     * `wasmtime`; worth asking when support asks how PHP renders.
+     *
+     * @throws EngineException With `runner: 'ffi'`, when the native library can't be used here: the check that failed.
+     */
+    public function runner(): string
+    {
+        return $this->engineRunner()->name();
     }
 
     /**
@@ -65,12 +80,7 @@ final class PdfEngine
      */
     public function checkLicenseKey(?string $key = null): array
     {
-        $runner = new WasmRunner(
-            wasmBinary: $this->options->wasmBinary ?? self::defaultBinary(),
-            wasmRunner: $this->options->wasmRunner ?? 'wasmtime',
-            timeout:    $this->options->timeout    ?? WasmRunner::DEFAULT_TIMEOUT,
-            maxMemoryMb: $this->options->maxMemoryMb ?? WasmRunner::DEFAULT_MAX_MEMORY_MB,
-        );
+        $runner = $this->engineRunner();
 
         return $runner->invoke([
             'method' => 'check_license',
@@ -159,12 +169,7 @@ final class PdfEngine
             $inputStr = $input;
         }
 
-        $runner = new WasmRunner(
-            wasmBinary: $this->options->wasmBinary ?? self::defaultBinary(),
-            wasmRunner: $this->options->wasmRunner ?? 'wasmtime',
-            timeout:    $this->options->timeout    ?? WasmRunner::DEFAULT_TIMEOUT,
-            maxMemoryMb: $this->options->maxMemoryMb ?? WasmRunner::DEFAULT_MAX_MEMORY_MB,
-        );
+        $runner = $this->engineRunner();
 
         // An XML document is parsed once, for the src of every file it names.
         $xml = $method === 'render_pdf' ? self::parseXml($inputStr) : null;
@@ -301,7 +306,7 @@ final class PdfEngine
         $response = $runner->invoke($payload);
 
         if (!isset($response['pdf'])) {
-            throw new EngineException('Unexpected response from WASI process.');
+            throw new EngineException('Unexpected response from the engine.');
         }
 
         $bytes = base64_decode($response['pdf'], strict: true);
@@ -352,12 +357,7 @@ final class PdfEngine
             $requestStamps[] = array_filter($options, static fn ($value) => $value !== null);
         }
 
-        $runner = new WasmRunner(
-            wasmBinary: $this->options->wasmBinary ?? self::defaultBinary(),
-            wasmRunner: $this->options->wasmRunner ?? 'wasmtime',
-            timeout:    $this->options->timeout    ?? WasmRunner::DEFAULT_TIMEOUT,
-            maxMemoryMb: $this->options->maxMemoryMb ?? WasmRunner::DEFAULT_MAX_MEMORY_MB,
-        );
+        $runner = $this->engineRunner();
         $response = $runner->invoke([
             'method' => 'stamp',
             'key'    => $this->licenseKey,
@@ -369,7 +369,7 @@ final class PdfEngine
         ]);
 
         if (!isset($response['pdf'])) {
-            throw new EngineException('Unexpected response from WASI process.');
+            throw new EngineException('Unexpected response from the engine.');
         }
         $bytes = base64_decode($response['pdf'], strict: true);
         if ($bytes === false) {
@@ -379,6 +379,12 @@ final class PdfEngine
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────
+
+    /** The runner this engine renders with, picked by its options the first time it is asked for. */
+    private function engineRunner(): EngineRunner
+    {
+        return $this->engineRunner ??= $this->options->engineRunner();
+    }
 
     /**
      * An XML document read with an XML parser, as the engine reads it, for the `src` of the files it names: entities
@@ -482,10 +488,5 @@ final class PdfEngine
             }
         }
         return $srcs;
-    }
-
-    private static function defaultBinary(): string
-    {
-        return \dirname(__DIR__) . '/resources/lpdf-wasi.wasm';
     }
 }

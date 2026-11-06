@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Tests;
 
 use Lpdf\Engine\EngineOptions;
+use Lpdf\Engine\Runner;
 use Lpdf\L;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -116,7 +117,8 @@ final class XmlSrcTest extends TestCase
     /** @return array<string, mixed> The request a render of `$xml` sends the engine. */
     private function request(string $xml): array
     {
-        L::engine(new EngineOptions(wasmRunner: "{$this->dir}/engine"))->setLicenseKey('test-key')->render($xml);
+        // The program in place of wasmtime keeps the request: through the native library, nothing would.
+        L::engine(new EngineOptions(wasmRunner: "{$this->dir}/engine", runner: Runner::Wasm))->setLicenseKey('test-key')->render($xml);
         $request = json_decode((string) file_get_contents("{$this->dir}/request.json"), true, 512, JSON_THROW_ON_ERROR);
         self::assertIsArray($request);
         return $request;
