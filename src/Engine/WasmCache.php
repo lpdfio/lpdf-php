@@ -18,25 +18,39 @@ final readonly class WasmCache
     /** The name of the folder in the temp directory when `wasmCacheDir` is left out, before PHP's user id. */
     public const DEFAULT_FOLDER = 'lpdf-wasmtime-';
 
+    /** Why no folder is used where PHP has no POSIX extension, which alone tells the user id that owns a folder. */
+    public const NO_POSIX = "PHP's POSIX extension is not loaded, and the SDK needs it to tell who owns the folder";
+
     private function __construct(
         /** The `config.toml` that names the cache, for `-C cache-config=`. */
         public string $configFile,
     ) {}
 
     /**
-     * The cache in `$folder`, or in `lpdf-wasmtime-<uid>` in the temp directory when it is null, with the folder made
-     * with mode 0700 where it is missing.
+     * The cache in `$folder`, taken from PHP's working directory where it is relative, or in `lpdf-wasmtime-<uid>` in
+     * the temp directory when it is null, with the folder made with mode 0700 where it is missing.
      *
      * @return self|string The cache, or why the folder isn't used, as a clause that names it.
      */
     public static function open(?string $folder): self|string
     {
-        // Who owns the folder is told by user id, which only the POSIX extension gives.
         if (!\function_exists('posix_geteuid')) {
-            return "PHP's POSIX extension is not loaded, and the SDK needs it to tell who owns the folder";
+            return self::NO_POSIX;
         }
         $uid = posix_geteuid();
         $folder ??= rtrim(sys_get_temp_dir(), '/') . '/' . self::DEFAULT_FOLDER . $uid;
+        // wasmtime takes an absolute cache directory only. It starts in PHP's working directory, as the checks below do.
+        if (!str_starts_with($folder, '/')) {
+            $workingDirectory = getcwd();
+            if ($workingDirectory === false) {
+                return "$folder is relative, and PHP can't tell its working directory";
+            }
+            $folder = "$workingDirectory/$folder";
+        }
+        // config.toml is TOML, which is UTF-8.
+        if (preg_match('//u', $folder) !== 1) {
+            return "the path of $folder isn't UTF-8, which config.toml needs";
+        }
         if (str_contains($folder, ',')) {
             return "the path of $folder has a comma, which wasmtime's -C option splits on";
         }
@@ -99,6 +113,6 @@ final readonly class WasmCache
     private static function phpError(): string
     {
         $message = error_get_last()['message'] ?? 'PHP gave no reason';
-        return (string) preg_replace('/^\w+\(\): /', '', $message);
+        return (string) preg_replace('/^\w+\(.*?\): /', '', $message);
     }
 }

@@ -159,7 +159,8 @@ final readonly class WasmRunner implements EngineRunner
 
     /**
      * The error of a render that wasmtime didn't run because it can't create its cache directory, as its `$err` says,
-     * with `$cache`'s reason where the SDK gave it no folder.
+     * with `$cache`'s reason where the SDK gave it no folder, and what would give it one: the POSIX extension where it
+     * is missing, since the SDK then uses no folder at all, or else another `wasmCacheDir`.
      */
     private static function noCacheDirectory(string $err, WasmCache|string $cache): string
     {
@@ -176,8 +177,11 @@ final readonly class WasmRunner implements EngineRunner
         if (\is_string($cache)) {
             $message .= ". The SDK gave it no folder of its own, since $cache";
         }
-        return "$message. Set wasmCacheDir in EngineOptions to a folder PHP's user can make, or one it owns that group "
-            . "and others can't open.";
+        if ($cache === WasmCache::NO_POSIX) {
+            return "$message. Load PHP's POSIX extension (ext-posix), so the SDK can give wasmtime a folder of its own.";
+        }
+        return "$message. Set wasmCacheDir in EngineOptions to a folder PHP's user can make, or one it owns and can "
+            . "write that group and others can't open.";
     }
 
     /** The error of a render whose program didn't start, which PHP explained with `$why`, and `$fix` would start. */

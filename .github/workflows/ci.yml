@@ -231,7 +231,7 @@ jobs:
   # ── Where `auto` falls back to wasmtime ───────────────────────────────────────
   # The official images, as a user gets them: without the FFI extension; under PHP-FPM, where `ffi.enable` at its
   # default refuses the library; and on Alpine, whose musl the library doesn't support. Their containers run as root,
-  # where WasmCacheTest can give a folder to another user, which the user of the jobs above can't.
+  # where WasmCacheTest can give a folder to another user, which the `test` job's user can't.
   fallback:
     name: Falls back to wasmtime (${{ matrix.case }})
     needs: engine

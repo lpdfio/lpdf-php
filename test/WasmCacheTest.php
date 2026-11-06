@@ -111,6 +111,35 @@ final class WasmCacheTest extends TestCase
         return ['group' => [0750], 'others' => [0701], 'both' => [0755]];
     }
 
+    /** `config.toml` is TOML, which is UTF-8, so a path that isn't can't be written in it. */
+    public function testAWasmCacheDirWhosePathIsNotUtf8IsNotUsed(): void
+    {
+        $this->assertSame([], $this->cacheOptions("$this->scratch/caf\xe9"));
+        $this->assertSame(['arguments', 'wasmtime'], array_values(array_diff(scandir($this->scratch), ['.', '..'])));
+    }
+
+    /**
+     * The real wasmtime, which takes an absolute cache directory only: a relative `wasmCacheDir` is taken from PHP's
+     * working directory, which is also wasmtime's.
+     */
+    public function testARelativeWasmCacheDirIsTakenFromTheWorkingDirectory(): void
+    {
+        RunnerSupport::need(Runner::Wasm);
+        $workingDirectory = (string) getcwd();
+        chdir($this->scratch);
+        try {
+            $engine = L::engine(new EngineOptions(runner: Runner::Wasm, wasmCacheDir: 'relative/cache'));
+
+            $this->assertStringStartsWith('%PDF-', $engine->render(self::MINIMAL));
+
+            $folder = getcwd() . '/relative/cache';
+            $this->assertSame("[cache]\ndirectory = \"$folder/cache\"\n", file_get_contents("$folder/config.toml"));
+            $this->assertNotEmpty(self::compiled($folder));
+        } finally {
+            chdir($workingDirectory);
+        }
+    }
+
     /** wasmtime's `-C` splits its options on commas, so the path of the config can't hold one. */
     public function testAWasmCacheDirWithACommaInItsPathIsNotUsed(): void
     {
@@ -125,6 +154,27 @@ final class WasmCacheTest extends TestCase
 
         $this->assertSame('', $output);
         $this->assertSame([], $this->recordedCacheOptions());
+    }
+
+    /**
+     * Without the POSIX extension no `wasmCacheDir` would help, so where wasmtime can't create its own cache either,
+     * the error says to load the extension. The real wasmtime, with HOME a file.
+     */
+    public function testWithoutThePosixExtensionTheErrorSaysToLoadIt(): void
+    {
+        RunnerSupport::need(Runner::Wasm);
+        $render = 'try { Lpdf\L::engine(new Lpdf\Engine\EngineOptions(runner: "wasm"))->render('
+            . var_export(self::MINIMAL, true) . '); echo "rendered"; }'
+            . ' catch (Lpdf\Engine\EngineException $e) { echo $e->getMessage(); }';
+
+        $noHome = 'env -u XDG_CACHE_HOME HOME=/dev/null';
+
+        $output = self::inPhpOfItsOwn('-d disable_functions=posix_geteuid', $render, $noHome);
+
+        $this->assertStringStartsWith('wasmtime could not create its cache directory, so it didn\'t render (', $output);
+        $this->assertStringEndsWith(". The SDK gave it no folder of its own, since PHP's POSIX extension is not loaded, "
+            . 'and the SDK needs it to tell who owns the folder. Load PHP\'s POSIX extension (ext-posix), so the SDK can '
+            . 'give wasmtime a folder of its own.', $output);
     }
 
     /**
@@ -158,11 +208,13 @@ final class WasmCacheTest extends TestCase
         if ($case === 'under a file') {
             touch("$this->scratch/file");
             $folder = "$this->scratch/file/cache";
+            $why = "$folder can't be made (Not a directory)";
         } else {
             if (posix_geteuid() === 0) {
                 $this->markTestSkipped('Root writes in a folder whatever its mode.');
             }
             mkdir($folder, 0500);
+            $why = "$folder/config.toml can't be written (Failed to open stream: Permission denied)";
         }
         $home = getenv('HOME');
         $xdg = getenv('XDG_CACHE_HOME');
@@ -174,9 +226,9 @@ final class WasmCacheTest extends TestCase
         } catch (EngineException $e) {
             $this->assertStringStartsWith('wasmtime could not create its cache directory, so it didn\'t render (failed to '
                 . 'create cache directory: /dev/null/', $e->getMessage());
-            $this->assertStringContainsString("The SDK gave it no folder of its own, since $folder", $e->getMessage());
-            $this->assertStringEndsWith('). Set wasmCacheDir in EngineOptions to a folder PHP\'s user can make, or one it '
-                . 'owns that group and others can\'t open.', $e->getMessage());
+            $this->assertStringContainsString("). The SDK gave it no folder of its own, since $why. ", $e->getMessage());
+            $this->assertStringEndsWith('. Set wasmCacheDir in EngineOptions to a folder PHP\'s user can make, or one it '
+                . 'owns and can write that group and others can\'t open.', $e->getMessage());
         } finally {
             putenv($home === false ? 'HOME' : "HOME=$home");
             putenv($xdg === false ? 'XDG_CACHE_HOME' : "XDG_CACHE_HOME=$xdg");
@@ -199,17 +251,24 @@ final class WasmCacheTest extends TestCase
         return $this->recordedCacheOptions();
     }
 
-    /**
-     * What the stand-in prints, rendering with the folder left out in a PHP of its own started with `$settings`:
-     * php.ini's `sys_temp_dir` and `disable_functions` are set only when PHP starts.
-     */
+    /** What a render through the stand-in, with the folder left out, prints in a PHP of its own (`inPhpOfItsOwn`). */
     private function renderInPhpOfItsOwn(string $settings): string
     {
-        $code = 'require ' . var_export(\dirname(__DIR__) . '/vendor/autoload.php', true) . ';'
-            . ' $options = new Lpdf\Engine\EngineOptions(wasmRunner: ' . var_export($this->standIn(), true)
-            . ', runner: "wasm");'
-            . ' if (Lpdf\L::engine($options)->render(' . var_export(self::MINIMAL, true) . ') !== "%PDF-") { echo "no PDF"; }';
-        exec(escapeshellarg(\PHP_BINARY) . " $settings -r " . escapeshellarg($code) . ' 2>&1', $output);
+        $options = 'new Lpdf\Engine\EngineOptions(wasmRunner: ' . var_export($this->standIn(), true) . ', runner: "wasm")';
+        return self::inPhpOfItsOwn(
+            $settings,
+            "if (Lpdf\\L::engine($options)->render(" . var_export(self::MINIMAL, true) . ') !== "%PDF-") { echo "no PDF"; }',
+        );
+    }
+
+    /**
+     * What `$code` prints in a PHP of its own, started with `$settings` and after `$env`, such as `env HOME=…`:
+     * php.ini's `sys_temp_dir` and `disable_functions` are set only when PHP starts.
+     */
+    private static function inPhpOfItsOwn(string $settings, string $code, string $env = ''): string
+    {
+        $code = 'require ' . var_export(\dirname(__DIR__) . '/vendor/autoload.php', true) . "; $code";
+        exec("$env " . escapeshellarg(\PHP_BINARY) . " $settings -r " . escapeshellarg($code) . ' 2>&1', $output);
         return implode("\n", $output);
     }
 

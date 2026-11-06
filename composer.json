@@ -16,7 +16,8 @@
     "ext-dom": "*"
   },
   "suggest": {
-    "ext-ffi": "Renders in PHP's own process through the native library in the package, with no wasmtime to install: Linux with glibc 2.17 or newer, x86_64 or arm64, and ffi.enable=true for a web server"
+    "ext-ffi": "Renders in PHP's own process through the native library in the package, with no wasmtime to install: Linux with glibc 2.17 or newer, x86_64 or arm64, and ffi.enable=true for a web server",
+    "ext-posix": "Lets the SDK give wasmtime a folder of its own for the engine it compiles, which it needs where PHP's user can't write its home, as www-data under PHP-FPM"
   },
   "require-dev": {
     "phpunit/phpunit": "^11"
