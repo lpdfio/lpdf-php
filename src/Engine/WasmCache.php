@@ -21,6 +21,9 @@ final readonly class WasmCache
     /** Why no folder is used where PHP has no POSIX extension, which alone tells the user id that owns a folder. */
     public const NO_POSIX = "PHP's POSIX extension is not loaded, and the SDK needs it to tell who owns the folder";
 
+    /** Why no folder is used on Windows, where wasmtime keeps its cache in the user's profile. */
+    public const ON_WINDOWS = 'PHP has no POSIX extension on Windows to tell who owns a folder';
+
     private function __construct(
         /** The `config.toml` that names the cache, for `-C cache-config=`. */
         public string $configFile,
@@ -34,6 +37,9 @@ final readonly class WasmCache
      */
     public static function open(?string $folder): self|string
     {
+        if (\PHP_OS_FAMILY === 'Windows') {
+            return self::ON_WINDOWS;
+        }
         if (!\function_exists('posix_geteuid')) {
             return self::NO_POSIX;
         }
@@ -47,9 +53,14 @@ final readonly class WasmCache
             }
             $folder = "$workingDirectory/$folder";
         }
-        // config.toml is TOML, which is UTF-8.
+        // With a slash at its end the path names what a link leads to, and the link itself would pass the checks.
+        $folder = rtrim($folder, '/') ?: '/';
+        // config.toml is TOML, which is UTF-8, and takes control characters only escaped, DEL among them.
         if (preg_match('//u', $folder) !== 1) {
             return "the path of $folder isn't UTF-8, which config.toml needs";
+        }
+        if (preg_match('/[\x00-\x1f\x7f]/', $folder) === 1) {
+            return 'the path of ' . addcslashes($folder, "\0..\37\177") . ' holds a control character';
         }
         if (str_contains($folder, ',')) {
             return "the path of $folder has a comma, which wasmtime's -C option splits on";

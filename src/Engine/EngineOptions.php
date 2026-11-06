@@ -35,8 +35,10 @@ final readonly class EngineOptions
          * The folder where the `wasmtime` program keeps the engine compiled to native code, so a render after the
          * first doesn't compile it again: `lpdf-wasmtime-<uid>` in the temp directory when left out, and taken from
          * PHP's working directory where it is relative. It is made with mode 0700 where it is missing, and used only
-         * when PHP's user owns it and group and others can't open it, since wasmtime runs what it holds unchecked;
-         * otherwise wasmtime keeps the engine in its own default place.
+         * when it is a directory, not a link, that PHP's user owns and group and others can't open, since wasmtime
+         * runs what it holds unchecked; otherwise wasmtime keeps the engine in its own default place. Only the folder
+         * itself is checked, not those above it, so put it inside a folder only PHP's user can write. Not used on
+         * Windows, where PHP has no POSIX extension to tell a folder's owner.
          */
         public ?string $wasmCacheDir = null,
     ) {

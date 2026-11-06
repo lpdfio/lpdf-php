@@ -51,12 +51,19 @@ final class WasmCacheTest extends TestCase
         $this->assertSame("[cache]\ndirectory = \"$folder/cache\"\n", file_get_contents("$folder/config.toml"));
     }
 
-    public function testAWasmCacheDirOfPhpsUserClosedToOthersIsUsedAsGiven(): void
+    #[DataProvider('endings')]
+    public function testAWasmCacheDirOfPhpsUserClosedToOthersIsUsedAsGiven(string $ending): void
     {
         $folder = "$this->scratch/cache";
         mkdir($folder, 0700);
 
-        $this->assertSame(["cache-config=$folder/config.toml"], $this->cacheOptions($folder));
+        $this->assertSame(["cache-config=$folder/config.toml"], $this->cacheOptions($folder . $ending));
+    }
+
+    /** @return array<string, array{string}> How a folder's path may end. */
+    public static function endings(): array
+    {
+        return ['as given' => [''], 'with a slash' => ['/'], 'with two slashes' => ['//']];
     }
 
     /** The temp directory is `sys_temp_dir`'s, set in a PHP of its own. */
@@ -71,12 +78,14 @@ final class WasmCacheTest extends TestCase
         $this->assertSame(0700, fileperms($folder) & 0777);
     }
 
-    public function testAWasmCacheDirThatIsALinkIsNotUsed(): void
+    /** With a slash at its end, the path names what the link leads to: a folder of PHP's user, closed to others. */
+    #[DataProvider('endings')]
+    public function testAWasmCacheDirThatIsALinkIsNotUsed(string $ending): void
     {
         mkdir("$this->scratch/real", 0700);
         symlink("$this->scratch/real", "$this->scratch/link");
 
-        $this->assertSame([], $this->cacheOptions("$this->scratch/link"));
+        $this->assertSame([], $this->cacheOptions("$this->scratch/link" . $ending));
         $this->assertFileDoesNotExist("$this->scratch/real/config.toml");
     }
 
@@ -116,6 +125,20 @@ final class WasmCacheTest extends TestCase
     {
         $this->assertSame([], $this->cacheOptions("$this->scratch/caf\xe9"));
         $this->assertSame(['arguments', 'wasmtime'], array_values(array_diff(scandir($this->scratch), ['.', '..'])));
+    }
+
+    /** `config.toml` is TOML, which takes control characters only escaped, and `json_encode` leaves DEL as it is. */
+    #[DataProvider('controlCharacters')]
+    public function testAWasmCacheDirWhosePathHoldsAControlCharacterIsNotUsed(string $character): void
+    {
+        $this->assertSame([], $this->cacheOptions("$this->scratch/a{$character}b"));
+        $this->assertSame(['arguments', 'wasmtime'], array_values(array_diff(scandir($this->scratch), ['.', '..'])));
+    }
+
+    /** @return array<string, array{string}> */
+    public static function controlCharacters(): array
+    {
+        return ['DEL' => ["\x7f"], 'a newline' => ["\n"]];
     }
 
     /**
