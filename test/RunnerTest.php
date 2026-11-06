@@ -177,47 +177,64 @@ final class RunnerTest extends TestCase
 
     /**
      * Under PHP-FPM, `ffi.enable` at its default allows FFI only in preloaded files, so `auto` renders with wasmtime.
-     * The pool runs as this user: as `www-data`, wasmtime can't create its cache in the official image, which is
-     * wasmtime's own problem with that image.
+     * The pool runs as `www-data`, as the official image's does, where wasmtime can't write its own cache in the
+     * user's home, `/var/www`: it keeps the compiled engine in the SDK's folder in the temp directory instead, and
+     * the second render compiles nothing.
      */
     public function testUnderPhpFpmWithFfiEnableAtItsDefaultAutoRendersWithWasmtime(): void
     {
         $fpm = getenv('LPDF_TEST_FPM') ?: $this->markTestSkipped('LPDF_TEST_FPM names php-fpm in the CI job that runs it.');
         $this->needsFixtures();
+        $hash = trim((string) file_get_contents(SnapshotHelper::snapshots() . '/bench_xs.pdf.sha256'));
 
-        $answer = self::requestUnderFpm($fpm, __DIR__ . '/fpm/render.php');
+        [$first, $second] = self::requestsUnderFpm($fpm, __DIR__ . '/fpm/render.php', 2);
 
-        $this->assertSame('preload', $answer['ffi.enable']);
-        $this->assertStringContainsString('restricted by "ffi.enable"', (string) $answer['ffiRefused']);
-        $this->assertStringEndsWith(': set ffi.enable=true in php.ini.', (string) $answer['ffiRefused']);
-        $this->assertSame(Runner::Wasm, $answer['runner'] ?? $answer['error'] ?? null);
-        $this->assertSame(trim((string) file_get_contents(SnapshotHelper::snapshots() . '/bench_xs.pdf.sha256')), $answer['hash']);
+        $this->assertSame('www-data', $first['user']);
+        $this->assertSame('preload', $first['ffi.enable']);
+        $this->assertStringContainsString('restricted by "ffi.enable"', (string) $first['ffiRefused']);
+        $this->assertStringEndsWith(': set ffi.enable=true in php.ini.', (string) $first['ffiRefused']);
+        $this->assertSame(Runner::Wasm, $first['runner'] ?? null);
+        $this->assertNull($first['error'] ?? null);
+        $this->assertSame($hash, $first['hash']);
+        $this->assertNotEmpty($first['compiled']);
+
+        $this->assertNull($second['error'] ?? null);
+        $this->assertSame($hash, $second['hash']);
+        $this->assertSame($first['compiled'], $second['compiled']);
     }
 
-    /** @return array<string, mixed> What `$script` answers to one GET request under a pool of `$fpm` of its own. */
-    private static function requestUnderFpm(string $fpm, string $script): array
+    /**
+     * @return list<array<string, mixed>> What `$script` answers to each of `$count` GET requests, one after another,
+     *                                    under a pool of `$fpm` of its own.
+     */
+    private static function requestsUnderFpm(string $fpm, string $script, int $count): array
     {
         $dir = sys_get_temp_dir() . '/lpdf-fpm-' . getmypid();
         @mkdir($dir);
         $port = 9701;
-        // Kept: PATH and HOME, for wasmtime and its cache.
+        // The pool's defaults but PATH, which leads to wasmtime: the environment is cleared, HOME with it, so wasmtime's
+        // own cache would be in www-data's home.
         $pool = ['[global]', "pid = $dir/fpm.pid", "error_log = $dir/fpm.log", 'daemonize = yes', '[lpdf]',
-            "listen = 127.0.0.1:$port", 'pm = static', 'pm.max_children = 1', 'clear_env = no'];
-        if (trim((string) shell_exec('id -u')) === '0') {
-            $pool[] = 'user = root';
-        }
+            "listen = 127.0.0.1:$port", 'pm = static', 'pm.max_children = 1', 'user = www-data', 'group = www-data',
+            'env[PATH] = ' . getenv('PATH')];
         file_put_contents("$dir/fpm.conf", implode("\n", $pool) . "\n");
-        exec(escapeshellarg($fpm) . ' -R -y ' . escapeshellarg("$dir/fpm.conf") . ' 2>&1', $output, $code);
+        exec(escapeshellarg($fpm) . ' -y ' . escapeshellarg("$dir/fpm.conf") . ' 2>&1', $output, $code);
         self::assertSame(0, $code, implode("\n", $output));
+        $answers = [];
         try {
-            $response = '';
-            for ($try = 0; $try < 50 && !str_contains($response, '{'); $try++) {
-                usleep(100_000);
-                $response = (string) shell_exec(sprintf(
-                    'SCRIPT_FILENAME=%s REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:%d 2>&1',
-                    escapeshellarg($script),
-                    $port,
-                ));
+            for ($request = 0; $request < $count; $request++) {
+                $response = '';
+                for ($try = 0; $try < 50 && !str_contains($response, '{'); $try++) {
+                    usleep(100_000);
+                    $response = (string) shell_exec(sprintf(
+                        'SCRIPT_FILENAME=%s REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:%d 2>&1',
+                        escapeshellarg($script),
+                        $port,
+                    ));
+                }
+                $answer = json_decode(substr($response, (int) strpos($response, '{')), true);
+                self::assertIsArray($answer, $response . "\n" . @file_get_contents("$dir/fpm.log"));
+                $answers[] = $answer;
             }
         } finally {
             $pid = (int) @file_get_contents("$dir/fpm.pid");
@@ -225,10 +242,7 @@ final class RunnerTest extends TestCase
                 exec("kill $pid");
             }
         }
-        $body = substr($response, (int) strpos($response, '{'));
-        $answer = json_decode($body, true);
-        self::assertIsArray($answer, $response . "\n" . @file_get_contents("$dir/fpm.log"));
-        return $answer;
+        return $answers;
     }
 
     /**
