@@ -228,7 +228,7 @@ final class SchemaTest extends TestCase
             [L::section(null, [L::layout(null, [L::column(new ColumnAttr(height: 'medum'))])])],
         );
 
-        $this->expectExceptionMessageMatches("/invalid height value: 'medum' — expected full, fill, a slot from xs to xxl or a pt value/");
+        $this->expectExceptionMessageMatches("/invalid height value: 'medum' — expected full, fill, a slot from xs to xxl or a length in pt, mm or in/");
         L::engine()->setLicenseKey('test-key')->render($built);
     }
 
