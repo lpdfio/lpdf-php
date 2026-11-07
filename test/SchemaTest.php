@@ -51,6 +51,7 @@ use Lpdf\Layout\TrAttr;
 use Lpdf\Layout\TextAttr;
 use Lpdf\Markdown\MarkdownAttr;
 use Lpdf\Markdown\MarkdownH1Attr;
+use Lpdf\Markdown\MarkdownHrAttr;
 use Lpdf\Markdown\MarkdownQuoteAttr;
 use Lpdf\Markdown\MarkdownStylesAttr;
 use PHPUnit\Framework\TestCase;
@@ -814,6 +815,8 @@ final class SchemaTest extends TestCase
         self::assertSame('h1', $styles['nodes'][0]['type']);
         self::assertEquals(['font-size' => 'xl', 'color' => 'muted'], $styles['nodes'][0]['attrs']);
         self::assertEquals(['bar-color' => 'primary'], $this->json(LMarkdown::quote(new MarkdownQuoteAttr(barColor: 'primary')))['attrs']);
+        self::assertEquals(['color' => 'muted', 'thickness' => 'xs'], $this->json(LMarkdown::hr(new MarkdownHrAttr(color: 'muted', thickness: 'xs')))['attrs']);
+        self::assertSame('hr', $this->json(LMarkdown::hr())['type']);
         self::assertSame('em', $this->json(LMarkdown::em())['type']);
         self::assertSame(['# a'], $this->json(LMarkdown::content(NoAttr, ['# a']))['nodes']);
     }

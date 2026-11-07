@@ -15,6 +15,7 @@ use Lpdf\Markdown\MarkdownH3Attr;
 use Lpdf\Markdown\MarkdownH4Attr;
 use Lpdf\Markdown\MarkdownH5Attr;
 use Lpdf\Markdown\MarkdownH6Attr;
+use Lpdf\Markdown\MarkdownHrAttr;
 use Lpdf\Markdown\MarkdownLiAttr;
 use Lpdf\Markdown\MarkdownPAttr;
 use Lpdf\Markdown\MarkdownQuoteAttr;
@@ -131,6 +132,12 @@ final class LMarkdown
     public static function li(?MarkdownLiAttr $attrs = null): MarkdownRuleNode
     {
         return new MarkdownRuleNode('li', self::optionsToAttrs($attrs));
+    }
+
+    /** Build the rule of a thematic break, written --- in Markdown. */
+    public static function hr(?MarkdownHrAttr $attrs = null): MarkdownRuleNode
+    {
+        return new MarkdownRuleNode('hr', self::optionsToAttrs($attrs));
     }
 
     /** Build the rule of a link. */
