@@ -62,9 +62,9 @@ final readonly class TableAttr
          * max-lines holds one line and ends in an ellipsis, a td has no rowspan, a row no keep, and
          * nothing in a row has data-source. A row never splits across pages. The table sits
          * directly in the layout, has no data-source of its own and one tr with it, sets its cols
-         * in fr, pt or %, has no height, and neither it nor anything in it has paginate. Its
-         * document has no table of contents, no reference to a bookmark, no pdfua and no pdfa of
-         * level a, and its section's columns are not balanced. Breaking a rule is an error that
+         * in fr, pt, mm, in or %, has no height, and neither it nor anything in it has paginate.
+         * Its document has no table of contents, no reference to a bookmark, no pdfua and no pdfa
+         * of level a, and its section's columns are not balanced. Breaking a rule is an error that
          * names it. Default false.
          */
         public ?bool $bulk = null,
