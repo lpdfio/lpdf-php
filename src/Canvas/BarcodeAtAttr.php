@@ -37,10 +37,6 @@ final readonly class BarcodeAtAttr
          * code is square, so it takes the smaller of the two. Without rows and columns, a
          * datamatrix or gs1-datamatrix with one size is the smallest square that holds its data,
          * and a pdf417 takes the columns that make it closest to three times as wide as high.
-         * Without a size, a code128, code39 or gs1-128 is as wide as its bars at 1pt per module and
-         * its bars are 40pt high, an ean13 or upca is the standard symbol, 0.33mm per module and
-         * bars 22.85mm high, and an ean8 0.33mm per module and bars 18.23mm high. The digits of hrt
-         * add 12pt to any of these. A qr, datamatrix, gs1-datamatrix or pdf417 needs a size.
          */
         public ?string $height = null,
         /**
