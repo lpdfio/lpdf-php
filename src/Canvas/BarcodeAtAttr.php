@@ -61,8 +61,9 @@ final readonly class BarcodeAtAttr
          * The rows of a pdf417 (3 to 90) or of a datamatrix or gs1-datamatrix (a height of the
          * standard's sizes, 8 to 144 modules). With columns, they fix the code's shape; alone, they
          * narrow the shapes the code chooses from. Data that needs more gets more: more rows for a
-         * pdf417, the next size up for a Data Matrix. Without rows and columns, the code takes the
-         * shape that comes out largest in its width and height. The other types ignore it.
+         * pdf417, the next size up for a Data Matrix. Without rows and columns, a code with both
+         * width and height takes the shape that comes out largest in them, and one with only one of
+         * them the shape the height attribute describes. The other types ignore it.
          */
         public ?int $rows = null,
         /**

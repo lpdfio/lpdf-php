@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Lpdf\Layout;
 
 /**
- * A barcode: a QR code, a Data Matrix or a PDF417, or a linear Code 128, Code 39, EAN-13, EAN-8,
- * UPC-A or GS1-128. It is never stretched. With only a width or a height, the other follows the
- * barcode's proportions. With both, they are a maximum: the barcode takes the largest size that
- * fits in them, and its box becomes that size, which the parent's align places. To put barcodes in
- * slots of one size, wrap each in a frame of that size.
+ * A barcode: a QR code, a Data Matrix, a GS1 Data Matrix or a PDF417, or a linear Code 128, Code
+ * 39, EAN-13, EAN-8, UPC-A or GS1-128. It is never stretched. With only a width or a height, the
+ * other follows the barcode's proportions. With both, they are a maximum: the barcode takes the
+ * largest size that fits in them, and its box becomes that size, which the parent's align places.
+ * To put barcodes in slots of one size, wrap each in a frame of that size.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
@@ -62,8 +62,9 @@ final readonly class BarcodeAttr
          * The rows of a pdf417 (3 to 90) or of a datamatrix or gs1-datamatrix (a height of the
          * standard's sizes, 8 to 144 modules). With columns, they fix the code's shape; alone, they
          * narrow the shapes the code chooses from. Data that needs more gets more: more rows for a
-         * pdf417, the next size up for a Data Matrix. Without rows and columns, the code takes the
-         * shape that comes out largest in its width and height. The other types ignore it.
+         * pdf417, the next size up for a Data Matrix. Without rows and columns, a code with both
+         * width and height takes the shape that comes out largest in them, and one with only one of
+         * them the shape the height attribute describes. The other types ignore it.
          */
         public ?int $rows = null,
         /**
