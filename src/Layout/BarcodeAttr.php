@@ -62,9 +62,11 @@ final readonly class BarcodeAttr
          * The rows of a pdf417 (3 to 90) or of a datamatrix or gs1-datamatrix (a height of the
          * standard's sizes, 8 to 144 modules). With columns, they fix the code's shape; alone, they
          * narrow the shapes the code chooses from. Data that needs more gets more: more rows for a
-         * pdf417, the next size up for a Data Matrix. Without rows and columns, a code with both
-         * width and height takes the shape that comes out largest in them, and one with only one of
-         * them the shape the height attribute describes. The other types ignore it.
+         * pdf417, the next size up for a Data Matrix. A pdf417 holds 928 codewords at most: rows
+         * times columns over 928 is an error, and data that doesn't fit in 928 at the rows given
+         * draws a gray box with a red border in its place. Without rows and columns, a code with
+         * both width and height takes the shape that comes out largest in them, and one with only
+         * one of them the shape the height attribute describes. The other types ignore it.
          */
         public ?int $rows = null,
         /**
@@ -72,7 +74,9 @@ final readonly class BarcodeAttr
          * modules (a width of the standard's sizes, 10 to 144). With rows, they fix the code's
          * shape; alone, they narrow the shapes the code chooses from. Data that needs more gets
          * more: more columns for a pdf417 once it has 90 rows, the next size up for a Data Matrix.
-         * The other types ignore it.
+         * A pdf417 holds 928 codewords at most: rows times columns over 928 is an error, and data
+         * that doesn't fit in 928 at the columns given draws a gray box with a red border in its
+         * place. The other types ignore it.
          */
         public ?int $columns = null,
         /**
