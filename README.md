@@ -2,9 +2,7 @@
 
 # lpdfio/lpdf
 
-**PHP SDK for [Lpdf](https://lpdf.io?utm_campaign=sdk-php&utm_medium=referral&utm_source=readme) — PDF as Code on every platform**
-
-You describe a document as code or XML. Lpdf renders a compact, pixel-perfect PDF — identical across platforms.
+`lpdfio/lpdf` is the PHP SDK for [Lpdf](https://lpdf.io?utm_campaign=sdk-php&utm_medium=referral&utm_source=readme), the PDF engine that renders a document written in XML or built in code to the same PDF in every language.
 
 ## Installation
 
@@ -48,33 +46,12 @@ $doc = L::document(new DocumentAttr(size: 'letter'), [
 $pdf = $engine->render($doc);
 ```
 
-An attribute class takes its attributes as named arguments, `new TextAttr(fontSize: 'xl')`. Positional arguments aren't supported: the parameters follow the schema's order, so an attribute added in a later version can move them.
-
-A render stops with an `EngineException` after 5 seconds; `L::engine(new EngineOptions(timeout: 60))` sets another limit in seconds, and `timeout: 0` sets none. It also stops once it needs more than 1024 MB of memory; `maxMemoryMb: 2048` sets another cap, from 1 to 4096 MB.
-
 ## Requirements
 
-- PHP 8.2+ with the DOM extension (`ext-dom`; on Debian and Ubuntu it is the `php-xml` package)
-- One of the two ways the SDK runs the engine, which it picks itself:
-  - **The native library** in the package, through PHP's FFI extension (`ext-ffi`): on Linux with glibc 2.17 or newer, on x86_64 or arm64. A web server needs `ffi.enable=true` in php.ini; the command line allows FFI as it is.
-  - **[`wasmtime`](https://wasmtime.dev)** on `PATH`, which runs the engine's WebAssembly: everywhere else, such as macOS, Windows and Alpine, and where FFI isn't allowed. On Linux and macOS, where PHP's user can't write its home, as `www-data` under PHP-FPM, it also needs PHP's POSIX extension (`ext-posix`), for the SDK's cache folder (*How PHP runs the engine*).
-
-## How PHP runs the engine
-
-`L::engine()` renders with the native library where it loads, and with `wasmtime` otherwise. `$engine->runner()` says which one renders: `ffi` or `wasm`.
-
-| | Native library (`ffi`) | wasmtime (`wasm`) |
-|---|---|---|
-| Runs on | Linux with glibc 2.17 or newer, x86_64 and arm64 | Wherever wasmtime runs |
-| Needs | The FFI extension, and `ffi.enable=true` under a web server | The `wasmtime` program on `PATH` |
-| Each render | A call in PHP's own process | A process of its own, which adds about 20 ms |
-| Sandbox | None: the engine has the rights of the PHP process | WebAssembly's: no files, no network |
-
-`runner` on `EngineOptions` picks how: `'auto'`, the default, chooses as above; `'ffi'` renders with the native library only, and throws an `EngineException` that names what stands in the way where it can't load; `'wasm'` renders with `wasmtime` only. For an app that renders templates, fonts or images its own users upload, `wasm` keeps the engine in WebAssembly's sandbox. `libPath` loads the native library from another path.
-
-`wasmtime` compiles the engine to native code at the first render and keeps it for the renders after, in a folder of the SDK's: `lpdf-wasmtime-<uid>` in PHP's temp directory, `sys_get_temp_dir()`, made with mode 0700 where it is missing. This way the SDK renders under PHP-FPM too, where PHP runs as `www-data`, whose home wasmtime can't write. `wasmCacheDir` on `EngineOptions` sets another folder. wasmtime runs what the folder holds without checking it, so the SDK uses a folder only where it is a directory, not a link, that PHP's user owns and group and others can't open, which it tells through PHP's POSIX extension (`ext-posix`). It checks that folder only, not those above it, so put a `wasmCacheDir` inside a folder only PHP's user can write. Most PHP builds have the extension; Alpine packages it apart, such as `php83-posix`, and Windows has none, so there the SDK uses no folder. Where it uses none, wasmtime keeps the engine in its own default place, in the user's home or, on Windows, profile, and where it can't create that either, the render throws an `EngineException` that says why and what to do: set `wasmCacheDir`, load the POSIX extension where it is missing, or on Windows let PHP's user write its profile.
-
-The timeout and the memory cap hold through both. The engine's memory is outside PHP's `memory_limit` either way. Through the native library, a fault the engine can't catch, such as running out of memory before its cap stops it, ends PHP's process; through `wasmtime` it ends the `wasmtime` process, and the render throws an `EngineException`. Where a render could need more memory than the machine has, keep `maxMemoryMb` below it, or render with `wasm`. Through the native library the engine stops a render at its timeout itself, and a step it hands to a library, such as reading the XML, subsetting a font or compressing an image, finishes first.
+- PHP 8.2 or later, with the DOM extension (`ext-dom`; on Debian and Ubuntu it is the `php-xml` package)
+- One of the two ways the SDK runs the engine, which it picks itself ([How PHP runs the engine](https://lpdf.io/docs/install/?sdk=php&utm_campaign=sdk-php&utm_medium=referral&utm_source=readme#how-php-runs-the-engine)):
+  - The native library in the package, through PHP's FFI extension (`ext-ffi`): on Linux with glibc 2.17 or newer, on x86_64 or arm64. A web server needs `ffi.enable=true` in php.ini; the command line allows FFI as it is.
+  - The [`wasmtime`](https://wasmtime.dev) command-line tool on your `PATH`, which runs the bundled WASI binary: everywhere else, such as macOS, Windows and Alpine, and where FFI isn't allowed. On Linux and macOS, where PHP's user can't write its home, as `www-data` under PHP-FPM, it also needs PHP's POSIX extension (`ext-posix`), for the SDK's cache folder.
 
 ## Docs
 
@@ -84,6 +61,6 @@ The timeout and the memory cap hold through both. The engine's memory is outside
 
 Report bugs and request features at [github.com/lpdfio/lpdf/issues](https://github.com/lpdfio/lpdf/issues), the one tracker for the engine, the SDKs and the VS Code extension. Pull requests are not accepted.
 
---
+---
 
-Dual-licensed: Community License (free) and Commercial License (paid). See [LICENSE](LICENSE) for full terms.
+Licensed under the Lpdf License. See [LICENSE](LICENSE) for full terms.
