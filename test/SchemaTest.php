@@ -20,6 +20,7 @@ use Lpdf\Kit\DocumentTokens;
 use Lpdf\Kit\Gradient;
 use Lpdf\Kit\Ruling;
 use Lpdf\Kit\RulingLines;
+use Lpdf\Kit\Spot;
 use Lpdf\Kit\FileAttr;
 use Lpdf\Kit\FileRelationship;
 use Lpdf\Kit\FontAttr;
@@ -531,6 +532,26 @@ final class SchemaTest extends TestCase
 
         self::assertSame($pdf, $this->render(L::toXml($document)));
         self::assertSame(1, substr_count($pdf, '/Subtype /Form'));
+    }
+
+    public function testASpotColorOfTheTokensIsItsInkAndRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        $document = L::document(
+            new DocumentAttr(tokens: new DocumentTokens(spots: [
+                'brand' => new Spot(ink: 'PANTONE 1665 C', value: 'cmyk(0, 85, 100, 0)'),
+                'die' => new Spot(ink: 'Dieline', value: '#ff00ff', overprint: true),
+            ])),
+            [L::section(null, [L::layout(null, [
+                L::column(new ColumnAttr(background: 'brand 30%', border: 's die'), [L::text(new TextAttr(color: 'brand'), ['Spot'])]),
+            ])])],
+        );
+
+        $pdf = $this->render($document);
+
+        self::assertSame($pdf, $this->render(L::toXml($document)));
+        self::assertStringContainsString('/Separation /PANTONE#201665#20C /DeviceCMYK', $pdf);
+        self::assertStringContainsString('/Separation /Dieline /DeviceRGB', $pdf);
+        self::assertStringContainsString('<spot name="die" ink="Dieline" value="#ff00ff" overprint="true"/>', L::toXml($document));
     }
 
     public function testBoldTextIsTheBoldFaceOfTheFont(): void
