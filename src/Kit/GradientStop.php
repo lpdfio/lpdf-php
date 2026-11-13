@@ -19,8 +19,9 @@ final readonly class GradientStop
          */
         public string $offset,
         /**
-         * The color at the stop: hex, cmyk(), rgb(), hsl() or a color token. The stops of a
-         * gradient are all CMYK or all RGB.
+         * The color at the stop: hex, cmyk(), rgb(), hsl(), a color token, or a spot color or a
+         * tint of it. The stops of a gradient are all CMYK, all RGB, or all tints of one spot
+         * color.
          */
         public string $color,
     ) {}

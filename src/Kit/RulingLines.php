@@ -43,8 +43,8 @@ final readonly class RulingLines
         /** Cuts the space into this many equal rows, from 1 to 100. */
         public ?int $countY = null,
         /**
-         * The color of the lines: hex, cmyk(), rgb(), hsl() or a color token. Defaults to
-         * line-muted.
+         * The color of the lines: hex, cmyk(), rgb(), hsl(), a color token, or a spot color or a
+         * tint of it. Defaults to line-muted.
          */
         public ?string $color = null,
         /**

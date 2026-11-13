@@ -11,7 +11,10 @@ namespace Lpdf\Kit;
  * scale it stands for: `['caption' => 'xs']` lets `fontSize: 'caption'` mean the text size `xs`, and `gap: 'caption'`
  * the space `xs`. `height` is the row of heights that `height: 'm'` names, from `xs` to `xxl`. `rulings` maps the name
  * of each ruling to a `Ruling`: its `lines`, a list of `RulingLines` each cut by a step or a count in x, in y or both,
- * and its `origin`, `edges` and `ocg`. A section draws one on every page with `ruling: 'name'`.
+ * and its `origin`, `edges` and `ocg`. A section draws one on every page with `ruling: 'name'`. `spots` maps the name
+ * of each spot color to a `Spot`: its `ink`, the ink's name as the printer knows it, its `value`, the color that stands
+ * in for it on a screen or a proof, and whether it `overprint`s. A color takes the name, or a tint of the ink after a
+ * space: `background: 'brand 30%'`.
  */
 final readonly class DocumentTokens implements \JsonSerializable
 {
@@ -28,6 +31,7 @@ final readonly class DocumentTokens implements \JsonSerializable
      * @param array<string,string>|null $aliases
      * @param array<string,string>|null $height
      * @param array<string,Ruling>|null $rulings
+     * @param array<string,Spot>|null $spots
      */
     public function __construct(
         public ?array $colors = null,
@@ -42,6 +46,7 @@ final readonly class DocumentTokens implements \JsonSerializable
         public ?array $aliases = null,
         public ?array $height = null,
         public ?array $rulings = null,
+        public ?array $spots = null,
     ) {}
 
     public function jsonSerialize(): mixed
@@ -49,6 +54,7 @@ final readonly class DocumentTokens implements \JsonSerializable
         return array_filter(
             [
                 'colors' => $this->colors,
+                'spots' => $this->spots === null ? null : array_map(self::spot(...), $this->spots),
                 'space'  => $this->space,
                 'grid'   => $this->grid,
                 'border' => $this->border,
@@ -61,6 +67,19 @@ final readonly class DocumentTokens implements \JsonSerializable
                 'height' => $this->height,
                 'rulings' => $this->rulings === null ? null : array_map(self::ruling(...), $this->rulings),
             ],
+            static fn($v) => $v !== null,
+        );
+    }
+
+    /**
+     * A spot color as the document tree takes it: its attributes that are set.
+     *
+     * @return array<string,mixed>
+     */
+    private static function spot(Spot $spot): array
+    {
+        return array_filter(
+            ['ink' => $spot->ink, 'value' => $spot->value, 'overprint' => $spot->overprint],
             static fn($v) => $v !== null,
         );
     }
