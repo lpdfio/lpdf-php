@@ -76,13 +76,14 @@ jobs:
       # ── Download the engine from core release ────────────────────────────────
       # The package carries resources/lpdf-wasi.wasm, which the wasmtime runner
       # runs, and the native library for each CPU in resources/lib, which the FFI
-      # runner loads.
+      # runner loads. It carries resources/THIRD_PARTY_LICENSES_ENGINE.txt too: the
+      # licenses of the crates the engine links ask for their text to travel with it.
       - name: Download the engine
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p resources/lib
-          for file in lpdf-wasi.wasm lib/liblpdf-linux-x86_64.so lib/liblpdf-linux-aarch64.so; do
+          for file in lpdf-wasi.wasm lib/liblpdf-linux-x86_64.so lib/liblpdf-linux-aarch64.so THIRD_PARTY_LICENSES_ENGINE.txt; do
             DOWNLOADED=""
             for attempt in 1 2 3; do
               gh release download "$CORE_TAG" \
@@ -246,7 +247,7 @@ jobs:
 
       - name: Commit the engine and the changelog
         run: |
-          git add -f resources/lpdf-wasi.wasm resources/lib/liblpdf-linux-x86_64.so resources/lib/liblpdf-linux-aarch64.so
+          git add -f resources/lpdf-wasi.wasm resources/lib/liblpdf-linux-x86_64.so resources/lib/liblpdf-linux-aarch64.so resources/THIRD_PARTY_LICENSES_ENGINE.txt
           git add CHANGELOG.md
           git diff --cached --quiet || git commit -m "release: $ADAPTER_TAG"
 
