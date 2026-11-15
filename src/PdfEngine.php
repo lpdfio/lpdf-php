@@ -8,6 +8,8 @@ use Lpdf\Kit\PdfDocument;
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\EngineOptions;
 use Lpdf\Engine\EngineRunner;
+use Lpdf\Engine\MergeOptions;
+use Lpdf\Engine\MergeSource;
 use Lpdf\Engine\RenderOptions;
 use Lpdf\Engine\StampAttr;
 
@@ -366,6 +368,61 @@ final class PdfEngine
             'pdf'    => base64_encode($pdf),
             'images' => (object) $images,
             'stamps' => $requestStamps,
+        ]);
+
+        if (!isset($response['pdf'])) {
+            throw new EngineException('Unexpected response from the engine.');
+        }
+        $bytes = base64_decode($response['pdf'], strict: true);
+        if ($bytes === false) {
+            throw new EngineException('Failed to decode base64 PDF response.');
+        }
+        return $bytes;
+    }
+
+    /**
+     * Merge existing PDFs into one PDF made for printing, and return it. Nothing is laid out: each page of each source
+     * is drawn on a page of its own size, in the order of `$sources`. Annotations that print are flattened, and forms,
+     * links and bookmarks are gone, since the result is for the press; layers carry over.
+     *
+     * A file that needs a password to open is an error. So is a file whose owner restricts printing or copying, unless
+     * `allowRestricted` is set, and a signed file, unless `allowSigned` is set; a form field that has a value and no
+     * stored appearance, and a file that can't be read, are errors too. Each error names the file, by its `name`.
+     * With `doubleSided`, a blank side follows a document that has an odd number of pages. Without a license key each
+     * merged page gets the attribution line.
+     *
+     * @param  list<MergeSource>  $sources  The files to merge, in the order of the result.
+     * @param  MergeOptions|null  $options  What the merge does beyond its defaults: `allowSigned`, `allowRestricted`
+     *                                      and `doubleSided`, each off when left out.
+     * @return string                       The bytes of the merged PDF.
+     * @throws EngineException When no file is given; when a file is not a PDF, can't be read, needs a password to open,
+     *                         is signed or restricted without the option that allows it, or has a form field the merge
+     *                         can't draw; or past the timeout or the memory cap, or when the engine crashes.
+     * @throws \InvalidArgumentException When an item of `$sources` is not a MergeSource.
+     */
+    public function merge(array $sources, ?MergeOptions $options = null): string
+    {
+        $files = [];
+        foreach (array_values($sources) as $i => $source) {
+            if (!$source instanceof MergeSource) {
+                throw new \InvalidArgumentException(sprintf('source %d is not a MergeSource', $i + 1));
+            }
+            $files[] = ['name' => $source->name, 'pdf' => base64_encode($source->pdf)];
+        }
+        $options ??= new MergeOptions();
+
+        $runner = $this->engineRunner();
+        $response = $runner->invoke([
+            'method'  => 'merge',
+            'key'     => $this->licenseKey,
+            // See render: without the clock the engine cannot check the key's expiry.
+            'now'     => time(),
+            'sources' => $files,
+            'options' => [
+                'allow-signed'     => $options->allowSigned,
+                'allow-restricted' => $options->allowRestricted,
+                'double-sided'     => $options->doubleSided,
+            ],
         ]);
 
         if (!isset($response['pdf'])) {
