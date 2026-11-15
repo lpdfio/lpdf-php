@@ -45,7 +45,7 @@ jobs:
             exit 1
           fi
           echo "Resolved core tag: $CORE_TAG"
-          for file in lpdf-wasi.wasm lib/liblpdf-linux-x86_64.so lib/liblpdf-linux-aarch64.so; do
+          for file in lpdf-wasi.wasm lib/liblpdf-linux-x86_64.so lib/liblpdf-linux-aarch64.so THIRD_PARTY_LICENSES_ENGINE.txt; do
             DOWNLOADED=""
             for attempt in 1 2 3; do
               gh release download "$CORE_TAG" \
