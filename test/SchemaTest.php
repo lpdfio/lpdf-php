@@ -14,6 +14,7 @@ use Lpdf\Engine\EngineException;
 use Lpdf\Engine\RenderOptions;
 use Lpdf\Kit\BuiltinFont;
 use Lpdf\Kit\ColumnFill;
+use Lpdf\Kit\Grow;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentTokens;
@@ -365,11 +366,12 @@ final class SchemaTest extends TestCase
     {
         $lines = array_map(static fn (int $n) => L::text(null, ["Line {$n}"]), range(1, 40));
         $build = static fn (?int $columns) => L::document(null, [
-            L::section(new SectionAttr(size: '80mm 40mm', grow: 'height', columns: $columns), [L::layout(null, $lines)]),
+            L::section(new SectionAttr(size: '80mm 40mm', grow: Grow::Height, columns: $columns), [L::layout(null, $lines)]),
         ]);
 
         $xml = L::toXml($build(null));
         self::assertStringContainsString('<section grow="height" size="80mm 40mm">', $xml);
+        self::assertSame('width height', Grow::WidthHeight);
         $pdf = $this->render($build(null));
         self::assertSame($pdf, $this->render($xml));
         self::assertSame(1, substr_count($pdf, '/Contents '));
