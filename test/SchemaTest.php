@@ -361,6 +361,24 @@ final class SchemaTest extends TestCase
         $this->render($build(3));
     }
 
+    public function testASectionThatGrowsIsWrittenUnderItsSchemaNameRendersAsItsXmlOnOnePageAndGrowWithColumnsIsRejected(): void
+    {
+        $lines = array_map(static fn (int $n) => L::text(null, ["Line {$n}"]), range(1, 40));
+        $build = static fn (?int $columns) => L::document(null, [
+            L::section(new SectionAttr(size: '80mm 40mm', grow: 'height', columns: $columns), [L::layout(null, $lines)]),
+        ]);
+
+        $xml = L::toXml($build(null));
+        self::assertStringContainsString('<section grow="height" size="80mm 40mm">', $xml);
+        $pdf = $this->render($build(null));
+        self::assertSame($pdf, $this->render($xml));
+        self::assertSame(1, substr_count($pdf, '/Contents '));
+
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage("grow doesn't work with columns or an inset, in section 1");
+        $this->render($build(2));
+    }
+
     public function testABulkTableRendersFromDataAsTheTableWithoutBulkAndOneBuiltWithLWhichHasNoDataIsRejected(): void
     {
         $xml = static fn (string $bulk) => '<lpdf version="1"><document size="a4"><section><layout margin="36pt">'

@@ -24,6 +24,9 @@ final readonly class SectionAttr
      *                                `ColumnFill::Balance`, levelled.
      * @param string|null $ruling     The name of a ruling of the tokens, whose lines are drawn on every page of the
      *                                section, under everything else.
+     * @param string|null $grow       The sizes the page grows in to fit the content, `width`, `height` or
+     *                                `width height`, where it would start a new page or squeeze the content. `size` is
+     *                                then the starting size, the smallest the page can be.
      */
     public function __construct(
         public ?string      $size        = null,
@@ -43,5 +46,6 @@ final readonly class SectionAttr
         public ?string      $columnRule  = null,
         public ?string      $columnFill  = null,
         public ?string      $ruling      = null,
+        public ?string      $grow        = null,
     ) {}
 }
