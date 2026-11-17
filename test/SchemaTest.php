@@ -14,6 +14,7 @@ use Lpdf\Engine\EngineException;
 use Lpdf\Engine\RenderOptions;
 use Lpdf\Kit\BuiltinFont;
 use Lpdf\Kit\ColumnFill;
+use Lpdf\Kit\Grow;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentTokens;
@@ -359,6 +360,25 @@ final class SchemaTest extends TestCase
         $this->expectException(EngineException::class);
         $this->expectExceptionMessage("col 3 and colspan 2 reach column 4, past the section's 3 columns");
         $this->render($build(3));
+    }
+
+    public function testASectionThatGrowsIsWrittenUnderItsSchemaNameRendersAsItsXmlOnOnePageAndGrowWithColumnsIsRejected(): void
+    {
+        $lines = array_map(static fn (int $n) => L::text(null, ["Line {$n}"]), range(1, 40));
+        $build = static fn (?int $columns) => L::document(null, [
+            L::section(new SectionAttr(size: '80mm 40mm', grow: Grow::Height, columns: $columns), [L::layout(null, $lines)]),
+        ]);
+
+        $xml = L::toXml($build(null));
+        self::assertStringContainsString('<section grow="height" size="80mm 40mm">', $xml);
+        self::assertSame('width height', Grow::WidthHeight);
+        $pdf = $this->render($build(null));
+        self::assertSame($pdf, $this->render($xml));
+        self::assertSame(1, substr_count($pdf, '/Contents '));
+
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage("grow doesn't work with columns or an inset, in section 1");
+        $this->render($build(2));
     }
 
     public function testABulkTableRendersFromDataAsTheTableWithoutBulkAndOneBuiltWithLWhichHasNoDataIsRejected(): void
