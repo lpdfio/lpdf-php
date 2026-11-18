@@ -163,6 +163,40 @@ final class PdfEngine
      */
     public function render(string|PdfDocument $input, ?RenderOptions $options = null): string
     {
+        return $this->renderRequest($input, $options, null);
+    }
+
+    /**
+     * `LCrossIndustryInvoice::generatePdf`: a render of `$input` with `$invoice`, its XML as base64, and for a template
+     * the map and the values read from the XML, which make the file a Factur-X invoice.
+     *
+     * @internal
+     * @param array<string, mixed> $invoice
+     */
+    public function renderInvoice(string|PdfDocument $input, array $invoice, mixed $data, string $createdOn): string
+    {
+        return $this->renderRequest($input, new RenderOptions(createdOn: $createdOn, data: $data), $invoice);
+    }
+
+    /**
+     * `LCrossIndustryInvoice::generatePdf`: the runner this engine renders with, which reads the invoice too, so the
+     * read runs as the render does: through the same runner, under the engine's timeout and memory cap.
+     *
+     * @internal
+     * @throws EngineException With `runner: 'ffi'`, when the native library can't be used here: the check that failed.
+     */
+    public function invoiceRunner(): EngineRunner
+    {
+        return $this->engineRunner();
+    }
+
+    /**
+     * A render of `$input`, with `$invoice` for `generatePdf`.
+     *
+     * @param array<string, mixed>|null $invoice
+     */
+    private function renderRequest(string|PdfDocument $input, ?RenderOptions $options, ?array $invoice): string
+    {
         if ($input instanceof PdfDocument) {
             $method   = 'render_tree_pdf';
             $inputStr = json_encode($input, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
@@ -303,6 +337,10 @@ final class PdfEngine
 
         if ($options?->data !== null && $method === 'render_pdf') {
             $payload['data'] = $options->data;
+        }
+
+        if ($invoice !== null) {
+            $payload['invoice'] = $invoice;
         }
 
         $response = $runner->invoke($payload);

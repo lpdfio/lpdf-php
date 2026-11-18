@@ -6,9 +6,11 @@ namespace Lpdf\Tests;
 
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\EngineOptions;
+use Lpdf\Engine\GeneratePdfOptions;
 use Lpdf\Engine\RenderOptions;
 use Lpdf\Engine\Runner;
 use Lpdf\L;
+use Lpdf\LCrossIndustryInvoice;
 use Lpdf\PdfEngine;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -64,6 +66,22 @@ final class TimeoutTest extends TestCase
         $this->assertSame('The render timed out after 1 second.', $error?->getMessage());
         $this->assertGreaterThanOrEqual(1, $seconds);
         $this->assertLessThan(1.5, $seconds);
+    }
+
+    /**
+     * Through `wasmtime` only: the native library reads the largest invoice the engine takes, 2,000,000 XML nodes, in
+     * under a second, the least timeout, and has no stand-in.
+     */
+    public function testAnInvoiceReadPastItsTimeoutThrowsNamingTheReading(): void
+    {
+        $engine = $this->standIn(self::SPIN_FOREVER, 1);
+
+        // The stand-in never reads the XML, and generatePdf reads it before it renders, through the engine's runner.
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage('The reading of the invoice timed out after 1 second.');
+        LCrossIndustryInvoice::generatePdf($engine, self::MINIMAL, new GeneratePdfOptions(
+            invoiceXml: '<rsm:CrossIndustryInvoice/>', createdOn: '2026-11-18T10:00:00Z',
+        ));
     }
 
     public function testARenderWithATimeoutOf0RunsWithNoLimit(): void
