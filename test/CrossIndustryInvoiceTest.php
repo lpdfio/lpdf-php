@@ -264,21 +264,16 @@ final class CrossIndustryInvoiceTest extends TestCase
         // engine.
         $invoiceXml = self::invoiceOfLines(5_000);
         $this->assertCount(5_000, LCrossIndustryInvoice::extractInvoiceData($invoiceXml)['lines']);
-        $formatted = 0;
-        $format = new InvoiceFormat(amount: function (string $value) use (&$formatted): string {
-            $formatted++;
-            return $value;
-        });
         try {
             LCrossIndustryInvoice::generatePdf(self::engine($runner, maxMemoryMb: 1), self::template(), new GeneratePdfOptions(
-                invoiceXml: $invoiceXml, createdOn: self::CREATED_ON, format: $format,
+                invoiceXml: $invoiceXml, createdOn: self::CREATED_ON,
             ));
             $this->fail('the invoice was read past the cap');
         } catch (EngineException $e) {
-            $this->assertStringStartsWith('lpdf render error: the render needs more memory than its cap of 1 MB', $e->getMessage());
+            // The error names the read, so it is the read that stopped at the engine's cap: read under the default
+            // cap, the invoice would fit, and the render would stop at the engine's with the render's error.
+            $this->assertStringStartsWith('lpdf render error: the reading of the invoice needs more memory than its cap of 1 MB', $e->getMessage());
         }
-        // Read under the default cap, its amounts would be formatted before the render stopped at the engine's.
-        $this->assertSame(0, $formatted);
     }
 
     /** @return array<string, array{mixed, string}> */
