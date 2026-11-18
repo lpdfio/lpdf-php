@@ -9,6 +9,7 @@ use Lpdf\Engine\EngineOptions;
 use Lpdf\Engine\ExtractInvoiceDataOptions;
 use Lpdf\Engine\GeneratePdfOptions;
 use Lpdf\Engine\InvoiceFormat;
+use Lpdf\Engine\Runner;
 use Lpdf\Kit\DocumentAssets;
 use Lpdf\Kit\DocumentAttr;
 use Lpdf\Kit\DocumentMeta;
@@ -297,6 +298,50 @@ final class CrossIndustryInvoiceTest extends TestCase
         $map = LCrossIndustryInvoice::defaultInvoiceMap();
         $this->assertStringStartsWith('<?xml', $map);
         $this->assertStringContainsString('<cross-industry-invoice-map prefix="invoice">', $map);
+    }
+
+    #[DataProvider('runners')]
+    public function testExtractsAndGivesTheDefaultMapThroughTheRunnerTheEngineOptionsName(string $runner): void
+    {
+        RunnerSupport::need($runner);
+        $engineOptions = new EngineOptions(runner: $runner);
+        $expected = json_decode((string) file_get_contents(self::assets() . '/files/facturx/case-vat-rates.json'), true);
+        $this->assertSame($expected, LCrossIndustryInvoice::extractInvoiceData(
+            self::invoice('case-vat-rates.xml'), new ExtractInvoiceDataOptions(engineOptions: $engineOptions),
+        ));
+        $this->assertSame(LCrossIndustryInvoice::defaultInvoiceMap(), LCrossIndustryInvoice::defaultInvoiceMap($engineOptions));
+    }
+
+    #[DataProvider('runners')]
+    public function testExtractsUnderTheMemoryCapTheEngineOptionsSet(string $runner): void
+    {
+        RunnerSupport::need($runner);
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage('lpdf render error: the reading of the invoice needs more memory than its cap of 1 MB');
+        LCrossIndustryInvoice::extractInvoiceData(self::invoiceOfLines(5_000), new ExtractInvoiceDataOptions(
+            engineOptions: new EngineOptions(maxMemoryMb: 1, runner: $runner),
+        ));
+    }
+
+    public function testReadsThroughTheRunnerOfTheEngineOptionsWhereTheDefaultWouldWork(): void
+    {
+        $invoiceXml = self::invoice('en16931.xml');
+        $this->assertSame('2026-0412', LCrossIndustryInvoice::extractInvoiceData($invoiceXml)['number']);
+        $this->assertStringStartsWith('<?xml', LCrossIndustryInvoice::defaultInvoiceMap());
+
+        $engineOptions = new EngineOptions(runner: Runner::Wasm, wasmRunner: '/no/such/wasmtime');
+        $calls = [
+            'extractInvoiceData' => fn () => LCrossIndustryInvoice::extractInvoiceData($invoiceXml, new ExtractInvoiceDataOptions(engineOptions: $engineOptions)),
+            'defaultInvoiceMap'  => fn () => LCrossIndustryInvoice::defaultInvoiceMap($engineOptions),
+        ];
+        foreach ($calls as $name => $call) {
+            try {
+                $call();
+                $this->fail("$name ran without the wasmtime the options name");
+            } catch (EngineException $e) {
+                $this->assertStringStartsWith("Lpdf could not start '/no/such/wasmtime' to render (", $e->getMessage(), $name);
+            }
+        }
     }
 
     public function testRefusesWhatTheEngineRefusesWithItsError(): void

@@ -17,6 +17,10 @@ use Lpdf\Kit\PdfDocument;
  * software writes. The engine reads the XML through a map and checks it; this class hands the values to the caller's
  * `InvoiceFormat` functions.
  *
+ * `generatePdf` reads through the runner of the engine it is given, under the engine's limits. `extractInvoiceData`
+ * and `defaultInvoiceMap` take no engine: they run through the runner of the `EngineOptions` given them, for a host
+ * whose runner isn't the default one, or else through the default runner, under the default limits.
+ *
  * ```php
  * $pdf = LCrossIndustryInvoice::generatePdf(L::engine(), $template, new GeneratePdfOptions(
  *     invoiceXml: file_get_contents('invoice.xml'),
@@ -61,23 +65,35 @@ final class LCrossIndustryInvoice
      * strings, as the map names them. A value the invoice lacks is absent, and a list with no items is empty. For code
      * that needs the values itself: a document built in code, choosing a template, naming the file.
      *
-     * It uses no engine: it reads no fonts and no key, under the default time and memory limits.
+     * It uses no engine: it reads no fonts and no key. It reads through the runner of the options' `engineOptions`,
+     * under its timeout and memory cap, or without them through the default runner, under the default limits.
      *
-     * @param  string $invoiceXml  The invoice's XML, an EN 16931 Cross Industry Invoice.
+     * @param  string                         $invoiceXml  The invoice's XML, an EN 16931 Cross Industry Invoice.
+     * @param  ExtractInvoiceDataOptions|null $options     The map, the format functions, and the options of the
+     *                                                     runner that reads.
      * @return array<string, mixed>
      * @throws EngineException When the map is not one or doesn't fit the schema, the invoice is not a Cross Industry
-     *                         Invoice or is MINIMUM or BASIC WL, or lacks a value the map marks required.
+     *                         Invoice or is MINIMUM or BASIC WL, or lacks a value the map marks required; past the
+     *                         timeout or the memory cap; or when the runner can't start.
      * @throws \UnexpectedValueException When a format function returns anything but a string.
      */
     public static function extractInvoiceData(string $invoiceXml, ?ExtractInvoiceDataOptions $options = null): array
     {
-        return self::read((new EngineOptions())->engineRunner(), $invoiceXml, $options?->invoiceMap, $options?->format);
+        $runner = ($options?->engineOptions ?? new EngineOptions())->engineRunner();
+        return self::read($runner, $invoiceXml, $options?->invoiceMap, $options?->format);
     }
 
-    /** Lpdf's default invoice map, as XML text: every value EN 16931 numbers, the start of a map of your own. */
-    public static function defaultInvoiceMap(): string
+    /**
+     * Lpdf's default invoice map, as XML text: every value EN 16931 numbers, the start of a map of your own.
+     *
+     * @param  EngineOptions|null $engineOptions  The runner that gives the map, as an engine's options set it, for a
+     *                                            host whose runner isn't the default one: without them, the default
+     *                                            runner.
+     * @throws EngineException When the runner can't start.
+     */
+    public static function defaultInvoiceMap(?EngineOptions $engineOptions = null): string
     {
-        $answer = (new EngineOptions())->engineRunner()->invoke(['method' => 'default_invoice_map']);
+        $answer = ($engineOptions ?? new EngineOptions())->engineRunner()->invoke(['method' => 'default_invoice_map']);
         if (!isset($answer['map']) || !is_string($answer['map'])) {
             throw new EngineException('Unexpected response from the engine.');
         }
