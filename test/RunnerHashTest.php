@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Tests;
 
 use Lpdf\Engine\EngineOptions;
+use Lpdf\LCrossIndustryInvoice;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -15,13 +16,16 @@ use PHPUnit\Framework\TestCase;
  * Each request is the one core's snapshot test renders, with the same fonts, images, profile, files, date, passwords
  * and entropy (`src/core/src/snapshot_tests.rs` in core), and goes to the runner as `PdfEngine` sends one: core fixes
  * the encryption's entropy, which `PdfEngine` draws at random for each render. Left out are the snapshots that core's
- * tests build in code, with no fixture of their name: the Factur-X cases, the stamps, `layers_comprehensive` and
- * `showcase-markdown-presets`.
+ * tests build in code, with no fixture of their name: the Factur-X cases, the stamps, `layers_comprehensive`,
+ * `showcase-markdown-presets` and the two other renders of `generatePdf`.
  */
 final class RunnerHashTest extends TestCase
 {
     /** Core's date for the standards, PDF/A, PDF/UA, PDF/X and Factur-X, which need one. */
     private const CREATED_ON = '2026-10-31T09:30:00Z';
+
+    /** Core's date for the renders of `LCrossIndustryInvoice::generatePdf` (`cross_industry_invoice_render_tests.rs`). */
+    private const INVOICE_CREATED_ON = '2026-11-18T10:00:00Z';
 
     private const FONTS = [
         'body' => 'CrimsonText-Regular.ttf', 'italic' => 'CrimsonText-Italic.ttf',
@@ -61,6 +65,7 @@ final class RunnerHashTest extends TestCase
         'showcase-linearized-encrypted-rc4' => ['fixture' => 'showcase-linearized-encrypted', 'cipher' => 'rc4-128', 'fonts' => ['body', 'heading', 'sans'], 'images' => ['photo', 'chart', 'badge'], 'passwords' => true],
         'showcase-attachments'      => ['files' => true],
         'showcase-facturx'          => ['fonts' => ['body', 'heading', 'sans'], 'files' => true, 'date' => true],
+        'showcase-cross-industry-invoice' => ['invoice' => true],
     ];
 
     /** @return array<string, array{string, string}> Each runner and each snapshot with a fixture. */
@@ -141,6 +146,18 @@ final class RunnerHashTest extends TestCase
         }
         if ($recipe['skipEncryption'] ?? false) {
             $request['skip_encryption'] = true;
+        }
+        // LCrossIndustryInvoice::generatePdf of the EN 16931 invoice, its values read with the default map and bound as
+        // they are, beside a note, in the font of the template.
+        if ($recipe['invoice'] ?? false) {
+            $invoiceXml = (string) file_get_contents("$assets/files/facturx/en16931.xml");
+            $request['fonts']['body'] = base64_encode((string) file_get_contents("$assets/fonts/SourceSans3-Regular.otf"));
+            $request['created_on'] = self::INVOICE_CREATED_ON;
+            $request['data'] = ['note' => 'Payable within 30 days, by bank transfer.'];
+            $request['invoice'] = [
+                'xml'  => base64_encode($invoiceXml),
+                'data' => LCrossIndustryInvoice::extractInvoiceData($invoiceXml),
+            ];
         }
         // Core's fixed entropy, bytes 0 to 47, so the encrypted file is the same each time.
         if ($recipe['passwords'] ?? false) {
