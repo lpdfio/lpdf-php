@@ -38,6 +38,9 @@ final class CrossIndustryInvoiceTest extends TestCase
     private const CREATED_ON = '2026-11-18T10:00:00Z';
     private const NOTE = 'Payable within 30 days, by bank transfer.';
 
+    /** A map of one value, the invoice's number, under names of its own. */
+    private const RECHNUNG_MAP = '<cross-industry-invoice-map prefix="rechnung"><value name="nummer" path="rsm:ExchangedDocument/ram:ID"/></cross-industry-invoice-map>';
+
     private static function assets(): string
     {
         return dirname(SnapshotHelper::fixtures()) . '/assets';
@@ -60,6 +63,13 @@ final class CrossIndustryInvoiceTest extends TestCase
             ->loadFont('body', (string) file_get_contents(self::assets() . '/fonts/SourceSans3-Regular.otf'));
     }
 
+    /** A page that shows `$text`, in the template's font. */
+    private static function page(string $text): string
+    {
+        return '<lpdf version="1"><assets><font name="body" src="../assets/fonts/SourceSans3-Regular.otf"/></assets>'
+            . '<document size="a4" font="body"><section><layout margin="48pt">' . $text . '</layout></section></document></lpdf>';
+    }
+
     /** en16931.xml with its first line repeated `$lines` times in place of its two. */
     private static function invoiceOfLines(int $lines): string
     {
@@ -71,7 +81,7 @@ final class CrossIndustryInvoiceTest extends TestCase
         return substr($xml, 0, $start) . str_repeat(substr($xml, $start, $firstEnd - $start), $lines) . substr($xml, $lastEnd);
     }
 
-    /** How values are written on the page, as the examples write them: PHP's own formatters, and the words for the codes. */
+    /** How values are written on the page: dates and amounts with PHP's own formatters, and the codes as words. */
     private static function format(): InvoiceFormat
     {
         $codeNames = [
@@ -86,7 +96,8 @@ final class CrossIndustryInvoiceTest extends TestCase
     }
 
     /**
-     * The page of the template, built in code with the values of `extractInvoiceData`, as the second example builds it.
+     * The page of core's `showcase-cross-industry-invoice` fixture, built in code with the values of
+     * `extractInvoiceData`.
      *
      * @param array<string, mixed> $invoiceData
      */
@@ -214,8 +225,7 @@ final class CrossIndustryInvoiceTest extends TestCase
 
     public function testReadsThroughAMapGivenUnderItsOwnNames(): void
     {
-        $map = '<cross-industry-invoice-map prefix="rechnung"><value name="nummer" path="rsm:ExchangedDocument/ram:ID"/></cross-industry-invoice-map>';
-        $data = LCrossIndustryInvoice::extractInvoiceData(self::invoice('en16931.xml'), new ExtractInvoiceDataOptions(invoiceMap: $map));
+        $data = LCrossIndustryInvoice::extractInvoiceData(self::invoice('en16931.xml'), new ExtractInvoiceDataOptions(invoiceMap: self::RECHNUNG_MAP));
         $this->assertSame(['nummer' => '2026-0412'], $data);
     }
 
@@ -223,6 +233,27 @@ final class CrossIndustryInvoiceTest extends TestCase
     public static function runners(): array
     {
         return RunnerSupport::runners();
+    }
+
+    #[DataProvider('runners')]
+    public function testFillsATemplateThroughAMapGivenUnderItsOwnNames(string $runner): void
+    {
+        RunnerSupport::need($runner);
+        $options = new GeneratePdfOptions(invoiceXml: self::invoice('en16931.xml'), createdOn: self::CREATED_ON, invoiceMap: self::RECHNUNG_MAP);
+        $bound = LCrossIndustryInvoice::generatePdf(self::engine($runner), self::page('<text data-value="rechnung:nummer">0000</text>'), $options);
+        $written = LCrossIndustryInvoice::generatePdf(self::engine($runner), self::page('<text>2026-0412</text>'), $options);
+        $this->assertSame(hash('sha256', $written), hash('sha256', $bound));
+    }
+
+    #[DataProvider('runners')]
+    public function testRefusesATemplatePathThatTheMapGivenLacks(string $runner): void
+    {
+        RunnerSupport::need($runner);
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage("lpdf render error: data-value=\"rechnung:nummr\": 'nummr' is not in the map: the invoice map has nummer");
+        LCrossIndustryInvoice::generatePdf(self::engine($runner), self::page('<text data-value="rechnung:nummr">0000</text>'), new GeneratePdfOptions(
+            invoiceXml: self::invoice('en16931.xml'), createdOn: self::CREATED_ON, invoiceMap: self::RECHNUNG_MAP,
+        ));
     }
 
     #[DataProvider('runners')]
