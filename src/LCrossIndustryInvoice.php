@@ -6,6 +6,7 @@ namespace Lpdf;
 
 use Lpdf\Engine\EngineException;
 use Lpdf\Engine\EngineOptions;
+use Lpdf\Engine\EngineRunner;
 use Lpdf\Engine\ExtractInvoiceDataOptions;
 use Lpdf\Engine\GeneratePdfOptions;
 use Lpdf\Engine\InvoiceFormat;
@@ -36,6 +37,8 @@ final class LCrossIndustryInvoice
      * invoice file.
      *
      * @param  PdfEngine          $engine              The engine, which carries the fonts, the license key and the limits.
+     *                                                 It reads the invoice too, through its runner and under its
+     *                                                 timeout and memory cap, as it renders.
      * @param  string|PdfDocument $templateOrDocument  How the invoice looks: lpdf XML, or a document built with `L`.
      * @return string                                  The bytes of the PDF.
      * @throws EngineException For what `extractInvoiceData` refuses, a template path under the prefix that the map
@@ -47,7 +50,7 @@ final class LCrossIndustryInvoice
         $invoice = ['xml' => base64_encode($options->invoiceXml)];
         if (!$templateOrDocument instanceof PdfDocument) {
             $invoice['map'] = $options->invoiceMap;
-            $invoice['data'] = self::read($options->invoiceXml, $options->invoiceMap, $options->format);
+            $invoice['data'] = self::read($engine->invoiceRunner(), $options->invoiceXml, $options->invoiceMap, $options->format);
         }
         return $engine->renderInvoice($templateOrDocument, $invoice, $options->data, $options->createdOn);
     }
@@ -66,7 +69,7 @@ final class LCrossIndustryInvoice
      */
     public static function extractInvoiceData(string $invoiceXml, ?ExtractInvoiceDataOptions $options = null): array
     {
-        return self::read($invoiceXml, $options?->invoiceMap, $options?->format);
+        return self::read((new EngineOptions())->engineRunner(), $invoiceXml, $options?->invoiceMap, $options?->format);
     }
 
     /** Lpdf's default invoice map, as XML text: every value EN 16931 numbers, the start of a map of your own. */
@@ -80,14 +83,14 @@ final class LCrossIndustryInvoice
     }
 
     /**
-     * The values of an invoice, read by the engine with no engine of the caller's, under the default limits, with the
-     * format function of each typed one applied.
+     * The values of an invoice, read by the engine through `$runner`, with the format function of each typed one
+     * applied.
      *
      * @return array<string, mixed>
      */
-    private static function read(string $invoiceXml, ?string $invoiceMap, ?InvoiceFormat $format): array
+    private static function read(EngineRunner $runner, string $invoiceXml, ?string $invoiceMap, ?InvoiceFormat $format): array
     {
-        $answer = (new EngineOptions())->engineRunner()->invoke([
+        $answer = $runner->invoke([
             'method'      => 'extract_invoice_data',
             'invoice_xml' => base64_encode($invoiceXml),
             'invoice_map' => $invoiceMap,

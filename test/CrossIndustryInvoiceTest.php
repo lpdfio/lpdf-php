@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Tests;
 
 use Lpdf\Engine\EngineException;
+use Lpdf\Engine\EngineOptions;
 use Lpdf\Engine\ExtractInvoiceDataOptions;
 use Lpdf\Engine\GeneratePdfOptions;
 use Lpdf\Engine\InvoiceFormat;
@@ -22,6 +23,7 @@ use Lpdf\Layout\RowAttr;
 use Lpdf\Layout\TableAttr;
 use Lpdf\Layout\TextAttr;
 use Lpdf\PdfEngine;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 use const Lpdf\NoAttr;
@@ -52,9 +54,21 @@ final class CrossIndustryInvoiceTest extends TestCase
     }
 
     /** An unlicensed engine with the template's font loaded under its name. */
-    private static function engine(): PdfEngine
+    private static function engine(?string $runner = null, ?int $maxMemoryMb = null): PdfEngine
     {
-        return L::engine()->loadFont('body', (string) file_get_contents(self::assets() . '/fonts/SourceSans3-Regular.otf'));
+        return L::engine(new EngineOptions(maxMemoryMb: $maxMemoryMb, runner: $runner))
+            ->loadFont('body', (string) file_get_contents(self::assets() . '/fonts/SourceSans3-Regular.otf'));
+    }
+
+    /** en16931.xml with its first line repeated `$lines` times in place of its two. */
+    private static function invoiceOfLines(int $lines): string
+    {
+        $xml = self::invoice('en16931.xml');
+        $close = '</ram:IncludedSupplyChainTradeLineItem>';
+        $start = (int) strpos($xml, '<ram:IncludedSupplyChainTradeLineItem>');
+        $firstEnd = (int) strpos($xml, $close) + strlen($close);
+        $lastEnd = (int) strrpos($xml, $close) + strlen($close);
+        return substr($xml, 0, $start) . str_repeat(substr($xml, $start, $firstEnd - $start), $lines) . substr($xml, $lastEnd);
     }
 
     /** How values are written on the page, as the examples write them: PHP's own formatters, and the words for the codes. */
@@ -203,6 +217,37 @@ final class CrossIndustryInvoiceTest extends TestCase
         $map = '<cross-industry-invoice-map prefix="rechnung"><value name="nummer" path="rsm:ExchangedDocument/ram:ID"/></cross-industry-invoice-map>';
         $data = LCrossIndustryInvoice::extractInvoiceData(self::invoice('en16931.xml'), new ExtractInvoiceDataOptions(invoiceMap: $map));
         $this->assertSame(['nummer' => '2026-0412'], $data);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function runners(): array
+    {
+        return RunnerSupport::runners();
+    }
+
+    #[DataProvider('runners')]
+    public function testReadsTheInvoiceUnderTheEnginesMemoryCap(string $runner): void
+    {
+        RunnerSupport::need($runner);
+        // About 6 MB, whose read takes over 12 MB, far past a cap of 1 MB, and fits the default cap of a call with no
+        // engine.
+        $invoiceXml = self::invoiceOfLines(5_000);
+        $this->assertCount(5_000, LCrossIndustryInvoice::extractInvoiceData($invoiceXml)['lines']);
+        $formatted = 0;
+        $format = new InvoiceFormat(amount: function (string $value) use (&$formatted): string {
+            $formatted++;
+            return $value;
+        });
+        try {
+            LCrossIndustryInvoice::generatePdf(self::engine($runner, maxMemoryMb: 1), self::template(), new GeneratePdfOptions(
+                invoiceXml: $invoiceXml, createdOn: self::CREATED_ON, format: $format,
+            ));
+            $this->fail('the invoice was read past the cap');
+        } catch (EngineException $e) {
+            $this->assertStringStartsWith('lpdf render error: the render needs more memory than its cap of 1 MB', $e->getMessage());
+        }
+        // Read under the default cap, its amounts would be formatted before the render stopped at the engine's.
+        $this->assertSame(0, $formatted);
     }
 
     public function testGivesTheDefaultMapAsXmlText(): void

@@ -179,6 +179,18 @@ final class PdfEngine
     }
 
     /**
+     * `LCrossIndustryInvoice::generatePdf`: the runner this engine renders with, which reads the invoice too, so the
+     * read runs as the render does: through the same runner, under the engine's timeout and memory cap.
+     *
+     * @internal
+     * @throws EngineException With `runner: 'ffi'`, when the native library can't be used here: the check that failed.
+     */
+    public function invoiceRunner(): EngineRunner
+    {
+        return $this->engineRunner();
+    }
+
+    /**
      * A render of `$input`, with `$invoice` for `generatePdf`.
      *
      * @param array<string, mixed>|null $invoice
