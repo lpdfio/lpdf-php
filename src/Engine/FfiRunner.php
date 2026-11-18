@@ -54,8 +54,8 @@ final class FfiRunner implements EngineRunner
     /**
      * @param  array<string, mixed> $payload  Already-built request array.
      * @return array<string, mixed>            Decoded response.
-     * @throws EngineException On a render error, when the render runs past the timeout or the memory cap, or when the
-     *                         engine panics.
+     * @throws EngineException On a render error, when the render or the reading of an invoice runs past the timeout or
+     *                         the memory cap, or when the engine panics.
      */
     public function invoke(array $payload): array
     {
@@ -73,7 +73,7 @@ final class FfiRunner implements EngineRunner
 
         $response = json_decode($out, true, 512, JSON_THROW_ON_ERROR);
         if (($response['timed_out'] ?? false) === true) {
-            throw EngineException::timedOut($this->timeout);
+            throw EngineException::timedOut($this->timeout, (string) ($payload['method'] ?? ''));
         }
         // A panic in the engine, which it caught: a bug, reported as the crash of wasmtime's engine is.
         if (($response['crashed'] ?? false) === true) {

@@ -103,7 +103,7 @@ final readonly class WasmRunner implements EngineRunner
                     fclose($pipes[1]);
                     fclose($pipes[2]);
                     proc_close($proc);
-                    throw EngineException::timedOut($this->timeout);
+                    throw EngineException::timedOut($this->timeout, (string) ($payload['method'] ?? ''));
                 }
                 $sec  = (int) $remaining;
                 $usec = (int)(($remaining - $sec) * 1_000_000);
