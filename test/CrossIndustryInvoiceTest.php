@@ -301,7 +301,7 @@ final class CrossIndustryInvoiceTest extends TestCase
     }
 
     #[DataProvider('runners')]
-    public function testExtractsAndGivesTheDefaultMapThroughTheRunnerTheEngineOptionsName(string $runner): void
+    public function testExtractsAndGivesTheDefaultMapThroughEitherRunner(string $runner): void
     {
         RunnerSupport::need($runner);
         $engineOptions = new EngineOptions(runner: $runner);
