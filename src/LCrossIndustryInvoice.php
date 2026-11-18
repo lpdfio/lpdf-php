@@ -44,6 +44,7 @@ final class LCrossIndustryInvoice
      * @throws EngineException For what `extractInvoiceData` refuses, a template path under the prefix that the map
      *                         lacks, a PDF/A level other than 3a, 3b or 3u, `encrypt`, `pdfx`, and a document that
      *                         declares the invoice file.
+     * @throws \UnexpectedValueException When a format function returns anything but a string.
      */
     public static function generatePdf(PdfEngine $engine, string|PdfDocument $templateOrDocument, GeneratePdfOptions $options): string
     {
@@ -66,6 +67,7 @@ final class LCrossIndustryInvoice
      * @return array<string, mixed>
      * @throws EngineException When the map is not one or doesn't fit the schema, the invoice is not a Cross Industry
      *                         Invoice or is MINIMUM or BASIC WL, or lacks a value the map marks required.
+     * @throws \UnexpectedValueException When a format function returns anything but a string.
      */
     public static function extractInvoiceData(string $invoiceXml, ?ExtractInvoiceDataOptions $options = null): array
     {
@@ -87,6 +89,8 @@ final class LCrossIndustryInvoice
      * applied.
      *
      * @return array<string, mixed>
+     * @throws EngineException What the engine refuses, or an answer without the values and where the typed ones are.
+     * @throws \UnexpectedValueException When a format function returns anything but a string.
      */
     private static function read(EngineRunner $runner, string $invoiceXml, ?string $invoiceMap, ?InvoiceFormat $format): array
     {
@@ -95,6 +99,9 @@ final class LCrossIndustryInvoice
             'invoice_xml' => base64_encode($invoiceXml),
             'invoice_map' => $invoiceMap,
         ]);
+        if (!is_array($answer['data'] ?? null) || !is_array($answer['typed'] ?? null)) {
+            throw new EngineException('Unexpected response from the engine.');
+        }
         $data = $answer['data'];
         foreach ($answer['typed'] as $typed) {
             $fn = match ($typed['type']) {
@@ -110,7 +117,17 @@ final class LCrossIndustryInvoice
             foreach ($typed['at'] as $step) {
                 $holder = &$holder[$step];
             }
-            $holder = (string) $fn($holder, $typed['name']);
+            $text = $fn($holder, $typed['name']);
+            // Not cast: a null would bind as no text, and an array as `Array`, neither what the function meant.
+            if (!is_string($text)) {
+                throw new \UnexpectedValueException(sprintf(
+                    "format %s returned %s for '%s': return the text to bind, or the value as it came.",
+                    $typed['type'],
+                    get_debug_type($text),
+                    $typed['name'],
+                ));
+            }
+            $holder = $text;
             unset($holder);
         }
         return $data;

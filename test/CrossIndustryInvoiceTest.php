@@ -250,6 +250,22 @@ final class CrossIndustryInvoiceTest extends TestCase
         $this->assertSame(0, $formatted);
     }
 
+    /** @return array<string, array{mixed, string}> */
+    public static function notText(): array
+    {
+        return ['null' => [null, 'null'], 'a number' => [12, 'int']];
+    }
+
+    #[DataProvider('notText')]
+    public function testRefusesAFormatFunctionThatReturnsNoTextNamingTheTypeAndTheEntry(mixed $returned, string $type): void
+    {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage("format code returned $type for 'lines.unit': return the text to bind, or the value as it came.");
+        LCrossIndustryInvoice::extractInvoiceData(self::invoice('en16931.xml'), new ExtractInvoiceDataOptions(format: new InvoiceFormat(
+            code: fn (string $value, string $entryName): mixed => $entryName === 'lines.unit' ? $returned : $value,
+        )));
+    }
+
     public function testGivesTheDefaultMapAsXmlText(): void
     {
         $map = LCrossIndustryInvoice::defaultInvoiceMap();

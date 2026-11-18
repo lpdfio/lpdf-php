@@ -7,7 +7,8 @@ namespace Lpdf\Engine;
 /**
  * How the values of each type are written on the page, for `LCrossIndustryInvoice`: each function takes the value in
  * its normal form and the full name of its entry in the map, without the prefix or an item number (`seller.country`,
- * `lines.unit`), and returns the text to bind. A type without a function is bound as the invoice has it.
+ * `lines.unit`), and returns the text to bind, a string: anything else is an `\UnexpectedValueException` that names
+ * the type and the entry. A type without a function is bound as the invoice has it.
  */
 final readonly class InvoiceFormat
 {
