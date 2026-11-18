@@ -84,7 +84,8 @@ final class LCrossIndustryInvoice
     }
 
     /**
-     * Lpdf's default invoice map, as XML text: every value EN 16931 numbers, the start of a map of your own.
+     * Lpdf's default invoice map, as XML text: the values EN 16931 numbers but a party's identifiers, what a line may
+     * hold several of, and an attached file's content. The start of a map of your own.
      *
      * @param  EngineOptions|null $engineOptions  The runner that gives the map, as an engine's options set it, for a
      *                                            host whose runner isn't the default one: without them, the default
