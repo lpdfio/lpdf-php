@@ -24,6 +24,7 @@ use Lpdf\Layout\RowAttr;
 use Lpdf\Layout\TableAttr;
 use Lpdf\Layout\TextAttr;
 use Lpdf\PdfEngine;
+use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -42,8 +43,10 @@ final class CrossIndustryInvoiceTest extends TestCase
     /** A map of one value, the invoice's number, under names of its own. */
     private const RECHNUNG_MAP = '<cross-industry-invoice-map prefix="rechnung"><value name="nummer" path="rsm:ExchangedDocument/ram:ID"/></cross-industry-invoice-map>';
 
+    /** Core's test/assets, with the invoices and the font: the test is skipped where core's files aren't. */
     private static function assets(): string
     {
+        self::needFixtures();
         return dirname(SnapshotHelper::fixtures()) . '/assets';
     }
 
@@ -52,9 +55,18 @@ final class CrossIndustryInvoiceTest extends TestCase
         return (string) file_get_contents(self::assets() . "/files/facturx/$name");
     }
 
+    /** Core's `showcase-cross-industry-invoice` fixture: the test is skipped where core's files aren't. */
     private static function template(): string
     {
+        self::needFixtures();
         return (string) file_get_contents(SnapshotHelper::fixtures() . '/showcase-cross-industry-invoice.xml');
+    }
+
+    private static function needFixtures(): void
+    {
+        if (!SnapshotHelper::hasFixtures()) {
+            Assert::markTestSkipped('Fixture files not available outside the monorepo.');
+        }
     }
 
     /** An unlicensed engine with the template's font loaded under its name. */
@@ -212,10 +224,14 @@ final class CrossIndustryInvoiceTest extends TestCase
         $this->assertSame(hash('sha256', $fromTemplate), hash('sha256', $fromCode));
     }
 
-    public function testExtractsTheValuesCoreReadsAndFormatsThemByTypeAndEntryName(): void
+    public function testExtractsTheValuesCoreReadsThroughTheDefaultMap(): void
     {
         $expected = json_decode((string) file_get_contents(self::assets() . '/files/facturx/case-vat-rates.json'), true);
         $this->assertSame($expected, LCrossIndustryInvoice::extractInvoiceData(self::invoice('case-vat-rates.xml')));
+    }
+
+    public function testFormatsTheValuesByTypeAndEntryName(): void
+    {
         $formatted = LCrossIndustryInvoice::extractInvoiceData(self::invoice('en16931.xml'), new ExtractInvoiceDataOptions(format: self::format()));
         $this->assertSame('31 October 2026', $formatted['issued']);
         $this->assertSame('Invoice', $formatted['typeCode']);
@@ -344,14 +360,15 @@ final class CrossIndustryInvoiceTest extends TestCase
         }
     }
 
-    public function testRefusesWhatTheEngineRefusesWithItsError(): void
+    public function testRefusesAMinimumInvoiceWithTheEnginesError(): void
     {
-        try {
-            LCrossIndustryInvoice::extractInvoiceData(self::invoice('minimum.xml'));
-            $this->fail('a MINIMUM invoice is refused');
-        } catch (EngineException $e) {
-            $this->assertStringContainsString("the invoice's profile is MINIMUM", $e->getMessage());
-        }
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage("the invoice's profile is MINIMUM");
+        LCrossIndustryInvoice::extractInvoiceData(self::invoice('minimum.xml'));
+    }
+
+    public function testRefusesATemplatePathThatTheDefaultMapLacksWithTheEnginesError(): void
+    {
         $typo = str_replace('invoice:seller.name', 'invoice:sellr.name', self::template());
         $this->expectException(EngineException::class);
         $this->expectExceptionMessage("data-value=\"invoice:sellr.name\": 'sellr' is not in the map");
