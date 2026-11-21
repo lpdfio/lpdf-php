@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Lpdf\Kit;
 
 /**
- * The words of the `allow` attribute of the output, separated by spaces: what a reader of an
- * encrypted PDF may do.
+ * What a reader of an encrypted PDF may do without the owner password: all of what follows, or
+ * print (at full quality), modify, copy, annotate, fill in forms, extract text for accessibility
+ * tools, and assemble (insert, delete and rotate pages).
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.

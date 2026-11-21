@@ -32,17 +32,17 @@ final readonly class StampAttr
         /**
          * The point of the page the box is placed from, and the point of the box that goes there: `top-left`,
          * `top-center`, `top-right`, `center-left`, `center`, `center-right`, `bottom-left`, `bottom-center` or
-         * `bottom-right`.
+         * `bottom-right` (`Anchor`).
          */
         public ?string $anchor = null,
-        /** Where the image sits across the box, in the room it leaves: `start`, `center`, the default, or `end`. */
+        /** Where the image sits across the box, in the room it leaves: `start`, `center`, the default, or `end` (`Align`). */
         public ?string $align = null,
-        /** Where the image sits down the box, in the room it leaves: `start`, `center`, the default, or `end`. */
+        /** Where the image sits down the box, in the room it leaves: `start`, `center`, the default, or `end` (`Align`). */
         public ?string $justify = null,
         /**
          * How the image is sized in the box, keeping its proportions: `fit`, the default, shrinks an image larger than
          * the box and keeps a smaller one at its natural size, from the resolution the PNG records, or a pixel to a
-         * point; `fill` takes the largest size that fits.
+         * point; `fill` takes the largest size that fits (`StampScale`).
          */
         public ?string $scale = null,
         /** How many times its natural size `fit` may grow an image, never past the box: 1, the default, or more. */

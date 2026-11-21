@@ -28,9 +28,28 @@ use Lpdf\Kit\FontAttr;
 use Lpdf\Kit\FootnoteCounter;
 use Lpdf\Kit\ImageAttr;
 use Lpdf\Kit\Orientation;
+use Lpdf\Kit\PageSize;
+use Lpdf\Kit\PdfALevel;
+use Lpdf\Kit\PdfUaPart;
+use Lpdf\Kit\PdfXVersion;
 use Lpdf\Kit\Permission;
 use Lpdf\Kit\SectionAttr;
 use Lpdf\Kit\SectionType;
+use Lpdf\Canvas\Anchor;
+use Lpdf\Engine\StampScale;
+use Lpdf\Layout\Align;
+use Lpdf\Layout\BarcodeAttr;
+use Lpdf\Layout\BoxAlign;
+use Lpdf\Layout\BoxJustify;
+use Lpdf\Layout\CellVAlign;
+use Lpdf\Layout\Paginate;
+use Lpdf\Shared\BarcodeType;
+use Lpdf\Shared\ListBullet;
+use Lpdf\Shared\ListFormat;
+use Lpdf\Shared\Ocg;
+use Lpdf\Shared\Pdf417EcLevel;
+use Lpdf\Shared\QrEcLevel;
+use Lpdf\Shared\TextAlign;
 use Lpdf\Layout\BookmarkAttr;
 use Lpdf\Layout\CodeAttr;
 use Lpdf\Layout\CodeSpanAttr;
@@ -829,6 +848,46 @@ final class SchemaTest extends TestCase
         self::assertSame('landscape', Orientation::Landscape);
         self::assertSame('Times-Bold', BuiltinFont::TimesBold);
         self::assertSame('all', Permission::All);
+    }
+
+    public function testAValueThatStartsWithADigitTakesTheLastWordOfItsEnumerationsName(): void
+    {
+        self::assertSame(['2a', '2b', '2u', '3a', '3b', '3u'],
+            [PdfALevel::Level2a, PdfALevel::Level2b, PdfALevel::Level2u, PdfALevel::Level3a, PdfALevel::Level3b, PdfALevel::Level3u]);
+        self::assertSame('1', PdfUaPart::Part1);
+        self::assertSame('4', PdfXVersion::Version4);
+        self::assertSame(['0', '8'], [Pdf417EcLevel::Level0, Pdf417EcLevel::Level8]);
+        self::assertSame('gs1-128', BarcodeType::Gs1128);
+        self::assertSame('gs1-datamatrix', BarcodeType::Gs1Datamatrix);
+    }
+
+    public function testTheConstantsOfTheClosedEnumerationsAreTheWordsTheSchemaReads(): void
+    {
+        self::assertSame(['a4', 'a3', 'a5', 'letter', 'legal'], [PageSize::A4, PageSize::A3, PageSize::A5, PageSize::Letter, PageSize::Legal]);
+        self::assertSame(['left', 'center', 'right', 'justify'], [TextAlign::Left, TextAlign::Center, TextAlign::Right, TextAlign::Justify]);
+        self::assertSame(['no', 'break-before', 'break-after', 'keep-next'], [Paginate::No, Paginate::BreakBefore, Paginate::BreakAfter, Paginate::KeepNext]);
+        self::assertSame('top-left', Anchor::TopLeft);
+        self::assertSame('stretch', BoxAlign::Stretch);
+        self::assertSame('between', BoxJustify::Between);
+        self::assertSame(['start', 'center', 'end'], [Align::Start, Align::Center, Align::End]);
+        self::assertSame('middle', CellVAlign::Middle);
+        self::assertSame('lower-roman', ListFormat::LowerRoman);
+        self::assertSame('dash', ListBullet::Dash);
+        self::assertSame('H', QrEcLevel::H);
+        self::assertSame('print', Ocg::Print);
+        self::assertSame('fit', StampScale::Fit);
+    }
+
+    public function testADocumentBuiltWithTheConstantsRendersAsTheXmlWithTheirWords(): void
+    {
+        $built = L::document(new DocumentAttr(size: PageSize::A4, orientation: Orientation::Landscape), [
+            L::section(NoAttr, [L::layout(NoAttr, [
+                L::text(new TextAttr(align: TextAlign::Center, paginate: Paginate::KeepNext), ['x']),
+                L::barcode(new BarcodeAttr(type: BarcodeType::Qr, data: 'x', ec: QrEcLevel::H, height: '40pt')),
+            ])]),
+        ]);
+        $xml = '<lpdf version="1"><document size="a4" orientation="landscape"><section><layout><text align="center" paginate="keep-next">x</text><barcode type="qr" data="x" ec="H" height="40pt"/></layout></section></document></lpdf>';
+        self::assertSame($this->render($xml), $this->render($built));
     }
 
     // -- Helpers ---------------------------------------------------------------------------------

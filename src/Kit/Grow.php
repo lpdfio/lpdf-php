@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Kit;
 
 /**
- * The values of the `grow` attribute of a section: the sizes its page grows in to fit its content.
+ * The sizes a section's page grows in to fit its content: width, height, or both.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
