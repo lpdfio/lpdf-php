@@ -863,7 +863,10 @@ final class SchemaTest extends TestCase
 
     public function testTheConstantsOfTheClosedEnumerationsAreTheWordsTheSchemaReads(): void
     {
-        self::assertSame(['a4', 'a3', 'a5', 'letter', 'legal'], [PageSize::A4, PageSize::A3, PageSize::A5, PageSize::Letter, PageSize::Legal]);
+        self::assertSame(
+            ['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'b4', 'b5', 'letter', 'legal', 'tabloid'],
+            [PageSize::A0, PageSize::A1, PageSize::A2, PageSize::A3, PageSize::A4, PageSize::A5, PageSize::A6, PageSize::B4, PageSize::B5, PageSize::Letter, PageSize::Legal, PageSize::Tabloid],
+        );
         self::assertSame(['left', 'center', 'right', 'justify'], [TextAlign::Left, TextAlign::Center, TextAlign::Right, TextAlign::Justify]);
         self::assertSame(['no', 'break-before', 'break-after', 'keep-next'], [Paginate::No, Paginate::BreakBefore, Paginate::BreakAfter, Paginate::KeepNext]);
         self::assertSame('top-left', Anchor::TopLeft);
