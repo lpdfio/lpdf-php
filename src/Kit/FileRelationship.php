@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Lpdf\Kit;
 
 /**
- * The values of the `relationship` attribute of a file the PDF carries: how it relates to the
- * document.
+ * How a file the PDF carries relates to the document: source, the file the document was made from;
+ * data, the data its pages show, such as the XML of an e-invoice; alternative, the same content in
+ * another form; supplement, more than the pages show; or unspecified.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.

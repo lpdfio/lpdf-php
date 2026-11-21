@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Lpdf\Kit;
 
 /**
- * The values of the `column-fill` attribute of a section: how the columns of its last page fill.
+ * How the columns of a section's last page fill: in order, as on every other page, or levelled.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
