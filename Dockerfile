@@ -1,4 +1,7 @@
-FROM php:cli
+# The PHP the workflows run, and the oldest the SDK supports. An unpinned `php:cli` moves to each new PHP: 8.6 has no
+# mbstring, which PHPUnit needs, and its mkdir() says "No such file or directory" where 8.2 says "Not a directory",
+# the wording WasmCacheTest expects.
+FROM php:8.2-cli
 
 # The same pinned runtime the workflows install, so a render that works here
 # works in CI. wasmtime.dev/install.sh resolves "latest" through the
