@@ -1,6 +1,6 @@
 {
   "name": "lpdfio/lpdf",
-  "description": "Lpdf PHP SDK: render PDF documents from XML or from code.",
+  "description": "Lpdf PHP SDK: render PDF documents from XML or from code. With data binding, PDF/A, PDF/UA, PDF/X and Factur-X / ZUGFeRD.",
   "type": "library",
   "keywords": ["pdf", "wasm", "xml", "document", "lpdf", "Factur-X", "ZUGFeRD"],
   "license": "proprietary",
