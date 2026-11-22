@@ -2,7 +2,7 @@
 
 # lpdfio/lpdf
 
-`lpdfio/lpdf` is the PHP SDK for [Lpdf](https://lpdf.io?utm_campaign=sdk-php&utm_medium=referral&utm_source=readme), the PDF engine that renders a document written in XML or built in code to the same PDF in every language.
+`lpdfio/lpdf` is the [Lpdf](https://lpdf.io?utm_campaign=sdk-php&utm_medium=referral&utm_source=readme) PHP SDK: render PDF documents from XML or from code.
 
 ## Installation
 
