@@ -1,7 +1,5 @@
 <img src="https://raw.githubusercontent.com/lpdfio/lpdf-php/main/lpdf-mark.svg" height="48" alt="Lpdf - PDF as Code" />
 
-# lpdfio/lpdf
-
 [Lpdf](https://lpdf.io?utm_campaign=sdk-php&utm_medium=referral&utm_source=readme) PHP SDK: render PDF documents from XML or from code.
 
 With data binding, PDF/A, PDF/UA, PDF/X and Factur-X / ZUGFeRD.
