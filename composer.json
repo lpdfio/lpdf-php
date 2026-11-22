@@ -1,6 +1,6 @@
 {
   "name": "lpdfio/lpdf",
-  "description": "PHP SDK for Lpdf, the PDF engine that renders a document written in XML or built in code to the same PDF in every language.",
+  "description": "Lpdf PHP SDK: render PDF documents from XML or from code.",
   "type": "library",
   "keywords": ["pdf", "wasm", "xml", "document", "lpdf", "Factur-X", "ZUGFeRD"],
   "license": "proprietary",
