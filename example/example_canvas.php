@@ -35,7 +35,7 @@ $engine = L::engine()->setLicenseKey($licenseKey);
 // The label above each group of shapes.
 $label = static fn (string $y) => new TextAtAttr(x: '28pt', y: $y, font: 'Helvetica-Bold', fontSize: '11pt', color: '#555555');
 
-$section1 = L::section(new SectionAttr(size: 'a4'), [
+$section1 = L::section(new SectionAttr(size: 'A4'), [
     L::layer(NoAttr, [
 
         // ── Heading bar ──────────────────────────────────────────────────────

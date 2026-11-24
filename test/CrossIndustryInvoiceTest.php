@@ -80,7 +80,7 @@ final class CrossIndustryInvoiceTest extends TestCase
     private static function page(string $text): string
     {
         return '<lpdf version="1"><assets><font name="body" src="../assets/fonts/SourceSans3-Regular.otf"/></assets>'
-            . '<document size="a4" font="body"><section><layout margin="48pt">' . $text . '</layout></section></document></lpdf>';
+            . '<document size="A4" font="body"><section><layout margin="48pt">' . $text . '</layout></section></document></lpdf>';
     }
 
     /** en16931.xml with its first line repeated `$lines` times in place of its two. */
@@ -127,7 +127,7 @@ final class CrossIndustryInvoiceTest extends TestCase
         ])] : [];
 
         return L::document(new DocumentAttr(
-            size: 'a4', font: 'body',
+            size: 'A4', font: 'body',
             assets: new DocumentAssets(fonts: [new FontAttr(name: 'body', src: '../assets/fonts/SourceSans3-Regular.otf')]),
             meta: new DocumentMeta(title: 'Invoice', author: 'Northwind Paper SAS', lang: 'en'),
         ), [

@@ -177,7 +177,7 @@ final class SchemaTest extends TestCase
 
     public function testABuiltDocumentRendersTheSameAsItsXml(): void
     {
-        $built = L::document(new DocumentAttr(size: 'a4'), [
+        $built = L::document(new DocumentAttr(size: 'A4'), [
             L::section(null, [
                 L::layout(null, [
                     L::column(new ColumnAttr(gap: '12pt'), [
@@ -402,7 +402,7 @@ final class SchemaTest extends TestCase
 
     public function testABulkTableRendersFromDataAsTheTableWithoutBulkAndOneBuiltWithLWhichHasNoDataIsRejected(): void
     {
-        $xml = static fn (string $bulk) => '<lpdf version="1"><document size="a4"><section><layout margin="36pt">'
+        $xml = static fn (string $bulk) => '<lpdf version="1"><document size="A4"><section><layout margin="36pt">'
             . "<table cols=\"1fr 2fr\"{$bulk}><thead><td><text bold=\"true\">Date</text></td><td><text bold=\"true\">Amount</text></td></thead>"
             . '<tr data-source="entries"><td><text data-value="date">-</text></td><td><text data-value="amount">-</text></td></tr></table>'
             . '<region pin="bottom"><text align="right">Page {page} of {pages}</text></region></layout></section></document></lpdf>';
@@ -864,7 +864,7 @@ final class SchemaTest extends TestCase
     public function testTheConstantsOfTheClosedEnumerationsAreTheWordsTheSchemaReads(): void
     {
         self::assertSame(
-            ['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'b4', 'b5', 'letter', 'legal', 'tabloid'],
+            ['A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B4', 'B5', 'Letter', 'Legal', 'Tabloid'],
             [PageSize::A0, PageSize::A1, PageSize::A2, PageSize::A3, PageSize::A4, PageSize::A5, PageSize::A6, PageSize::B4, PageSize::B5, PageSize::Letter, PageSize::Legal, PageSize::Tabloid],
         );
         self::assertSame(['left', 'center', 'right', 'justify'], [TextAlign::Left, TextAlign::Center, TextAlign::Right, TextAlign::Justify]);
@@ -889,7 +889,7 @@ final class SchemaTest extends TestCase
                 L::barcode(new BarcodeAttr(type: BarcodeType::Qr, data: 'x', ec: QrEcLevel::H, height: '40pt')),
             ])]),
         ]);
-        $xml = '<lpdf version="1"><document size="a4" orientation="landscape"><section><layout><text align="center" paginate="keep-next">x</text><barcode type="qr" data="x" ec="H" height="40pt"/></layout></section></document></lpdf>';
+        $xml = '<lpdf version="1"><document size="A4" orientation="landscape"><section><layout><text align="center" paginate="keep-next">x</text><barcode type="qr" data="x" ec="H" height="40pt"/></layout></section></document></lpdf>';
         self::assertSame($this->render($xml), $this->render($built));
     }
 
