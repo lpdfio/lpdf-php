@@ -84,7 +84,7 @@ use Lpdf\Shared\AttrsHelper;
  * use Lpdf\Kit\{DocumentAttr, SectionAttr};
  *
  * $doc = L::document(new DocumentAttr(), [
- *     L::section(new SectionAttr(size: 'a4'), [
+ *     L::section(new SectionAttr(size: 'A4'), [
  *         L::layout(null, [L::text(null, ['Hello'])]),
  *     ]),
  * ]);

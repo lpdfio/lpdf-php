@@ -24,7 +24,7 @@ use const Lpdf\NoAttr;
 
 $engine = L::engine();
 
-$doc = L::document(new DocumentAttr(size: 'letter'), [
+$doc = L::document(new DocumentAttr(size: 'Letter'), [
     L::section(NoAttr, [
         L::layout(new LayoutAttr(margin: '48pt'), [
             L::column(new ColumnAttr(gap: '24pt'), [

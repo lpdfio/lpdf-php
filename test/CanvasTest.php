@@ -71,10 +71,10 @@ final class CanvasTest extends TestCase
 
     public function testSectionSerializesToSection(): void
     {
-        $json = $this->json(L::section(new SectionAttr(size: 'a4', background: '#ffffff'), []));
+        $json = $this->json(L::section(new SectionAttr(size: 'A4', background: '#ffffff'), []));
 
         self::assertSame('section', $json['type']);
-        self::assertSame('a4', $json['attrs']['size']);
+        self::assertSame('A4', $json['attrs']['size']);
         self::assertSame('#ffffff', $json['attrs']['background']);
     }
 
@@ -412,7 +412,7 @@ final class CanvasTest extends TestCase
         return L::document(
             null,
             [
-                L::section(new SectionAttr(size: 'a4'), [
+                L::section(new SectionAttr(size: 'A4'), [
                     L::layer(null, [
                         L::rect(new RectAttr(x: '40pt', y: '40pt', width: '200pt', height: '100pt', fill: '#4a90e2')),
                         L::textAt(
@@ -430,7 +430,7 @@ final class CanvasTest extends TestCase
         return L::document(
             null,
             [
-                L::section(new SectionAttr(size: 'a4'), [
+                L::section(new SectionAttr(size: 'A4'), [
                     L::layer(null, [
                         L::rect(new RectAttr(
                             x: '40pt', y: '40pt', width: '200pt', height: '100pt',
