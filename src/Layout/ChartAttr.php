@@ -118,9 +118,9 @@ final readonly class ChartAttr
          */
         public ?string $legend = null,
         /**
-         * Writes each value at the end of its bar, or over its point and under a point lower than
-         * the points beside it, where its line doesn't run, and the total of a stack at the end of
-         * the stack or over its top. Default false. A sparkline writes none.
+         * Writes each value at the end of its bar or over its point. A point lower than the points
+         * beside it has its value under it, where its line doesn't run. The total of a stack goes
+         * at the end of the stack or over its top. Default false. A sparkline writes none.
          */
         public ?bool $valueLabels = null,
         /**
