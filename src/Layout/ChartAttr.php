@@ -9,11 +9,15 @@ namespace Lpdf\Layout;
  * each value a cell, a value for each series in the series' order. A chart with one series needs no
  * series. It takes its box in the flow as an image does, never splits across pages, and moves whole
  * to the next page when it doesn't fit. The engine draws its axis, steps, gridlines, labels and
- * legend by fixed rules: the value axis starts at zero and runs in round steps, each 1, 2 or 5
- * times a power of ten, written in full; a negative value takes the axis below zero, where a zero
- * line is drawn; a label wider than its room wraps at spaces onto three lines at most, and what
- * still doesn't fit ends in an ellipsis, so a chart always renders. A chart is a leaf, with no
- * padding, background or border: a column around it gives them, and a text above it is its title.
+ * legend by fixed rules: the value axis of bars and areas starts at zero, and a line's fits its
+ * values, from a round step under the lowest to one over the highest; the axis runs in round steps,
+ * each 1, 2 or 5 times a power of ten, written in full; a negative value takes the axis below zero,
+ * where a zero line is drawn; a label wider than its room wraps at spaces onto three lines at most,
+ * and what still doesn't fit ends in an ellipsis, so a chart always renders. A line or an area
+ * writes every 2nd, 3rd or 5th label where they don't all fit, and every point keeps its place. A
+ * missing value breaks a line, an area and a sparkline, and counts as zero in a stacked area. A
+ * sparkline draws no axis, labels or legend. A chart is a leaf, with no padding, background or
+ * border: a column around it gives them, and a text above it is its title.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
@@ -23,24 +27,30 @@ final readonly class ChartAttr
     public function __construct(
         /**
          * The kind of chart. bar draws a bar for each value, side by side within a category, or
-         * stacked with stacked="true".
+         * stacked with stacked="true". line draws a line through the values of each series, on an
+         * axis that fits them. area draws a line filled down to zero, or with stacked="true" each
+         * series filled down to the one under it. sparkline draws one small line through the whole
+         * box, with no axis, labels or legend, for a table cell.
          */
         public string $type,
         /**
          * Height of the whole chart, a length or a name from the height row of the tokens. The
-         * axis, the labels and the legend take room inside it and the width, and the bars get the
+         * axis, the labels and the legend take room inside it and the width, and the plot gets the
          * rest. The width is fill unless it is set.
          */
         public string $height,
         /**
          * Which way the bars run. vertical, the default, puts the categories along the bottom and
          * the value axis on the left; horizontal lists the categories down the left side, which
-         * suits long labels, with the value axis along the bottom.
+         * suits long labels, with the value axis along the bottom. Bars only: refused on any other
+         * kind.
          */
         public ?string $direction = null,
         /**
-         * Stacks the bars of a category on each other, in the order of the series, so the axis runs
-         * to the largest total. A stacked value can't be negative. Default false: side by side.
+         * Stacks the bars of a category on each other, in the order of the series, or the areas of
+         * the series, each filled down to the one under it, so the axis runs to the largest total.
+         * A stacked value can't be negative, and a missing one counts as zero. Default false: side
+         * by side, or areas filled down to zero. Bars and areas only: refused on any other kind.
          */
         public ?bool $stacked = null,
         /**
@@ -66,13 +76,15 @@ final readonly class ChartAttr
         public ?int $decimals = null,
         /**
          * A number the value axis reaches down to at least, which takes it below zero: min="-50".
-         * It only widens the axis: a value below it still fits.
+         * It only widens the axis: a value below it still fits. On a line, whose axis fits its
+         * values, min="0" brings the axis down to zero. A sparkline reaches it too, though it draws
+         * no axis.
          */
         public ?float $min = null,
         /**
          * A number the value axis reaches at least: max="100" for percentages, or the same max on
-         * charts meant to be compared side by side. It only widens the axis: a value above it still
-         * fits.
+         * charts meant to be compared side by side, such as the sparklines of a table. It only
+         * widens the axis: a value above it still fits.
          */
         public ?float $max = null,
         /**
@@ -87,7 +99,7 @@ final readonly class ChartAttr
          */
         public ?string $decimalMark = null,
         /**
-         * The space between the bars and the axis labels, and between them and the legend. Default
+         * The space between the plot and the axis labels, and between them and the legend. Default
          * s, from the space row of the tokens.
          */
         public ?string $gap = null,
@@ -106,15 +118,22 @@ final readonly class ChartAttr
          */
         public ?string $legend = null,
         /**
-         * Writes each value at the end of its bar, and the total of a stack at the end of the
-         * stack. Default false.
+         * Writes each value at the end of its bar or over its point, and the total of a stack at
+         * the end of the stack or over its top. Default false. A sparkline writes none.
          */
         public ?bool $valueLabels = null,
+        /**
+         * The width of every line of a line, an area or a sparkline chart, a length such as 2pt:
+         * 1.5pt by default, and 1pt for a sparkline. 0 draws no line, so an area is its fill alone.
+         * Which line is the current one and which the comparison is told by the series' color.
+         */
+        public ?string $strokeWidth = null,
         public ?string $font = null,
         public ?string $fontSize = null,
         /**
          * The color of the chart's text, its labels, steps and legend, and of its zero line.
-         * Default the color of the text around it.
+         * Default the color of the text around it. A sparkline, which has no text, draws its line
+         * in it, and without it in the first color of the palette.
          */
         public ?string $color = null,
         /**
