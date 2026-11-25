@@ -956,6 +956,7 @@ final class SchemaTest extends TestCase
         ini_set('serialize_precision', '17');
         try {
             self::assertSame(['0.1'], $this->json(LChart::value(NoAttr, [0.1]))['nodes']);
+            self::assertSame('17', ini_get('serialize_precision'), 'the setting is restored after the call');
         } finally {
             ini_set('serialize_precision', (string) $precision);
         }
@@ -965,6 +966,13 @@ final class SchemaTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         LChart::value(NoAttr, [NAN]);
+    }
+
+    public function testAValueThatIsNotANumberOrAStringIsRefused(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('value() child at index 0 must be an int, a float or a string, got bool');
+        LChart::value(NoAttr, [true]);
     }
 
     public function testAChartRendersTheSameFromTheBuilderAndItsXml(): void
