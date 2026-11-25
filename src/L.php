@@ -37,6 +37,10 @@ use Lpdf\Layout\BarcodeAttr;
 use Lpdf\Layout\BarcodeNode;
 use Lpdf\Layout\BookmarkAttr;
 use Lpdf\Layout\BookmarkNode;
+use Lpdf\Layout\ChartAttr;
+use Lpdf\Layout\ChartCategoryNode;
+use Lpdf\Layout\ChartNode;
+use Lpdf\Layout\ChartSeriesNode;
 use Lpdf\Layout\CodeAttr;
 use Lpdf\Layout\CodeNode;
 use Lpdf\Layout\CodeSpanAttr;
@@ -383,6 +387,18 @@ final class L
     public static function barcode(BarcodeAttr $attrs): BarcodeNode
     {
         return new BarcodeNode(self::optionsToAttrs($attrs));
+    }
+
+    /**
+     * Build a chart drawn from numbers, written like a table: {@see LChart::series()} are its columns, each
+     * {@see LChart::category()} a row and each {@see LChart::value()} a cell, a value for each series in the series'
+     * order. A chart with one series needs no series.
+     *
+     * @param array<ChartSeriesNode|ChartCategoryNode> $nodes
+     */
+    public static function chart(ChartAttr $attrs, array $nodes = []): ChartNode
+    {
+        return new ChartNode(self::optionsToAttrs($attrs), $nodes);
     }
 
     /**

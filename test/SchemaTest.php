@@ -6,6 +6,7 @@ namespace Lpdf\Tests;
 use const Lpdf\NoAttr;
 
 use Lpdf\L;
+use Lpdf\LChart;
 use Lpdf\LMarkdown;
 use Lpdf\Canvas\TextAtAttr;
 use Lpdf\Canvas\LayerAttr;
@@ -42,6 +43,12 @@ use Lpdf\Layout\BarcodeAttr;
 use Lpdf\Layout\BoxAlign;
 use Lpdf\Layout\BoxJustify;
 use Lpdf\Layout\CellVAlign;
+use Lpdf\Layout\ChartAttr;
+use Lpdf\Layout\ChartCategoryAttr;
+use Lpdf\Layout\ChartDirection;
+use Lpdf\Layout\ChartLegend;
+use Lpdf\Layout\ChartSeriesAttr;
+use Lpdf\Layout\ChartType;
 use Lpdf\Layout\Paginate;
 use Lpdf\Shared\BarcodeType;
 use Lpdf\Shared\ListBullet;
@@ -904,6 +911,81 @@ final class SchemaTest extends TestCase
         return L::document(null, [L::section(null, [
             L::markdown($attrs, [...($styles === null ? [] : [$styles]), LMarkdown::content(NoAttr, [$text])]),
         ])]);
+    }
+
+    private function revenueChart(): object
+    {
+        return L::document(null, [L::section(null, [L::layout(null, [
+            L::chart(new ChartAttr(type: ChartType::Bar, height: '180pt', prefix: '$', legend: ChartLegend::Top, thousandsMark: '.', decimalMark: ','), [
+                LChart::series(new ChartSeriesAttr(label: 'Revenue', color: '#1763cf')),
+                LChart::series(new ChartSeriesAttr(label: 'Costs')),
+                LChart::category(new ChartCategoryAttr(label: 'Q1'), [LChart::value(NoAttr, [120000]), LChart::value(NoAttr, [95000.5])]),
+                LChart::category(new ChartCategoryAttr(label: 'Q2'), [LChart::value(NoAttr, ['131000']), LChart::value(NoAttr)]),
+            ]),
+        ])])]);
+    }
+
+    public function testAChartItsSeriesItsCategoriesAndTheirValuesAreBuiltWithTheSchemaNames(): void
+    {
+        $chart = $this->json(L::chart(new ChartAttr(type: ChartType::Bar, height: '100pt', valueLabels: true, direction: ChartDirection::Horizontal)));
+        self::assertSame('chart', $chart['type']);
+        self::assertEquals(['type' => 'bar', 'height' => '100pt', 'direction' => 'horizontal', 'value-labels' => true], $chart['attrs']);
+        self::assertEquals(['label' => 'Revenue'], $this->json(LChart::series(new ChartSeriesAttr(label: 'Revenue')))['attrs']);
+        $category = $this->json(LChart::category(new ChartCategoryAttr(label: 'Q1'), [LChart::value(NoAttr, [41200])]));
+        self::assertSame('category', $category['type']);
+        self::assertSame(['41200'], $category['nodes'][0]['nodes']);
+        self::assertSame([], $this->json(LChart::value(NoAttr))['nodes']);
+    }
+
+    public function testANumberOfAValueIsWrittenInFullWithNoExponent(): void
+    {
+        $written = fn (int|float|string $value): string => $this->json(LChart::value(NoAttr, [$value]))['nodes'][0];
+        self::assertSame('0.25', $written(0.25));
+        self::assertSame('-3.5', $written(-3.5));
+        self::assertSame('3', $written(3.0));
+        self::assertSame('1000000000000000000000', $written(1e21));
+        self::assertSame('0.00000015', $written(1.5e-7));
+        self::assertSame('0.0000001', $written(1e-7));
+        self::assertSame('0', $written(-0.0));
+        self::assertSame('0.250', $written('0.250'));
+    }
+
+    public function testANumberOfAValueIsWrittenWhateverTheSerializePrecision(): void
+    {
+        $precision = ini_get('serialize_precision');
+        ini_set('serialize_precision', '17');
+        try {
+            self::assertSame(['0.1'], $this->json(LChart::value(NoAttr, [0.1]))['nodes']);
+        } finally {
+            ini_set('serialize_precision', (string) $precision);
+        }
+    }
+
+    public function testAValueThatIsNotFiniteIsRefused(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        LChart::value(NoAttr, [NAN]);
+    }
+
+    public function testAChartRendersTheSameFromTheBuilderAndItsXml(): void
+    {
+        $xml = L::toXml($this->revenueChart());
+        self::assertStringContainsString('<value>120000</value>', $xml);
+        self::assertStringContainsString('<value>95000.5</value>', $xml);
+        self::assertMatchesRegularExpression('~<value\s*/>~', $xml);
+        self::assertSame($this->render($this->revenueChart()), $this->render($xml));
+    }
+
+    public function testACategoryWithTheWrongCountOfValuesIsRefused(): void
+    {
+        $document = L::document(null, [L::section(null, [L::layout(null, [
+            L::chart(new ChartAttr(type: ChartType::Bar, height: '100pt'), [
+                LChart::series(), LChart::series(), LChart::category(new ChartCategoryAttr(label: 'Q1'), [LChart::value(NoAttr, [1])]),
+            ]),
+        ])])]);
+        $this->expectException(EngineException::class);
+        $this->expectExceptionMessage("category 'Q1' has 1 value, and the chart has 2 series");
+        $this->render($document);
     }
 
     public function testAMarkdownItsStylesItsContentAndTheirRulesAreBuiltWithTheSchemaNames(): void

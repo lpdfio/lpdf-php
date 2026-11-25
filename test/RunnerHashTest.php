@@ -49,6 +49,7 @@ final class RunnerHashTest extends TestCase
         'showcase-page-clip'        => ['images' => ['photo' => 'image-sample.png', 'avatar', 'tall']],
         'showcase-row-split-image'  => ['images' => ['photo' => 'image-sample.png', 'avatar', 'tall']],
         'showcase-bulk'             => ['data' => true],
+        'showcase-chart-data'       => ['data' => true],
         'showcase-columns-data'     => ['data' => true],
         'showcase-encryption'       => ['skipEncryption' => true],
         'showcase-encryption-rc4'   => ['fixture' => 'showcase-encryption', 'cipher' => 'rc4-128', 'passwords' => true],
