@@ -59,6 +59,7 @@ final class RunnerHashTest extends TestCase
         'showcase-pdfa-2a'          => ['fonts' => ['body', 'italic', 'heading', 'sans'], 'images' => ['photo', 'chart', 'badge'], 'date' => true],
         'showcase-pdfa-2b'          => ['fonts' => ['body', 'italic', 'heading', 'sans'], 'images' => ['photo', 'chart', 'badge'], 'date' => true],
         'showcase-pdfa-2u'          => ['fonts' => ['body', 'italic', 'heading', 'sans'], 'images' => ['photo', 'chart', 'badge'], 'date' => true],
+        'showcase-pdfa-form'        => ['fonts' => ['body', 'italic', 'heading', 'sans'], 'date' => true],
         'showcase-pdfua'            => ['fonts' => ['body', 'heading', 'sans'], 'images' => ['chart', 'badge'], 'date' => true],
         'showcase-pdfua-toc'        => ['fonts' => ['body', 'heading', 'sans'], 'images' => ['chart', 'badge'], 'date' => true],
         'showcase-pdfx'             => ['fonts' => ['body', 'italic', 'heading', 'sans'], 'images' => ['photo', 'chart', 'badge'], 'profile' => true, 'date' => true],
