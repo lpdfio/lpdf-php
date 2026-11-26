@@ -26,7 +26,10 @@ final class LChart
 {
     use AttrsHelper;
 
-    /** Build a series of a chart: its entry in the legend and the color of its bars, line or area. */
+    /**
+     * Build a series of a chart: its entry in the legend and the color of its bars, line or area. A pie, a donut and
+     * a sparkline take none.
+     */
     public static function series(?ChartSeriesAttr $attrs = null): ChartSeriesNode
     {
         return new ChartSeriesNode(self::optionsToAttrs($attrs));
@@ -44,8 +47,9 @@ final class LChart
 
     /**
      * Build a value of a category: a number, written in full with no exponent and no locale, or a string that is
-     * one, such as `'0.250'`, taken as written so its label keeps its decimals. No value, `[]`, draws no bar and
-     * breaks a line, an area or a sparkline; a stacked area counts it as zero. It has no attributes: pass `NoAttr`.
+     * one, such as `'0.250'`, taken as written so its label keeps its decimals. No value, `[]`, draws no bar or
+     * slice and breaks a line, an area or a sparkline; a stacked area counts it as zero. It has no attributes: pass
+     * `NoAttr`.
      *
      * @param array<int|float|string> $nodes
      * @throws \InvalidArgumentException when a value is not an int, a finite float or a string.
