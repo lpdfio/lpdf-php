@@ -16,8 +16,12 @@ namespace Lpdf\Layout;
  * and what still doesn't fit ends in an ellipsis, so a chart always renders. A line or an area
  * writes every 2nd, 3rd or 5th label where they don't all fit, and every point keeps its place. A
  * missing value breaks a line, an area and a sparkline, and counts as zero in a stacked area. A
- * sparkline draws no axis, labels or legend. A chart is a leaf, with no padding, background or
- * border: a column around it gives them, and a text above it is its title.
+ * sparkline draws no axis, labels or legend. A pie or a donut draws no axis either: a slice for
+ * each category, clockwise from the top, as wide as its share of the whole, in the largest circle
+ * the plot holds, and a legend at the right that lists each slice's label, color and share; a donut
+ * has a hole, with a text of the author's in it, and a negative value, or values that add up to
+ * zero, are refused. A chart is a leaf, with no padding, background or border: a column around it
+ * gives them, and a text above it is its title.
  *
  * Generated from lpdf.xsd by scripts/gen-sdk-api.mjs.
  * Do not edit: change the schema and run `make gen-sdk-api`.
@@ -29,8 +33,10 @@ final readonly class ChartAttr
          * The kind of chart. bar draws a bar for each value, side by side within a category, or
          * stacked with stacked="true". line draws a line through the values of each series, on an
          * axis that fits them. area draws a line filled down to zero, or with stacked="true" each
-         * series filled down to the one under it. sparkline draws one small line through the whole
-         * box, with no axis, labels or legend, for a table cell.
+         * series filled down to the one under it. pie draws a slice for each category, as wide as
+         * its share of the whole, with no axis. donut is a pie with a hole, which hole sizes and
+         * hole-text writes in. sparkline draws one small line through the whole box, with no axis,
+         * labels or legend, for a table cell.
          */
         public string $type,
         /**
@@ -70,8 +76,9 @@ final readonly class ChartAttr
          */
         public ?string $suffix = null,
         /**
-         * The decimals of the value labels, 0 to 6. Left out, a value is written with the decimals
-         * it has. The steps of the axis take the decimals their size needs.
+         * The decimals of the value labels, 0 to 6, and of the shares in the legend of a pie or a
+         * donut, which are whole percents unless it says otherwise. Left out, a value is written
+         * with the decimals it has. The steps of the axis take the decimals their size needs.
          */
         public ?int $decimals = null,
         /**
@@ -113,8 +120,10 @@ final readonly class ChartAttr
          */
         public ?string $categoryGap = null,
         /**
-         * Where the legend goes, which lists each series with its label and its color: bottom, top,
-         * right, or none. Default bottom with two series or more, and none with one.
+         * Where the legend goes, which lists each series with its label and its color, or each
+         * slice of a pie or a donut with its label, its color and its share of the whole, 22%:
+         * bottom, top, right, or none. Default bottom with two series or more, and none with one;
+         * right for a pie or a donut.
          */
         public ?string $legend = null,
         /**
@@ -130,6 +139,17 @@ final readonly class ChartAttr
          * is told by the series' color.
          */
         public ?string $strokeWidth = null,
+        /**
+         * The hole of a donut as a share of its size, from 0.1 to 0.9: 0.8 is a thin ring and 0.5 a
+         * thick one. Default 0.6. Donuts only: refused on any other kind.
+         */
+        public ?float $hole = null,
+        /**
+         * A text in the middle of a donut's hole, as it should read: a total, $11,100, or a share,
+         * 72%. The engine adds nothing up. Too wide for the hole, it wraps at spaces, and what
+         * still doesn't fit ends in an ellipsis. Donuts only: refused on any other kind.
+         */
+        public ?string $holeText = null,
         public ?string $font = null,
         public ?string $fontSize = null,
         /**
