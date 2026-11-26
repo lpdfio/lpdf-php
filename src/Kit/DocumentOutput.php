@@ -29,12 +29,12 @@ final readonly class DocumentOutput implements \JsonSerializable
          * also be searchable, or `2a` when it must also be tagged, and `3a`, `3b` or `3u` to carry attachments of any
          * kind. The render needs `createdOn`, and every text a font of the assets. Level a tags the file as `pdfua`
          * does, without PDF/UA's checks: add `pdfua` for a file a screen reader can use. What PDF/A cannot hold is an
-         * error that says what to change: a built-in font, a CMYK color, a form field, a barcode's digits, `encrypt`,
-         * attachments in part 2, and in level a a `lang` that is not a language tag and a character of Unicode's
-         * private use area. With `3a`, `3b` or `3u`, an attachment named `factur-x.xml`, or `xrechnung.xml` for the
-         * XRECHNUNG profile, makes the file a Factur-X or ZUGFeRD e-invoice: the engine reads the profile from BT-24
-         * of that XML and names the invoice in the file's metadata. The XML is attached as given, and its content is
-         * not checked.
+         * error that says what to change: a built-in font, a CMYK color, a push button, a form field in a built-in
+         * font, a barcode's digits, `encrypt`, attachments in part 2, and in level a a `lang` that is not a language
+         * tag and a character of Unicode's private use area. With `3a`, `3b` or `3u`, an attachment named
+         * `factur-x.xml`, or `xrechnung.xml` for the XRECHNUNG profile, makes the file a Factur-X or ZUGFeRD
+         * e-invoice: the engine reads the profile from BT-24 of that XML and names the invoice in the file's
+         * metadata. The XML is attached as given, and its content is not checked.
          */
         public ?string $pdfa = null,
         /**
